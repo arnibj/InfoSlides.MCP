@@ -24,8 +24,20 @@ public sealed class CredentialStore(string directory)
     public string CredentialsPath => Path.Combine(Directory, "credentials.json");
     public string ConfigPath => Path.Combine(Directory, "config.json");
 
-    public static string DefaultDirectory() =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".infoslides");
+    public static string DefaultDirectory()
+    {
+        // DoNotVerify: HOME/USERPROFILE may not exist yet (fresh containers, redirected homes);
+        // never fall back to a relative path, which would drop credentials into the CWD.
+        var home = Environment.GetFolderPath(
+            Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify);
+        if (string.IsNullOrEmpty(home))
+        {
+            throw new InvalidOperationException(
+                "Cannot determine the user profile directory (HOME/USERPROFILE is unset).");
+        }
+
+        return Path.Combine(home, ".infoslides");
+    }
 
     public StoredCredentials? LoadCredentials() =>
         Load(CredentialsPath, InfoSlidesJsonContext.Default.StoredCredentials);

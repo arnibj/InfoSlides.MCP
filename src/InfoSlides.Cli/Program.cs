@@ -1,3 +1,6 @@
+using System.CommandLine;
+using InfoSlides.Cli.Commands;
+
 namespace InfoSlides.Cli;
 
 public static class Program
@@ -18,9 +21,7 @@ public static class Program
             return 0;
         }
 
-        Console.WriteLine($"infoslides {VersionInfo.Version} — InfoSlides CLI & MCP server");
-        Console.WriteLine("Run with --mcp to start the MCP server (stdio). CLI verbs arrive in the next milestone.");
-        return 0;
+        return await CommandTree.Build().Parse(args).InvokeAsync();
     }
 
     private static string? GetOptionValue(string[] args, string name)
