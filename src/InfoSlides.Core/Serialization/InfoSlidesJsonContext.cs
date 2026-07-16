@@ -14,6 +14,8 @@ namespace InfoSlides.Core.Serialization;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(JsonElement))]
+[JsonSerializable(typeof(JsonElement?))]
+[JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(ApiWarning))]
 [JsonSerializable(typeof(List<ApiWarning>))]
 [JsonSerializable(typeof(OkResult))]
@@ -24,6 +26,9 @@ namespace InfoSlides.Core.Serialization;
 [JsonSerializable(typeof(CliCodeExchangeRequest))]
 [JsonSerializable(typeof(SessionInfo))]
 [JsonSerializable(typeof(SlideCondition))]
+[JsonSerializable(typeof(List<SlideCondition>))]
+[JsonSerializable(typeof(NewSlide))]
+[JsonSerializable(typeof(List<NewSlide>))]
 [JsonSerializable(typeof(Slide))]
 [JsonSerializable(typeof(Slideshow))]
 [JsonSerializable(typeof(List<Slideshow>))]
