@@ -68,6 +68,7 @@ Global options: `--api-url`, `--api-key`, `--json`. Credential precedence: flags
 | --- | --- |
 | `API-CONTRACT.md` | The agent-facing REST contract the InfoSlides backend implements. |
 | `BACKEND-CHANGES.md` | Checklist of InfoSlides-side work (TenantApiKeys table, gatekeeping, …). |
+| `BACKEND-HANDOVER.md` | Handover for the backend implementation session: wire rules, verification recipe. |
 | `src/InfoSlides.Core` | Shared API client, models, AOT JSON context, config, auth. |
 | `src/InfoSlides.Cli` | The `infoslides` executable: CLI verbs + MCP server. |
 | `tests/` | Unit tests and end-to-end MCP stdio smoke tests. |

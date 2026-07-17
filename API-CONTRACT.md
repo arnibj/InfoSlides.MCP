@@ -97,7 +97,7 @@ surfaces backend errors/warnings verbatim.
 | `POST /v1/tenants` ⏳ | none | Body `{ "tenantName", "ownerEmail" }` → `{ "tenantId", "apiKey": "isk_admin_...", "verificationEmailSent": true }`. Honors `Idempotency-Key`. |
 | `POST /v1/auth/resend-verification` ⏳ | any | Re-sends the owner verification email. |
 | `GET /v1/tenant` ⏳ | any | "whoami": `{ "tenantId", "name", "ownerEmail", "isEmailVerified", "subscriptionLevel", "deviceQuota": { "used", "max" }, "keyScope": { "type", "slideIds" } }`. |
-| `POST /v1/auth/cli/start` ⏳ | none | Browser entry. Query: `provider=google\|microsoft\|github`, `state`, `codeChallenge` (PKCE S256), `redirectUri` (loopback; registered set: `http://localhost:5000/callback`, `:5013`, `:53682`). Backend brokers the IdP and 302s to `redirectUri?code=...&state=...`. Codes are single-use, 5-minute TTL. |
+| `GET /v1/auth/cli/start` ⏳ | none | Browser entry (the CLI opens this URL, so it must accept GET). Query: `provider=google\|microsoft\|github`, `state`, `codeChallenge` (PKCE S256), `redirectUri` (loopback; registered set: `http://localhost:5000/callback`, `:5013`, `:53682`). Backend brokers the IdP and 302s to `redirectUri?code=...&state=...`. Codes are single-use, 5-minute TTL. |
 | `POST /v1/auth/cli/exchange` ⏳ | none | Body `{ "code", "codeVerifier" }` → `{ "sessionToken", "expiresAt", "tenantId", "email" }`. |
 
 ### 4.2 Slideshows & slides
