@@ -16,3 +16,47 @@ jobs:
       - run: dotnet restore
       - run: dotnet build --no-restore -warnaserror
       - run: dotnet test --no-build --verbosity normal
+
+  publish-aot:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            rid: linux-x64
+          - os: windows-latest
+            rid: win-x64
+          - os: macos-latest
+            rid: osx-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - run: dotnet publish src/InfoSlides.Cli -c Release -r ${{ matrix.rid }}
+      - name: Smoke test native binary (unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          BIN=src/InfoSlides.Cli/bin/Release/net10.0/${{ matrix.rid }}/publish/infoslides
+          test "$($BIN --version)" = "0.1.0"
+          { printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}'; sleep 2; } \
+            | $BIN --mcp | grep -q '"serverInfo"'
+      - name: Smoke test native binary (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $bin = "src/InfoSlides.Cli/bin/Release/net10.0/${{ matrix.rid }}/publish/infoslides.exe"
+          if ((& $bin --version) -ne "0.1.0") { throw "version mismatch" }
+          $init = '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}'
+          $out = $init | & $bin --mcp | Select-Object -First 1
+          if ($out -notmatch '"serverInfo"') { throw "no initialize response: $out" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: infoslides-${{ matrix.rid }}
+          path: |
+            src/InfoSlides.Cli/bin/Release/net10.0/${{ matrix.rid }}/publish/infoslides
+            src/InfoSlides.Cli/bin/Release/net10.0/${{ matrix.rid }}/publish/infoslides.exe
+          if-no-files-found: error
