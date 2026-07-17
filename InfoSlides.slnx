@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/InfoSlides.Cli/InfoSlides.Cli.csproj" />
+    <Project Path="src/InfoSlides.Core/InfoSlides.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/InfoSlides.Core.Tests/InfoSlides.Core.Tests.csproj" />
+    <Project Path="tests/InfoSlides.Mcp.Tests/InfoSlides.Mcp.Tests.csproj" />
+  </Folder>
+</Solution>
