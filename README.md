@@ -1,6 +1,6 @@
 # InfoSlides.MCP
 
-Agent-native access to [InfoSlides](https://infoslides.com) digital signage: a single
+Agent-native access to [InfoSlides](https://infoslides.app) digital signage: a single
 dependency-free executable `infoslides` that is both a **developer CLI** and, with `--mcp`, an
 **MCP server** (stdio) for AI agents like Claude Code and Cursor.
 
