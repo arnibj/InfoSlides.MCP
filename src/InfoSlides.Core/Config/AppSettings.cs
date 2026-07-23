@@ -7,7 +7,7 @@ namespace InfoSlides.Core.Config;
 /// </summary>
 public sealed record AppSettings(Uri ApiUrl, string? Credential, string ConfigDirectory)
 {
-    public const string DefaultApiUrl = "https://api.infoslides.com";
+    public const string DefaultApiUrl = "https://api.infoslides.app";
     public const string ApiKeyEnvVar = "INFOSLIDES_API_KEY";
     public const string ApiUrlEnvVar = "INFOSLIDES_API_URL";
 
