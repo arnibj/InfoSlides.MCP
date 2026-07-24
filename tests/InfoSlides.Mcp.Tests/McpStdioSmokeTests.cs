@@ -14,8 +14,8 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
     private static readonly string[] ExpectedTools =
     [
         "create_tenant", "get_tenant_info", "resend_verification_email",
-        "upload_slideshow", "update_slideshow", "list_slideshows", "get_slideshow",
-        "clone_slideshow", "list_gallery", "add_media_slide", "set_slide_conditions", "preview_slide",
+        "upload_slideshow", "upload_pptx", "update_slideshow", "list_slideshows", "get_slideshow",
+        "clone_slideshow", "list_gallery", "add_media_slide", "add_dynamic_slide", "upload_media", "set_slide_conditions", "preview_slide",
         "create_template", "list_templates", "update_source",
         "create_device", "list_devices", "get_device_status", "assign_schedule", "get_stream_link",
         "create_api_key", "list_api_keys", "revoke_api_key",

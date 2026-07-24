@@ -161,4 +161,74 @@ public sealed class ApiClientTests
         Assert.Equal("HttpError", exception.Code);
         Assert.Equal(HttpStatusCode.BadGateway, exception.StatusCode);
     }
+
+    [Fact]
+    public async Task UploadPptx_SendsMultipartWithFileAndTitle_AndIdempotencyKey()
+    {
+        var (client, handler) = CreateClient("isk_admin_abc");
+        handler.Enqueue(HttpStatusCode.Created,
+            """{"data":{"id":"s1","title":"Q3 Deck","resolution":{"width":1920,"height":1080}}}""");
+        using var fileStream = new MemoryStream([1, 2, 3, 4]);
+
+        var result = await client.UploadPptxAsync(fileStream, "deck.pptx", "Q3 Deck");
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Post, request.Method);
+        Assert.Equal("/v1/slideshows/pptx", request.Uri.AbsolutePath);
+        Assert.Contains("deck.pptx", request.Body);
+        Assert.Contains("Q3 Deck", request.Body);
+        Assert.False(string.IsNullOrEmpty(request.IdempotencyKey));
+        Assert.Equal("Q3 Deck", result.Data.Title);
+    }
+
+    [Fact]
+    public async Task UploadPptx_NoTitle_OmitsTitlePart()
+    {
+        var (client, handler) = CreateClient("isk_admin_abc");
+        handler.Enqueue(HttpStatusCode.Created,
+            """{"data":{"id":"s1","title":"deck","resolution":{"width":1920,"height":1080}}}""");
+        using var fileStream = new MemoryStream([1]);
+
+        await client.UploadPptxAsync(fileStream, "deck.pptx", title: null);
+
+        var request = Assert.Single(handler.Requests);
+        Assert.DoesNotContain("name=\"title\"", request.Body);
+    }
+
+    [Fact]
+    public async Task UploadMedia_SendsMultipartWithFile_AndReturnsAssetShape()
+    {
+        var (client, handler) = CreateClient("isk_admin_abc");
+        handler.Enqueue(HttpStatusCode.Created,
+            """{"data":{"id":"asset1","fileType":"image","width":800,"height":600}}""");
+        using var fileStream = new MemoryStream([1, 2, 3]);
+
+        var result = await client.UploadMediaAsync(fileStream, "photo.jpg", "image/jpeg");
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal("/v1/media", request.Uri.AbsolutePath);
+        Assert.Contains("photo.jpg", request.Body);
+        Assert.False(string.IsNullOrEmpty(request.IdempotencyKey));
+        Assert.Equal("asset1", result.Data.Id);
+        Assert.Equal("image", result.Data.FileType);
+        Assert.Equal(800, result.Data.Width);
+    }
+
+    [Fact]
+    public async Task AddDynamicSlide_SendsTemplateId_AndIdempotencyKey()
+    {
+        var (client, handler) = CreateClient("isk_admin_abc");
+        handler.Enqueue(HttpStatusCode.Created,
+            """{"data":{"id":"slide1","templateId":"tmpl1","durationSeconds":10,"position":0}}""");
+
+        var result = await client.AddDynamicSlideAsync("show1", new AddDynamicSlideRequest("tmpl1", 10, 0));
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Post, request.Method);
+        Assert.Equal("/v1/slideshows/show1/slides/dynamic", request.Uri.AbsolutePath);
+        Assert.Contains("\"templateId\":\"tmpl1\"", request.Body);
+        Assert.False(string.IsNullOrEmpty(request.IdempotencyKey));
+        Assert.Equal("slide1", result.Data.Id);
+        Assert.Equal("tmpl1", result.Data.TemplateId);
+    }
 }

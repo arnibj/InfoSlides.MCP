@@ -66,9 +66,70 @@ public sealed class InfoSlidesApiClient
         SendAsync(HttpMethod.Post, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}/clone", null,
             InfoSlidesJsonContext.Default.Slideshow, false, idempotent: true, ct);
 
+    /// <summary>
+    /// Uploads a <c>.pptx</c> file and creates a slideshow from it (parses slide count/native
+    /// resolution and queues thumbnail/stream rendering server-side — see
+    /// <c>POST /v1/slideshows/pptx</c> in API-CONTRACT.md §4.2).
+    /// </summary>
+    /// <param name="fileContent">The file's content stream (left open/closed by the caller).</param>
+    /// <param name="fileName">The original file name (must end in <c>.pptx</c>).</param>
+    /// <param name="title">Optional display name; falls back to the file name server-side.</param>
+    public Task<ApiResult<Slideshow>> UploadPptxAsync(
+        Stream fileContent, string fileName, string? title, CancellationToken ct = default)
+    {
+        var content = new MultipartFormDataContent();
+        var filePart = new StreamContent(fileContent);
+        filePart.Headers.ContentType = new MediaTypeHeaderValue(
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation");
+        content.Add(filePart, "file", fileName);
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            content.Add(new StringContent(title), "title");
+        }
+
+        return SendAsync(
+            HttpMethod.Post, "/v1/slideshows/pptx", content, InfoSlidesJsonContext.Default.Slideshow,
+            anonymousAllowed: false, idempotent: true, ct);
+    }
+
+    /// <summary>
+    /// Uploads a file directly into the tenant's media library (as opposed to
+    /// <see cref="AddMediaSlideAsync"/>'s <c>mediaUrl</c>, which downloads from a public URL —
+    /// see <c>POST /v1/media</c> in API-CONTRACT.md §4.2). Pass the returned
+    /// <see cref="UploadedMedia.Id"/> as <c>mediaAssetId</c> to <see cref="AddMediaSlideRequest"/>.
+    /// </summary>
+    /// <param name="fileContent">The file's content stream (left open/closed by the caller).</param>
+    /// <param name="fileName">The original file name.</param>
+    /// <param name="contentType">Best-effort MIME type; the server re-derives the real type from
+    /// the file's extension/signature.</param>
+    public Task<ApiResult<UploadedMedia>> UploadMediaAsync(
+        Stream fileContent, string fileName, string contentType, CancellationToken ct = default)
+    {
+        var content = new MultipartFormDataContent();
+        var filePart = new StreamContent(fileContent);
+        filePart.Headers.ContentType = new MediaTypeHeaderValue(
+            string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType);
+        content.Add(filePart, "file", fileName);
+
+        return SendAsync(
+            HttpMethod.Post, "/v1/media", content, InfoSlidesJsonContext.Default.UploadedMedia,
+            anonymousAllowed: false, idempotent: true, ct);
+    }
+
     public Task<ApiResult<Slide>> AddMediaSlideAsync(string slideshowId, AddMediaSlideRequest request, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}/slides",
             Json(request, InfoSlidesJsonContext.Default.AddMediaSlideRequest),
+            InfoSlidesJsonContext.Default.Slide, false, idempotent: true, ct);
+
+    /// <summary>
+    /// Creates a template-driven dynamic slide in an existing slideshow (see
+    /// <c>POST /v1/slideshows/{id}/slides/dynamic</c> in API-CONTRACT.md §4.2). The new slide
+    /// starts with no content source and empty override data — push data via
+    /// <see cref="UpdateSourceAsync"/>.
+    /// </summary>
+    public Task<ApiResult<Slide>> AddDynamicSlideAsync(string slideshowId, AddDynamicSlideRequest request, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}/slides/dynamic",
+            Json(request, InfoSlidesJsonContext.Default.AddDynamicSlideRequest),
             InfoSlidesJsonContext.Default.Slide, false, idempotent: true, ct);
 
     public Task<ApiResult<Slide>> SetSlideConditionsAsync(string slideId, IReadOnlyList<SlideCondition> conditions, CancellationToken ct = default) =>
