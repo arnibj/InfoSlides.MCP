@@ -26,10 +26,17 @@ public sealed class CredentialStore(string directory)
 
     public static string DefaultDirectory()
     {
+        // Prefer the USERPROFILE/HOME env vars directly: on Windows, Environment.GetFolderPath
+        // resolves UserProfile via the OS user token and ignores an overridden USERPROFILE env
+        // var, which breaks callers that redirect it for isolation (e.g. tests spawning the CLI
+        // with a temp profile dir). USERPROFILE is checked first so a Unix-style HOME picked up
+        // from a bash shell on Windows (e.g. Git Bash) can't override the native Windows path.
         // DoNotVerify: HOME/USERPROFILE may not exist yet (fresh containers, redirected homes);
         // never fall back to a relative path, which would drop credentials into the CWD.
-        var home = Environment.GetFolderPath(
-            Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify);
+        var home = Environment.GetEnvironmentVariable("USERPROFILE")
+            ?? Environment.GetEnvironmentVariable("HOME")
+            ?? Environment.GetFolderPath(
+                Environment.SpecialFolder.UserProfile, Environment.SpecialFolderOption.DoNotVerify);
         if (string.IsNullOrEmpty(home))
         {
             throw new InvalidOperationException(

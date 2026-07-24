@@ -39,7 +39,7 @@ param(
     [switch]$Mcp,
     [string]$ApiUrl,
     [string]$Cli,
-    [string]$OwnerEmail = "cli-smoke+$(Get-Date -Format yyyyMMddHHmmss)@example.com",
+    [string]$OwnerEmail = "cli-smoke+$(Get-Date -Format yyyyMMddHHmmss)@infoslides.app",
     [string]$TenantName = "CLI Smoke Test",
     [switch]$NoBuild
 )
@@ -198,13 +198,40 @@ if ($Mcp) {
         $psi.UseShellExecute        = $false
         $p = [System.Diagnostics.Process]::Start($psi)
 
+        # Drain stdout/stderr via async line events instead of a blocking ReadToEnd() - the CLI
+        # logs everything (host startup, MCP diagnostics) to stderr, so reading only stdout risks
+        # a pipe deadlock: the child blocks writing to a full stderr buffer while we block on stdout.
+        $outSb = New-Object System.Text.StringBuilder
+        $errSb = New-Object System.Text.StringBuilder
+        $outEvt = Register-ObjectEvent -InputObject $p -EventName OutputDataReceived -Action {
+            if ($null -ne $EventArgs.Data) { [void]$Event.MessageData.AppendLine($EventArgs.Data) }
+        } -MessageData $outSb
+        $errEvt = Register-ObjectEvent -InputObject $p -EventName ErrorDataReceived -Action {
+            if ($null -ne $EventArgs.Data) { [void]$Event.MessageData.AppendLine($EventArgs.Data) }
+        } -MessageData $errSb
+        $p.BeginOutputReadLine()
+        $p.BeginErrorReadLine()
+
         $p.StandardInput.WriteLine('{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"1.0"}}}')
         $p.StandardInput.WriteLine('{"jsonrpc":"2.0","method":"notifications/initialized"}')
         $p.StandardInput.WriteLine('{"jsonrpc":"2.0","id":2,"method":"tools/list"}')
-        $p.StandardInput.Close()   # stdio transport ends on stdin EOF, so the server drains and exits
 
-        $out = $p.StandardOutput.ReadToEnd()
-        if (-not $p.WaitForExit(5000)) { $p.Kill() }
+        # Wait for the tools/list response before closing stdin. Closing stdin right after writing
+        # the requests races EOF-triggered shutdown against the in-flight response write - the
+        # handler can log "completed" on stderr while the JSON-RPC reply never reaches stdout.
+        $deadline = (Get-Date).AddSeconds(5)
+        while ((Get-Date) -lt $deadline -and $outSb.ToString() -notmatch 'create_tenant') {
+            Start-Sleep -Milliseconds 100
+        }
+
+        $p.StandardInput.Close()   # stdio transport ends on stdin EOF, so the server drains and exits
+        if (-not $p.WaitForExit(3000)) { $p.Kill() }
+        Start-Sleep -Milliseconds 200   # let queued OutputDataReceived/ErrorDataReceived events flush
+        Unregister-Event -SourceIdentifier $outEvt.Name -ErrorAction SilentlyContinue
+        Unregister-Event -SourceIdentifier $errEvt.Name -ErrorAction SilentlyContinue
+
+        $out = $outSb.ToString()
+        $errText = $errSb.ToString()
 
         Write-Host "* tools/list returns create_tenant" -ForegroundColor White
         if ($out -match 'create_tenant') {
@@ -212,6 +239,10 @@ if ($Mcp) {
         } else {
             $script:fail++; Write-Host "  FAIL - no tool list in response (first 300 chars below)" -ForegroundColor Red
             Write-Host "    $($out.Substring(0, [Math]::Min(300, $out.Length)))" -ForegroundColor DarkGray
+            if ($errText.Trim()) {
+                Write-Host "  stderr (first 300 chars):" -ForegroundColor DarkGray
+                Write-Host "    $($errText.Substring(0, [Math]::Min(300, $errText.Length)))" -ForegroundColor DarkGray
+            }
         }
     } catch {
         $script:fail++; Write-Host "  FAIL (exception): $_" -ForegroundColor Red

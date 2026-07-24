@@ -6,8 +6,8 @@ Ordered roughly by dependency.
 > **Status: all items implemented** (2026-07-18, branch `claude/mcp-endpoints-audit-83z4sm`
 > in `arnibj/infoslides`; ~330 new tests, suite green). Stage-by-stage record:
 > `docs/mcp-agent-api/PROGRESS.md`; contract reconciliation: `docs/mcp-agent-api/GAP-ANALYSIS.md`
-> (both in the InfoSlides repo). Note: `GET /v1/auth/cli/start` supports google|microsoft —
-> a GitHub OAuth app is not yet registered server-side (owner decision).
+> (both in the InfoSlides repo). `GET /v1/auth/cli/start` supports google|microsoft|github
+> (2026-07-24: GitHub OAuth app registered, `AspNet.Security.OAuth.GitHub` wired in).
 
 ## 1. TenantApiKeys table & key auth
 
