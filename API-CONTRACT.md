@@ -14,7 +14,9 @@ warnings) — no client release is required.
 
 ## 1. Conventions
 
-- Base URL: `https://api.infoslides.com` (override: `INFOSLIDES_API_URL` / `--api-url`).
+- Base URL: `https://infoslides.app` (override: `INFOSLIDES_API_URL` / `--api-url`). Agent-API (`/v1/...`)
+  controllers are mounted at the domain root — no `api.` subdomain and no `/api` path prefix (that
+  prefix is reserved for the web-facing and TV-facing controllers).
 - All endpoints are prefixed with `/v1`.
 - Authentication: `Authorization: Bearer <credential>` where the credential is either
   - a **session token** obtained via the CLI OAuth loopback flow, or
