@@ -41,11 +41,14 @@ Or configure manually:
 }
 ```
 
-24 tools are exposed: tenant provisioning (`create_tenant` is anonymous and returns the admin
-key), slideshows, media slides, visibility conditions (time / weekday / data triggers), dynamic
-templates (AI prompt or raw HTML/CSS), live data pushes (`update_source`), devices, schedules
-(with `AspectMismatch` warnings), HLS stream links, slide PNG previews, API keys (admin and
-push-only data-provider keys) and Paddle upgrade links. The backend enforces all entitlements.
+27 tools are exposed: tenant provisioning (`create_tenant` is anonymous and returns the admin
+key), slideshows — including direct `.pptx` upload (`upload_pptx`) — media slides (by URL or
+direct image/video upload into the library via `upload_media`), visibility conditions (time /
+weekday / data triggers), dynamic templates (AI prompt or raw HTML/CSS) added to a deck with
+`add_dynamic_slide` and driven by live data pushes (`update_source`), devices, schedules (with
+`AspectMismatch` warnings), HLS stream links, slide PNG previews (`preview_slide`), API keys
+(admin and push-only data-provider keys) and Paddle upgrade links. The backend enforces all
+entitlements.
 
 ## CLI
 
@@ -54,6 +57,13 @@ infoslides login                          # OAuth in the browser (Google/Microso
 infoslides tenant create "Acme Cafe" owner@acme.test --save
 infoslides gallery list
 infoslides slideshow clone <gallery-id> --from-gallery
+infoslides slideshow upload-pptx ./deck.pptx           # or: media upload + slide add-media
+infoslides media upload ./logo.png
+infoslides slide add-media <slideshow-id> --asset-id <media-id> --duration 8
+infoslides slide set-conditions <slide-id> --condition time=08:00-11:00
+infoslides template create "Weather" --html ./weather.html --css ./weather.css
+infoslides slide add-dynamic <slideshow-id> <template-id>
+infoslides source update <slide-id> --data '{"tempC": 12}'
 infoslides device create "Lobby screen" --width 1080 --height 1920
 infoslides schedule assign <device-id> <slideshow-id>
 infoslides stream link <device-id>
