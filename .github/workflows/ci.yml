@@ -41,7 +41,7 @@ jobs:
         shell: bash
         run: |
           BIN=src/InfoSlides.Cli/bin/Release/net10.0/${{ matrix.rid }}/publish/infoslides
-          test "$($BIN --version)" = "0.1.0"
+          test "$($BIN --version)" = "1.0.0"
           { printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}'; sleep 2; } \
             | $BIN --mcp | grep -q '"serverInfo"'
       - name: Smoke test native binary (windows)
@@ -49,7 +49,7 @@ jobs:
         shell: pwsh
         run: |
           $bin = "src/InfoSlides.Cli/bin/Release/net10.0/${{ matrix.rid }}/publish/infoslides.exe"
-          if ((& $bin --version) -ne "0.1.0") { throw "version mismatch" }
+          if ((& $bin --version) -ne "1.0.0") { throw "version mismatch" }
           $init = '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}'
           $out = $init | & $bin --mcp | Select-Object -First 1
           if ($out -notmatch '"serverInfo"') { throw "no initialize response: $out" }
