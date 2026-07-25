@@ -33,8 +33,26 @@ public sealed record UpdateSlideshowRequest(
     Resolution? Resolution = null,
     IReadOnlyList<string>? SlideOrder = null);
 
+/// <summary>
+/// Request body for <c>POST /v1/slideshows/{id}/slides</c>. Exactly one of
+/// <see cref="MediaUrl"/> (downloaded server-side) / <see cref="MediaAssetId"/> (an id already in
+/// the tenant's media library, e.g. from <c>POST /v1/media</c>) must be set.
+/// </summary>
 public sealed record AddMediaSlideRequest(
-    string MediaUrl,
+    string? MediaUrl = null,
+    string? MediaAssetId = null,
+    double? DurationSeconds = null,
+    int? Position = null);
+
+/// <summary>Result of <c>POST /v1/media</c> — pass <see cref="Id"/> as <c>mediaAssetId</c> to <see cref="AddMediaSlideRequest"/>.</summary>
+public sealed record UploadedMedia(string Id, string FileType, int? Width = null, int? Height = null);
+
+/// <summary>
+/// Request body for <c>POST /v1/slideshows/{id}/slides/dynamic</c>. The new slide starts with no
+/// content source and empty override data — push initial/ongoing data with <c>source update</c>.
+/// </summary>
+public sealed record AddDynamicSlideRequest(
+    string TemplateId,
     double? DurationSeconds = null,
     int? Position = null);
 

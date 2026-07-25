@@ -19,7 +19,9 @@ public sealed class FakeBackend : IDisposable
 
     public FakeBackend()
     {
-        BaseUrl = new Uri($"http://127.0.0.1:{GetFreePort()}/");
+        // "localhost" (not a literal 127.0.0.1) gets a default HTTP.sys URL-ACL reservation for
+        // non-admin users on Windows - matches the prefix LoopbackLoginFlow.cs uses in production.
+        BaseUrl = new Uri($"http://localhost:{GetFreePort()}/");
         _listener.Prefixes.Add(BaseUrl.ToString());
         _listener.Start();
         _ = Task.Run(LoopAsync);

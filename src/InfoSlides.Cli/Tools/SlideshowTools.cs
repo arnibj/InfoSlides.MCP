@@ -76,17 +76,61 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
         ToolResults.Execute(() => api.ListGalleryAsync(ct), InfoSlidesJsonContext.Default.ListGalleryItem);
 
     [McpServerTool(Name = "add_media_slide")]
-    [Description("Add a media slide (image or video URL) to a slideshow. Returns an AspectMismatch warning " +
-                 "when the media ratio differs from the slideshow resolution — self-correct if it appears.")]
+    [Description("Add a media slide to a slideshow, from a publicly reachable URL (downloaded server-side) " +
+                 "or an existing media library asset id (see upload_media) — provide exactly one. Returns an " +
+                 "AspectMismatch warning when the media ratio differs from the slideshow resolution — " +
+                 "self-correct if it appears.")]
     public Task<CallToolResult> AddMediaSlide(
         [Description("Id of the slideshow to add the slide to.")] string slideshowId,
-        [Description("Publicly reachable URL of the image/video.")] string mediaUrl,
+        [Description("Publicly reachable URL of the image/video; omit when using mediaAssetId.")] string? mediaUrl = null,
+        [Description("Id of an existing media library asset (e.g. from upload_media); omit when using mediaUrl.")] string? mediaAssetId = null,
+        [Description("How long the slide is shown, in seconds.")] double? durationSeconds = null,
+        [Description("Zero-based position in the deck; appended when omitted.")] int? position = null,
+        CancellationToken ct = default)
+    {
+        if ((mediaUrl is null) == (mediaAssetId is null))
+        {
+            return Task.FromResult(ToolResults.ValidationError("Provide exactly one of mediaUrl or mediaAssetId."));
+        }
+
+        return ToolResults.Execute(
+            () => api.AddMediaSlideAsync(
+                slideshowId, new AddMediaSlideRequest(mediaUrl, mediaAssetId, durationSeconds, position), ct),
+            InfoSlidesJsonContext.Default.Slide);
+    }
+
+    [McpServerTool(Name = "add_dynamic_slide")]
+    [Description("Add a template-driven dynamic slide to a slideshow (see create_template). The new slide " +
+                 "starts with no data — push initial/ongoing values with update_source.")]
+    public Task<CallToolResult> AddDynamicSlide(
+        [Description("Id of the slideshow to add the slide to.")] string slideshowId,
+        [Description("Id of a template (from create_template/list_templates).")] string templateId,
         [Description("How long the slide is shown, in seconds.")] double? durationSeconds = null,
         [Description("Zero-based position in the deck; appended when omitted.")] int? position = null,
         CancellationToken ct = default) =>
         ToolResults.Execute(
-            () => api.AddMediaSlideAsync(slideshowId, new AddMediaSlideRequest(mediaUrl, durationSeconds, position), ct),
+            () => api.AddDynamicSlideAsync(
+                slideshowId, new AddDynamicSlideRequest(templateId, durationSeconds, position), ct),
             InfoSlidesJsonContext.Default.Slide);
+
+    [McpServerTool(Name = "upload_pptx")]
+    [Description("Upload a .pptx file from disk and create a slideshow from it — parses slide count and " +
+                 "native resolution server-side and queues thumbnail/stream rendering.")]
+    public async Task<CallToolResult> UploadPptx(
+        [Description("Absolute path to a .pptx file on disk.")] string filePath,
+        [Description("Display name; defaults to the file name.")] string? title = null,
+        CancellationToken ct = default)
+    {
+        if (!File.Exists(filePath))
+        {
+            return ToolResults.ValidationError($"File not found: {filePath}");
+        }
+
+        await using var stream = File.OpenRead(filePath);
+        return await ToolResults.Execute(
+            () => api.UploadPptxAsync(stream, Path.GetFileName(filePath), title, ct),
+            InfoSlidesJsonContext.Default.Slideshow);
+    }
 
     [McpServerTool(Name = "set_slide_conditions")]
     [Description("Replace the visibility conditions of a slide. Types: 'time' (e.g. '08:00-11:00'), " +

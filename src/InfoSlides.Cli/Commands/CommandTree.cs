@@ -22,6 +22,7 @@ internal static class CommandTree
         root.Subcommands.Add(Key());
         root.Subcommands.Add(Slideshow());
         root.Subcommands.Add(Gallery());
+        root.Subcommands.Add(Media());
         root.Subcommands.Add(Slide());
         root.Subcommands.Add(Template());
         root.Subcommands.Add(Source());
@@ -140,6 +141,30 @@ internal static class CommandTree
             InfoSlidesJsonContext.Default.Slideshow));
         slideshow.Subcommands.Add(upload);
 
+        var pptxFile = new Argument<string>("file") { Description = "Path to a .pptx file." };
+        var pptxTitle = new Option<string?>("--title") { Description = "Display name (default: the file name)." };
+        var uploadPptx = new Command(
+            "upload-pptx", "Upload a .pptx file and create a slideshow from it (parses slide count/native " +
+                           "resolution and queues thumbnail/stream rendering server-side).")
+        {
+            pptxFile, pptxTitle,
+        };
+        uploadPptx.SetAction(async (parse, ct) =>
+        {
+            var path = parse.GetValue(pptxFile)!;
+            if (!File.Exists(path))
+            {
+                Console.Error.WriteLine($"error: file not found: {path}");
+                return 2;
+            }
+
+            await using var stream = File.OpenRead(path);
+            return await CliContext.Run(parse,
+                api => api.UploadPptxAsync(stream, Path.GetFileName(path), parse.GetValue(pptxTitle), ct),
+                InfoSlidesJsonContext.Default.Slideshow);
+        });
+        slideshow.Subcommands.Add(uploadPptx);
+
         var list = new Command("list", "List slideshows.");
         list.SetAction((parse, ct) => CliContext.Run(parse,
             api => api.ListSlideshowsAsync(ct), InfoSlidesJsonContext.Default.ListSlideshow));
@@ -204,23 +229,104 @@ internal static class CommandTree
         return gallery;
     }
 
+    private static Command Media()
+    {
+        var media = new Command("media", "Media library operations.");
+
+        var file = new Argument<string>("file") { Description = "Path to the file to upload." };
+        var upload = new Command(
+            "upload", "Upload a file into the tenant's media library. Use the returned id with " +
+                      "`slide add-media --asset-id` to add it as a slide.")
+        {
+            file,
+        };
+        upload.SetAction(async (parse, ct) =>
+        {
+            var path = parse.GetValue(file)!;
+            if (!System.IO.File.Exists(path))
+            {
+                Console.Error.WriteLine($"error: file not found: {path}");
+                return 2;
+            }
+
+            await using var stream = System.IO.File.OpenRead(path);
+            return await CliContext.Run(parse,
+                api => api.UploadMediaAsync(stream, Path.GetFileName(path), ResolveContentType(path), ct),
+                InfoSlidesJsonContext.Default.UploadedMedia);
+        });
+        media.Subcommands.Add(upload);
+        return media;
+    }
+
+    /// <summary>Best-effort MIME type from the file extension — advisory only; the server re-derives the
+    /// real type from the file's extension/signature.</summary>
+    private static string ResolveContentType(string filePath) => Path.GetExtension(filePath).ToLowerInvariant() switch
+    {
+        ".png" => "image/png",
+        ".jpg" or ".jpeg" => "image/jpeg",
+        ".gif" => "image/gif",
+        ".webp" => "image/webp",
+        ".svg" => "image/svg+xml",
+        ".mp4" => "video/mp4",
+        ".mov" => "video/quicktime",
+        ".webm" => "video/webm",
+        ".pdf" => "application/pdf",
+        _ => "application/octet-stream",
+    };
+
     private static Command Slide()
     {
         var slide = new Command("slide", "Individual slide operations.");
 
         var showId = new Argument<string>("slideshow-id") { Description = "Slideshow to add the slide to." };
-        var mediaUrl = new Argument<string>("media-url") { Description = "URL of the image/video." };
+        var mediaUrl = new Argument<string?>("media-url")
+        {
+            Description = "URL of the image/video; omit when using --asset-id.",
+            Arity = ArgumentArity.ZeroOrOne,
+        };
+        var assetId = new Option<string?>("--asset-id")
+        {
+            Description = "Id of an existing media library asset (e.g. from `media upload`), instead of media-url.",
+        };
         var duration = new Option<double?>("--duration") { Description = "Display duration in seconds." };
         var position = new Option<int?>("--position") { Description = "Zero-based position; appended when omitted." };
-        var addMedia = new Command("add-media", "Add a media slide to a slideshow.")
+        var addMedia = new Command("add-media", "Add a media slide to a slideshow, from a URL or an existing media asset id.")
         {
-            showId, mediaUrl, duration, position,
+            showId, mediaUrl, assetId, duration, position,
         };
-        addMedia.SetAction((parse, ct) => CliContext.Run(parse,
-            api => api.AddMediaSlideAsync(parse.GetValue(showId)!, new AddMediaSlideRequest(
-                parse.GetValue(mediaUrl)!, parse.GetValue(duration), parse.GetValue(position)), ct),
-            InfoSlidesJsonContext.Default.Slide));
+        addMedia.SetAction((parse, ct) =>
+        {
+            var url = parse.GetValue(mediaUrl);
+            var asset = parse.GetValue(assetId);
+            if ((url is null) == (asset is null))
+            {
+                Console.Error.WriteLine("error: provide exactly one of media-url or --asset-id.");
+                return Task.FromResult(2);
+            }
+
+            return CliContext.Run(parse,
+                api => api.AddMediaSlideAsync(parse.GetValue(showId)!, new AddMediaSlideRequest(
+                    url, asset, parse.GetValue(duration), parse.GetValue(position)), ct),
+                InfoSlidesJsonContext.Default.Slide);
+        });
         slide.Subcommands.Add(addMedia);
+
+        var dynShowId = new Argument<string>("slideshow-id") { Description = "Slideshow to add the slide to." };
+        var templateId = new Argument<string>("template-id") { Description = "Id of a template (from `template create`/`template list`)." };
+        var dynDuration = new Option<double?>("--duration") { Description = "Display duration in seconds." };
+        var dynPosition = new Option<int?>("--position") { Description = "Zero-based position; appended when omitted." };
+        var addDynamic = new Command(
+            "add-dynamic",
+            "Add a template-driven dynamic slide to a slideshow. Starts with no data — push it " +
+            "with `source update`.")
+        {
+            dynShowId, templateId, dynDuration, dynPosition,
+        };
+        addDynamic.SetAction((parse, ct) => CliContext.Run(parse,
+            api => api.AddDynamicSlideAsync(parse.GetValue(dynShowId)!, new AddDynamicSlideRequest(
+                parse.GetValue(templateId)!, parse.GetValue(dynDuration), parse.GetValue(dynPosition)), ct),
+            InfoSlidesJsonContext.Default.Slide));
+        slide.Subcommands.Add(addDynamic);
 
         var slideId = new Argument<string>("slide-id") { Description = "Slide id." };
         var condition = new Option<string[]>("--condition")

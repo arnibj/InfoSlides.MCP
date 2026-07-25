@@ -52,6 +52,7 @@ internal static class McpBootstrap
             .WithStdioServerTransport()
             .WithTools<TenantTools>(jsonOptions)
             .WithTools<SlideshowTools>(jsonOptions)
+            .WithTools<MediaTools>(jsonOptions)
             .WithTools<TemplateTools>(jsonOptions)
             .WithTools<DeviceTools>(jsonOptions)
             .WithTools<ApiKeyTools>(jsonOptions)

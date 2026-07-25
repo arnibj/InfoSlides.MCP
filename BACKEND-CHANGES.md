@@ -6,8 +6,8 @@ Ordered roughly by dependency.
 > **Status: all items implemented** (2026-07-18, branch `claude/mcp-endpoints-audit-83z4sm`
 > in `arnibj/infoslides`; ~330 new tests, suite green). Stage-by-stage record:
 > `docs/mcp-agent-api/PROGRESS.md`; contract reconciliation: `docs/mcp-agent-api/GAP-ANALYSIS.md`
-> (both in the InfoSlides repo). Note: `GET /v1/auth/cli/start` supports google|microsoft —
-> a GitHub OAuth app is not yet registered server-side (owner decision).
+> (both in the InfoSlides repo). `GET /v1/auth/cli/start` supports google|microsoft|github
+> (2026-07-24: GitHub OAuth app registered, `AspNet.Security.OAuth.GitHub` wired in).
 
 ## 1. TenantApiKeys table & key auth
 
@@ -41,8 +41,18 @@ Ordered roughly by dependency.
 
 - [x] Slideshow CRUD (`/v1/slideshows...`) incl. `resolution` metadata (default 1920x1080,
       portrait support) and clone.
+- [x] `POST /v1/slideshows/pptx` (2026-07-24) — multipart `.pptx` upload → slideshow, same
+      parse/thumbnail/stream pipeline as the web app's upload.
+- [x] `POST /v1/media` (2026-07-24) — multipart file upload directly into the tenant's media
+      library, closing the "slide-add by existing media id" item from open question 3 below.
 - [x] Media slide add (`POST /v1/slideshows/{id}/slides`) with `durationSeconds`/`position`,
-      aspect-ratio check → `AspectMismatch` warning.
+      aspect-ratio check → `AspectMismatch` warning; accepts `mediaUrl` (download) or
+      `mediaAssetId` (existing asset, e.g. from `POST /v1/media`) — exactly one of the two.
+- [x] `POST /v1/slideshows/{id}/slides/dynamic` (2026-07-24) — dynamic (template-driven) slide
+      add, closing the gap where a template could be created (`POST /v1/templates`) and pushed to
+      (`POST /v1/slides/{id}/source`) but never actually instantiated as a slide via the agent API.
+      No content-source endpoint was needed: the new slide starts with empty override data and
+      `POST /v1/slides/{id}/source` already writes straight into it.
 - [x] `PUT /v1/slides/{id}/conditions` — wire to the **existing** server-side condition
       evaluation engine (time / weekday / data_trigger during HLS rendering).
 - [x] `POST /v1/slides/{id}/source` (+ `?dryRun=true` schema validation) triggering re-render.
