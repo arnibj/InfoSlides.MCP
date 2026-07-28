@@ -50,14 +50,43 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      # The repo is needed for the manifest/server.json templates and the bundle script; the
+      # binaries come from the build job's artifacts.
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           merge-multiple: true
+          path: artifacts
+
+      - name: Stage binaries for bundling
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p staging/win-x64 staging/linux-x64 staging/osx-arm64
+
+          for rid in linux-x64 osx-arm64; do
+            tar xzf "artifacts/infoslides-${GITHUB_REF_NAME}-${rid}.tar.gz" -C "staging/${rid}"
+          done
+          unzip -q "artifacts/infoslides-${GITHUB_REF_NAME}-win-x64.zip" -d staging/win-x64
+
+      - name: Build MCPB bundle and server.json
+        shell: bash
+        run: |
+          chmod +x scripts/build-mcpb.sh
+          scripts/build-mcpb.sh "${GITHUB_REF_NAME#v}" staging "$PWD/artifacts"
+
       - name: Checksums
-        run: sha256sum infoslides-* > sha256sums.txt
+        shell: bash
+        run: |
+          cd artifacts
+          sha256sum infoslides-* > sha256sums.txt
+          cat sha256sums.txt
+
       - uses: softprops/action-gh-release@v2
         with:
           files: |
-            infoslides-*
-            sha256sums.txt
+            artifacts/infoslides-*
+            artifacts/server.json
+            artifacts/sha256sums.txt
           generate_release_notes: true

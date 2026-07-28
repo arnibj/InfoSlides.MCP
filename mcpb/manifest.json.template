@@ -1,0 +1,71 @@
+{
+  "manifest_version": "0.3",
+  "name": "infoslides",
+  "display_name": "InfoSlides — put content on a TV or screen",
+  "version": "__VERSION__",
+  "description": "Turn a PowerPoint, an image, or a live data feed into a video stream playing on any smart TV or display.",
+  "long_description": "InfoSlides is digital signage for smart TVs. This server lets an AI agent take a user from nothing to a live screen without opening a dashboard: provision a workspace anonymously, upload a PowerPoint or clone a ready-made design, register the physical display, assign a schedule, and hand back the stream link to open on the TV.\n\nNew workspaces land on a permanent free plan — 1 screen, 4 slideshows, no credit card, nothing expires — so the whole flow can be completed at zero cost.\n\nNo API key is needed to start: the `create_tenant` tool is anonymous and returns one. Set the API key afterwards to reconnect to an existing workspace.",
+  "author": {
+    "name": "Arni Bjorgvinsson",
+    "url": "https://infoslides.app"
+  },
+  "homepage": "https://infoslides.app",
+  "documentation": "https://infoslides.app/docs/api",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arnibj/InfoSlides.MCP"
+  },
+  "support": "https://github.com/arnibj/InfoSlides.MCP/issues",
+  "license": "MIT",
+  "keywords": [
+    "digital-signage",
+    "dooh",
+    "tv",
+    "screen",
+    "display",
+    "menu-board",
+    "hls",
+    "powerpoint",
+    "upplysingaskjar"
+  ],
+  "server": {
+    "type": "binary",
+    "entry_point": "server/infoslides-linux-x64",
+    "mcp_config": {
+      "command": "${__dirname}/server/infoslides-linux-x64",
+      "args": ["--mcp"],
+      "env": {
+        "INFOSLIDES_API_KEY": "${user_config.api_key}",
+        "INFOSLIDES_API_URL": "${user_config.api_url}"
+      },
+      "platform_overrides": {
+        "win32": {
+          "command": "${__dirname}/server/infoslides-win-x64.exe"
+        },
+        "darwin": {
+          "command": "${__dirname}/server/infoslides-osx-arm64"
+        }
+      }
+    }
+  },
+  "user_config": {
+    "api_key": {
+      "type": "string",
+      "title": "InfoSlides API key",
+      "description": "Leave blank to start fresh — the create_tenant tool works without a credential and returns a new key. Paste an existing isk_admin_… key here to connect to a workspace you already have.",
+      "sensitive": true,
+      "required": false
+    },
+    "api_url": {
+      "type": "string",
+      "title": "API URL",
+      "description": "Only change this when pointing at a self-hosted or staging InfoSlides backend.",
+      "required": false,
+      "default": "https://infoslides.app"
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {}
+  }
+}
