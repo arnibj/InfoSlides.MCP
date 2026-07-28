@@ -4,6 +4,7 @@ using InfoSlides.Cli.Tools;
 using InfoSlides.Core.Api;
 using InfoSlides.Core.Config;
 using InfoSlides.Core.Serialization;
+using InfoSlides.Core.Update;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -22,6 +23,17 @@ internal static class McpBootstrap
     public static async Task<int> RunAsync(string? apiKey, string? apiUrl, CancellationToken ct = default)
     {
         var settings = AppSettings.Resolve(apiKey, apiUrl);
+
+        // Surfaced in the server instructions rather than on stderr: stderr goes to the client's
+        // log file, which no user reads. MCP users are the ones who most need this — improved
+        // tool descriptions are worthless to an agent still running an old bundle.
+        var updateNotice = UpdateChecker.GetPendingNotice(VersionInfo.Version, settings.ConfigDirectory) is { } notice
+            ? $"\n\nNote for the user: {notice}"
+            : string.Empty;
+
+        // Fire-and-forget; the server is long-lived so this always completes. Result is used on
+        // the next start.
+        _ = UpdateChecker.RefreshAsync(settings.ConfigDirectory);
 
         var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings());
         builder.Logging.AddConsole(options => options.LogToStandardErrorThreshold = LogLevel.Trace);
@@ -65,7 +77,8 @@ internal static class McpBootstrap
                     "Call get_tenant_info early to see the plan and screen allowance rather than " +
                     "discovering limits through errors. Results may carry warnings (e.g. AspectMismatch " +
                     "when content and screen shape disagree) — read them and self-correct. Errors may " +
-                    "include an upgradeUrl when a paid plan is required.";
+                    "include an upgradeUrl when a paid plan is required."
+                    + updateNotice;
             })
             .WithStdioServerTransport()
             .WithTools<TenantTools>(jsonOptions)

@@ -3,6 +3,7 @@ using System.Text.Json.Serialization.Metadata;
 using InfoSlides.Core.Config;
 using InfoSlides.Core.Models;
 using InfoSlides.Core.Serialization;
+using InfoSlides.Core.Update;
 using Xunit;
 
 namespace InfoSlides.Core.Tests;
@@ -80,6 +81,21 @@ public sealed class JsonContextCoverageTests
 
         RoundTrip(new StoredCredentials("isk_admin_x", "tok", now, "t1", "o@a.test"), c.StoredCredentials);
         RoundTrip(new StoredConfig("https://api.local"), c.StoredConfig);
+
+        RoundTrip(new UpdateCheckState("1.2.0", now), c.UpdateCheckState);
+        RoundTrip(new GitHubRelease("v1.2.0"), c.GitHubRelease);
+    }
+
+    [Fact]
+    public void GitHubRelease_ReadsTheApisSnakeCaseTagName()
+    {
+        // The context's camelCase policy would map TagName to "tagName"; GitHub sends "tag_name",
+        // so the property needs its explicit JsonPropertyName. Without this the tag silently
+        // deserialises to null and the update check never fires.
+        var release = JsonSerializer.Deserialize(
+            """{"tag_name":"v1.2.0","name":"1.2.0"}""", InfoSlidesJsonContext.Default.GitHubRelease);
+
+        Assert.Equal("v1.2.0", release!.TagName);
     }
 
     [Fact]

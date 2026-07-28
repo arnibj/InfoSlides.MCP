@@ -22,7 +22,7 @@ credit card, no trial clock, nothing expires. The whole flow below costs nothing
 ```sh
 # 1. Install (macOS/Linux; see Install for Windows and MCP clients)
 #    Version-pinned — check /releases/latest for the current one.
-curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.1.0/infoslides-v1.1.0-linux-x64.tar.gz | tar xz
+curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.2.0/infoslides-v1.2.0-linux-x64.tar.gz | tar xz
 
 # 2. Create a workspace — anonymous, prints an admin API key, saves it to ~/.infoslides
 ./infoslides tenant create "Acme Cafe" owner@acme.test --save
@@ -109,6 +109,17 @@ infoslides stream link <device-id>
 
 Global options: `--api-url`, `--api-key`, `--json`. Credential precedence: flags →
 `INFOSLIDES_API_KEY` / `INFOSLIDES_API_URL` → `~/.infoslides/` → defaults.
+
+### Update notices
+
+No install route notifies you of a new release on its own, so the binary checks for one itself: at
+most once a day, in the background, cached to `~/.infoslides/update-check.json`. The notice goes to
+**stderr** in CLI mode (so `--json` output stays clean and pipeable) and into the server
+instructions in `--mcp` mode, where an agent can pass it on.
+
+The check never sits on the critical path — the notice you see comes from the cache and the refresh
+is for next time — so no command is slower for it and being offline costs nothing. Set
+`INFOSLIDES_NO_UPDATE_CHECK=1` to switch it off; it also disables itself when `CI` is set.
 
 ## Install
 
