@@ -12,17 +12,20 @@ namespace InfoSlides.Cli.Tools;
 public sealed class TemplateTools(InfoSlidesApiClient api)
 {
     [McpServerTool(Name = "create_template")]
-    [Description("Create a dynamic slide template (Premium). Two modes: AI-prompt driven — pass 'prompt' " +
-                 "plus 'sampleJson' describing the data schema; or code driven — pass raw 'html' (with " +
-                 "{{field}} placeholders) and optional 'css'. Later update_source pushes must match the " +
-                 "schema. Set dryRun=true to validate without creating.")]
+    [Description("Design a screen layout that fills itself in from live data, so the display stays " +
+                 "current without anyone editing it — today's soup and price, the current exchange " +
+                 "rate, a live sales counter, the next departure time. Requires a paid plan. Two ways " +
+                 "to build it: describe the look in 'prompt' and give an example of the data in " +
+                 "'sampleJson', or hand over finished 'html' with {{field}} placeholders plus optional " +
+                 "'css'. The example data defines the shape every later update_source push must " +
+                 "match. Set dryRun=true to check it without creating anything.")]
     public Task<CallToolResult> CreateTemplate(
-        [Description("Template title.")] string title,
-        [Description("AI Studio visual prompt (AI mode). Requires sampleJson.")] string? prompt = null,
-        [Description("Example JSON object defining the data schema (AI mode).")] JsonElement? sampleJson = null,
-        [Description("Raw HTML with {{field}} placeholders (code mode).")] string? html = null,
+        [Description("What this layout is for, e.g. 'Soup of the day' or 'Live sales board'.")] string title,
+        [Description("Description of how the slide should look (AI mode). Requires sampleJson.")] string? prompt = null,
+        [Description("Example of the data this slide will show, as JSON — defines the shape update_source must send.")] JsonElement? sampleJson = null,
+        [Description("Finished HTML with {{field}} placeholders (code mode).")] string? html = null,
         [Description("Optional stylesheet for the custom HTML (code mode).")] string? css = null,
-        [Description("Validate the template without creating it.")] bool dryRun = false,
+        [Description("Check the layout without creating it.")] bool dryRun = false,
         CancellationToken ct = default)
     {
         if (prompt is null && html is null)
@@ -49,19 +52,23 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
     }
 
     [McpServerTool(Name = "list_templates", ReadOnly = true)]
-    [Description("List templates with their data schemas (sampleJson) — check the schema before update_source.")]
+    [Description("See the self-updating screen layouts available to this workspace, each with an " +
+                 "example of the data it expects. Check that example before pushing values with " +
+                 "update_source, and use this to find a ready-made layout instead of building one.")]
     public Task<CallToolResult> ListTemplates(CancellationToken ct = default) =>
         ToolResults.Execute(() => api.ListTemplatesAsync(ct), InfoSlidesJsonContext.Default.ListTemplate);
 
     [McpServerTool(Name = "update_source")]
-    [Description("Push a JSON data payload to a template-based slide, triggering a server-side re-render " +
-                 "(e.g. refresh a sales counter). The payload must match the template's schema. This is the " +
-                 "only tool usable with a data-provider (isk_dp_) key. Set dryRun=true to validate the " +
-                 "payload without rendering.")]
+    [Description("Put fresh information on the screen: send today's menu, the new price, the current " +
+                 "total, the updated opening hours. The display re-renders itself server-side — nobody " +
+                 "has to touch the TV. The data must match the shape the template's example defines " +
+                 "(see list_templates). This is also the only tool a restricted push-only " +
+                 "(isk_dp_) key can call, which is how an external system safely feeds one slide. Set " +
+                 "dryRun=true to check the data without changing what is on screen.")]
     public Task<CallToolResult> UpdateSource(
         [Description("Id of the slide to update.")] string slideId,
-        [Description("JSON object matching the template's sampleJson schema.")] JsonElement data,
-        [Description("Validate the payload without re-rendering.")] bool dryRun = false,
+        [Description("The new values, as a JSON object matching the template's example data.")] JsonElement data,
+        [Description("Check the data without changing what is on screen.")] bool dryRun = false,
         CancellationToken ct = default) =>
         ToolResults.Execute(() => api.UpdateSourceAsync(slideId, data, dryRun, ct),
             InfoSlidesJsonContext.Default.OkResult);

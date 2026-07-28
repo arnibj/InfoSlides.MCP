@@ -1,0 +1,73 @@
+name: Publish to MCP Registry
+
+# Deliberately manual. Publishing to registry.modelcontextprotocol.io is public and hard to undo,
+# and it seeds the downstream directories (Smithery, Glama, mcp.so, PulseMCP) that poll it. Run
+# this from the Actions tab once the release it points at exists and its .mcpb has been installed
+# and smoke-tested from a real MCP client.
+#
+# To publish automatically on every tag instead, replace the workflow_dispatch trigger with:
+#   on:
+#     push:
+#       tags: ["v*"]
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Released version to publish, without the leading v (e.g. 1.1.0)"
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC — proves ownership of the io.github.arnibj namespace, no secret needed
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      # server.json is generated at release time (scripts/build-mcpb.sh) because it carries the
+      # bundle's SHA-256, which cannot be known before the bundle exists. Take it from the
+      # release rather than rebuilding it, so what is published describes the exact artifact
+      # users will download.
+      - name: Fetch server.json from the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          gh release download "v${VERSION}" --repo "${GITHUB_REPOSITORY}" --pattern server.json --clobber
+          echo "--- server.json ---"
+          cat server.json
+
+      - name: Verify the bundle hash still matches the published artifact
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          URL="$(jq -r '.packages[0].identifier' server.json)"
+          EXPECTED="$(jq -r '.packages[0].fileSha256' server.json)"
+
+          curl -fsSL "$URL" -o bundle.mcpb
+          ACTUAL="$(sha256sum bundle.mcpb | cut -d' ' -f1)"
+
+          if [[ "$ACTUAL" != "$EXPECTED" ]]; then
+            echo "error: fileSha256 mismatch — clients would refuse to install this bundle." >&2
+            echo "  server.json: $EXPECTED" >&2
+            echo "  downloaded:  $ACTUAL" >&2
+            exit 1
+          fi
+          echo "Bundle hash verified: $ACTUAL"
+
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server to MCP Registry
+        run: ./mcp-publisher publish

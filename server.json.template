@@ -1,0 +1,38 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.arnibj/infoslides",
+  "title": "InfoSlides — put content on a TV or screen",
+  "description": "Put a PowerPoint, photo, or live data on any smart TV, menu board, or lobby screen.",
+  "version": "__VERSION__",
+  "repository": {
+    "url": "https://github.com/arnibj/InfoSlides.MCP",
+    "source": "github"
+  },
+  "websiteUrl": "https://infoslides.app",
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/arnibj/InfoSlides.MCP/releases/download/v__VERSION__/infoslides-mcp-v__VERSION__.mcpb",
+      "version": "__VERSION__",
+      "fileSha256": "__SHA256__",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "INFOSLIDES_API_KEY",
+          "description": "Workspace admin API key (isk_admin_…). Optional — the create_tenant tool is anonymous and returns one, so a first-time user can leave this unset.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "INFOSLIDES_API_URL",
+          "description": "Backend base URL. Defaults to https://infoslides.app; only set for a self-hosted or staging backend.",
+          "isRequired": false,
+          "isSecret": false,
+          "default": "https://infoslides.app"
+        }
+      ]
+    }
+  ]
+}

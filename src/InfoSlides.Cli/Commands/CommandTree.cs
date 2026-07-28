@@ -49,8 +49,10 @@ internal static class CommandTree
         create.SetAction((parse, ct) => CliContext.Run(parse,
             async api =>
             {
+                // "cli" here, "mcp" from TenantTools — the backend counts agent-originated signups
+                // separately from command-line ones.
                 var result = await api.CreateTenantAsync(
-                    new CreateTenantRequest(parse.GetValue(name)!, parse.GetValue(email)!), ct);
+                    new CreateTenantRequest(parse.GetValue(name)!, parse.GetValue(email)!, "cli"), ct);
                 if (parse.GetValue(save))
                 {
                     new CredentialStore(CliContext.Settings(parse).ConfigDirectory)

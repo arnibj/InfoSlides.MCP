@@ -36,12 +36,36 @@ jobs:
         with:
           dotnet-version: "10.0.x"
       - run: dotnet publish src/InfoSlides.Cli -c Release -r ${{ matrix.rid }}
+
+      # Read the expected version out of the csproj rather than hardcoding it. The version already
+      # lives in two places that drift silently (csproj and VersionInfo.cs); a third copy here
+      # turns every release into a red build, which is what happened bumping 1.0.1 -> 1.1.0.
+      # This step also asserts the two source-of-truth copies agree with each other.
+      - name: Resolve expected version
+        shell: bash
+        run: |
+          set -euo pipefail
+          CSPROJ_VERSION="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/InfoSlides.Cli/InfoSlides.Cli.csproj)"
+          CODE_VERSION="$(sed -n 's:.*Version = "\(.*\)";.*:\1:p' src/InfoSlides.Cli/VersionInfo.cs)"
+
+          if [[ -z "$CSPROJ_VERSION" ]]; then
+            echo "::error::Could not parse <Version> from InfoSlides.Cli.csproj" >&2
+            exit 1
+          fi
+          if [[ "$CSPROJ_VERSION" != "$CODE_VERSION" ]]; then
+            echo "::error::Version drift — csproj says '$CSPROJ_VERSION', VersionInfo.cs says '$CODE_VERSION'. Bump both." >&2
+            exit 1
+          fi
+
+          echo "EXPECTED_VERSION=$CSPROJ_VERSION" >> "$GITHUB_ENV"
+          echo "Expected version: $CSPROJ_VERSION"
+
       - name: Smoke test native binary (unix)
         if: runner.os != 'Windows'
         shell: bash
         run: |
           BIN=src/InfoSlides.Cli/bin/Release/net10.0/${{ matrix.rid }}/publish/infoslides
-          test "$($BIN --version)" = "1.0.1"
+          test "$($BIN --version)" = "$EXPECTED_VERSION"
           { printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}'; sleep 2; } \
             | $BIN --mcp | grep -q '"serverInfo"'
       - name: Smoke test native binary (windows)
@@ -49,7 +73,7 @@ jobs:
         shell: pwsh
         run: |
           $bin = "src/InfoSlides.Cli/bin/Release/net10.0/${{ matrix.rid }}/publish/infoslides.exe"
-          if ((& $bin --version) -ne "1.0.1") { throw "version mismatch" }
+          if ((& $bin --version) -ne $env:EXPECTED_VERSION) { throw "version mismatch: expected $env:EXPECTED_VERSION" }
           $init = '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}'
           $out = $init | & $bin --mcp | Select-Object -First 1
           if ($out -notmatch '"serverInfo"') { throw "no initialize response: $out" }
