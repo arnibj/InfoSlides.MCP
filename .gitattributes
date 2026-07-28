@@ -1,0 +1,4 @@
+# Shell scripts must be LF regardless of the committer's platform — scripts/build-mcpb.sh runs on
+# the Linux release runner, where a CRLF line ending fails with "$'\r': command not found".
+# Deliberately narrow: normalising everything else would churn line endings across the repo.
+*.sh text eol=lf
