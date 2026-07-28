@@ -15,7 +15,11 @@ public sealed class FakeBackend : IDisposable
 
     public Uri BaseUrl { get; }
 
-    public List<(string Method, string Path, string? Authorization)> Requests { get; } = [];
+    /// <summary>
+    /// Every request the server made, in order. <c>Body</c> is the raw request body as UTF-8 text
+    /// (empty for bodyless requests) so tests can assert on what was actually put on the wire.
+    /// </summary>
+    public List<(string Method, string Path, string? Authorization, string Body)> Requests { get; } = [];
 
     public FakeBackend()
     {
@@ -48,9 +52,19 @@ public sealed class FakeBackend : IDisposable
             }
 
             var request = context.Request;
+
+            // Read the body before responding — multipart uploads included, since the assertion is
+            // only ever "does this substring appear", never a structural parse.
+            var body = string.Empty;
+            if (request.HasEntityBody)
+            {
+                using var reader = new StreamReader(request.InputStream, request.ContentEncoding);
+                body = await reader.ReadToEndAsync();
+            }
+
             lock (Requests)
             {
-                Requests.Add((request.HttpMethod, request.Url!.AbsolutePath, request.Headers["Authorization"]));
+                Requests.Add((request.HttpMethod, request.Url!.AbsolutePath, request.Headers["Authorization"], body));
             }
 
             var response = context.Response;
@@ -63,10 +77,10 @@ public sealed class FakeBackend : IDisposable
             else
             {
                 response.StatusCode = 404;
-                var body = Encoding.UTF8.GetBytes(
+                var notFound = Encoding.UTF8.GetBytes(
                     """{"error":{"code":"NotFound","message":"No such route in FakeBackend."}}""");
                 response.ContentType = "application/json";
-                await response.OutputStream.WriteAsync(body);
+                await response.OutputStream.WriteAsync(notFound);
             }
 
             response.Close();

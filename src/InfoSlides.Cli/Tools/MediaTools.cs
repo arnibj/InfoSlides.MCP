@@ -10,11 +10,12 @@ namespace InfoSlides.Cli.Tools;
 public sealed class MediaTools(InfoSlidesApiClient api)
 {
     [McpServerTool(Name = "upload_media")]
-    [Description("Upload a file from disk directly into the tenant's media library. Returns an asset id — " +
-                 "pass it as mediaAssetId to add_media_slide to add it as a slide without a publicly " +
-                 "reachable URL.")]
+    [Description("Send a picture or video from the user's own computer to their workspace — a photo of " +
+                 "the specials board, a poster, a logo, a promo clip. Use this when the file is local " +
+                 "and has no public web address. Returns an asset id; pass it to add_media_slide as " +
+                 "mediaAssetId to put it on the screen.")]
     public async Task<CallToolResult> UploadMedia(
-        [Description("Absolute path to the file on disk.")] string filePath,
+        [Description("Absolute path to the image or video file on disk.")] string filePath,
         CancellationToken ct = default)
     {
         if (!File.Exists(filePath))

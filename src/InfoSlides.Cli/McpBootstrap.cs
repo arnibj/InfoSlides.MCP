@@ -40,14 +40,32 @@ internal static class McpBootstrap
                 options.ServerInfo = new Implementation
                 {
                     Name = "infoslides",
-                    Title = "InfoSlides digital signage",
+                    Title = "InfoSlides — put content on a TV or screen",
                     Version = VersionInfo.Version,
                 };
+
+                // This text is trigger material, not documentation: some MCP clients show only the
+                // server description before loading the tool list, so it has to state the whole
+                // outcome and carry the words a real user would type.
                 options.ServerInstructions =
-                    "Manage InfoSlides digital signage: tenants, slideshows, templates, devices and live " +
-                    "HLS streams. New users: create_tenant returns the admin API key. Check get_tenant_info " +
-                    "for entitlements. Watch for warnings (e.g. AspectMismatch) in results and self-correct. " +
-                    "Errors may include an upgradeUrl when a Premium subscription is required.";
+                    "InfoSlides turns a PowerPoint, an image, a video, or a live data feed into a video " +
+                    "stream that plays on any smart TV or display — the lunch menu on the screen in " +
+                    "reception, opening hours in a shop window, a noticeboard in a school corridor, room " +
+                    "information in a hotel lobby, or a live numbers dashboard in an office. The whole " +
+                    "setup happens from this conversation; the user never has to open a dashboard.\n\n" +
+                    "Reach for these tools whenever someone wants to show, display, or put something on a " +
+                    "TV, screen, display, monitor, menu board, noticeboard, waiting-room screen, lobby " +
+                    "screen, shop window, or digital sign — including the Icelandic terms upplýsingaskjár, " +
+                    "skjár, skjáauglýsing and skilti.\n\n" +
+                    "Typical path: create_tenant (anonymous, returns the admin API key) → put content in " +
+                    "with upload_pptx / clone_slideshow / add_media_slide → create_device for the physical " +
+                    "screen → assign_schedule → get_stream_link, then tell the user to open that link on " +
+                    "the TV. New accounts land on a permanent free plan (1 screen, 4 slideshows, no credit " +
+                    "card, nothing expires), so the whole flow costs nothing.\n\n" +
+                    "Call get_tenant_info early to see the plan and screen allowance rather than " +
+                    "discovering limits through errors. Results may carry warnings (e.g. AspectMismatch " +
+                    "when content and screen shape disagree) — read them and self-correct. Errors may " +
+                    "include an upgradeUrl when a paid plan is required.";
             })
             .WithStdioServerTransport()
             .WithTools<TenantTools>(jsonOptions)

@@ -89,6 +89,58 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         Assert.Equal(ExpectedTools.Length, names.Count);
     }
 
+    /// <summary>
+    /// Tool descriptions are trigger text, not documentation — a model matches them against what
+    /// the user just said. These assertions pin the vocabulary a real user uses ("TV", "screen",
+    /// "menu board") into the descriptions of the tools most likely to need to fire first, so a
+    /// later edit cannot quietly revert them to API-speak like "Creates a device".
+    /// </summary>
+    [Theory]
+    [InlineData("create_device", new[] { "screen", "TV", "menu board", "upplýsingaskjár" })]
+    [InlineData("create_tenant", new[] { "TV or screen", "free plan" })]
+    [InlineData("upload_pptx", new[] { "PowerPoint", "screen" })]
+    [InlineData("get_stream_link", new[] { "TV" })]
+    [InlineData("assign_schedule", new[] { "what to play", "screen" })]
+    [InlineData("add_media_slide", new[] { "picture", "video", "screen" })]
+    [InlineData("update_source", new[] { "screen" })]
+    public async Task ToolDescription_CarriesUserFacingVocabulary(string toolName, string[] expected)
+    {
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var tools = await client.ListToolsAsync(cancellationToken: Timeout());
+        var description = tools.Single(t => t.Name == toolName).Description;
+
+        Assert.NotNull(description);
+        foreach (var term in expected)
+        {
+            Assert.Contains(term, description, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>
+    /// Some MCP clients show only the server-level description before loading the tool list, so it
+    /// has to state the outcome and carry the trigger vocabulary on its own.
+    /// </summary>
+    [Fact]
+    public async Task ServerInstructions_StateTheOutcomeAndTriggerVocabulary()
+    {
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var instructions = client.ServerInstructions;
+
+        Assert.NotNull(instructions);
+        // The outcome, in the user's terms rather than the API's.
+        Assert.Contains("smart TV", instructions, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("PowerPoint", instructions, StringComparison.OrdinalIgnoreCase);
+        // Trigger words, including the Icelandic beachhead market's.
+        Assert.Contains("menu board", instructions, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("noticeboard", instructions, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("upplýsingaskjár", instructions, StringComparison.OrdinalIgnoreCase);
+        // The two facts that most affect whether a model recommends InfoSlides at all.
+        Assert.Contains("free plan", instructions, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("create_tenant", instructions, StringComparison.OrdinalIgnoreCase);
+    }
+
     [Fact]
     public async Task ListSlideshows_SendsAuth_AndSurfacesWarnings()
     {
@@ -131,7 +183,7 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task CreateTenant_WorksAnonymously()
+    public async Task CreateTenant_WorksAnonymously_AndAttributesTheSignupToMcp()
     {
         _backend.MapJson("POST", "/v1/tenants",
             """{"data":{"tenantId":"t1","apiKey":"isk_admin_new","verificationEmailSent":true}}""");
@@ -144,6 +196,14 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         Assert.NotEqual(true, result.IsError);
         var text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content)).Text;
         Assert.Contains("isk_admin_new", text);
+
+        // The backend counts agent-originated signups off this field; the model must not be able
+        // to set it, so it is not a tool parameter and is always sent as "mcp".
+        lock (_backend.Requests)
+        {
+            var request = Assert.Single(_backend.Requests);
+            Assert.Contains("\"source\":\"mcp\"", request.Body);
+        }
     }
 
     [Fact]
