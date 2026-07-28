@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using InfoSlides.Core.Config;
 using InfoSlides.Core.Models;
+using InfoSlides.Core.Update;
 
 namespace InfoSlides.Core.Serialization;
 
@@ -57,4 +58,6 @@ namespace InfoSlides.Core.Serialization;
 [JsonSerializable(typeof(CheckoutLink))]
 [JsonSerializable(typeof(StoredCredentials))]
 [JsonSerializable(typeof(StoredConfig))]
+[JsonSerializable(typeof(UpdateCheckState))]
+[JsonSerializable(typeof(GitHubRelease))]
 public sealed partial class InfoSlidesJsonContext : JsonSerializerContext;
