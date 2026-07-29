@@ -41,9 +41,7 @@ curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.2.0/infosl
 
 Open that URL in the TV's browser, the InfoSlides TV app, or any HLS-capable player.
 
-> **TODO (AGENT-06):** add the terminal-to-TV GIF here once recorded — empty terminal on the left,
-> a real screen coming to life on the right. Item 10 of the distribution plan; it is the single
-> most persuasive thirty seconds available and this is the spot it belongs in.
+https://github.com/user-attachments/assets/8da62e05-59f4-4a70-9351-dfa3fd47ce4e
 
 ## As an MCP server
 
