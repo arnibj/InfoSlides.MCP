@@ -4,4 +4,4 @@
 
 Please do **not** open public GitHub issues for security vulnerabilities.
 
-Email security concerns to: arni.bjorgvinsson@gmail.com
+Email security concerns to: admin@infoslides.app
