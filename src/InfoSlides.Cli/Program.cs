@@ -41,10 +41,13 @@ public static class Program
 
         var exitCode = await CommandTree.Build().Parse(args).InvokeAsync();
 
-        // Give the background refresh a brief chance to land so the cache actually gets written
-        // for short commands. Never allowed to delay the exit meaningfully, and never observed
-        // for faults — RefreshAsync swallows its own errors by design.
-        await Task.WhenAny(refresh, Task.Delay(TimeSpan.FromMilliseconds(300))).ConfigureAwait(false);
+        // Give the background refresh a chance to land so the cache actually gets written for
+        // short commands. Measured against the real GitHub API: a cold request (DNS + TLS +
+        // response) commonly takes 600-700ms, so a shorter budget here loses the race on nearly
+        // every short command and the cache never advances. Still bounded well under
+        // RefreshAsync's own 5s HttpClient timeout, and never observed for faults — RefreshAsync
+        // swallows its own errors by design.
+        await Task.WhenAny(refresh, Task.Delay(TimeSpan.FromSeconds(2))).ConfigureAwait(false);
 
         return exitCode;
     }
