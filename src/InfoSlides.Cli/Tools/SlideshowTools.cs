@@ -130,18 +130,25 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
             InfoSlidesJsonContext.Default.Slide);
 
     [McpServerTool(Name = "upload_pptx")]
-    [Description("Put an existing PowerPoint on a screen. Uploads a .pptx from the local disk and " +
-                 "turns it into screen content — the server reads the slide count and the deck's own " +
-                 "resolution and starts rendering it into a video stream. This is usually the quickest " +
-                 "route when the user says they already have a presentation.")]
+    [Description("Put an existing PowerPoint or PDF on a screen. Uploads a .pptx or .pdf from the " +
+                 "local disk and turns it into screen content — the server reads the slide/page count " +
+                 "and the file's own resolution and starts rendering it into a video stream. This is " +
+                 "usually the quickest route when the user says they already have a presentation or a " +
+                 "PDF deck.")]
     public async Task<CallToolResult> UploadPptx(
-        [Description("Absolute path to a .pptx file on disk.")] string filePath,
+        [Description("Absolute path to a .pptx or .pdf file on disk.")] string filePath,
         [Description("Display name; defaults to the file name.")] string? title = null,
         CancellationToken ct = default)
     {
         if (!File.Exists(filePath))
         {
             return ToolResults.ValidationError($"File not found: {filePath}");
+        }
+
+        var extension = Path.GetExtension(filePath).ToLowerInvariant();
+        if (extension is not (".pptx" or ".pdf"))
+        {
+            return ToolResults.ValidationError($"Unsupported file type '{extension}'; expected .pptx or .pdf.");
         }
 
         await using var stream = File.OpenRead(filePath);

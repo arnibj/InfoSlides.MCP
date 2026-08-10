@@ -1,6 +1,6 @@
 # InfoSlides — put content on a TV from your terminal or your agent
 
-**Turn a PowerPoint, a photo, or a live data feed into a video stream playing on any smart TV.**
+**Turn a PowerPoint, a PDF, a photo, or a live data feed into a video stream playing on any smart TV.**
 The lunch menu on the screen in reception. Opening hours in a shop window. A noticeboard in a
 school corridor. Room information in a hotel lobby. A live numbers board in an office.
 
@@ -74,7 +74,7 @@ Or configure it by hand (stdio transport):
 ### What the agent gets
 
 **27 tools**, covering the whole path: workspace provisioning (`create_tenant`, anonymous, returns
-the admin key), slideshows including direct `.pptx` upload (`upload_pptx`), media slides by URL or
+the admin key), slideshows including direct `.pptx`/`.pdf` upload (`upload_pptx`), media slides by URL or
 direct file upload (`upload_media`), visibility conditions (time of day, weekday, data triggers),
 self-updating template slides driven by live data pushes (`update_source`), devices, schedules with
 `AspectMismatch` warnings, HLS stream links, PNG slide previews for self-verification, API keys
@@ -93,7 +93,7 @@ infoslides login                          # OAuth in the browser (Google/Microso
 infoslides tenant create "Acme Cafe" owner@acme.test --save
 infoslides gallery list
 infoslides slideshow clone <gallery-id> --from-gallery
-infoslides slideshow upload-pptx ./deck.pptx           # or: media upload + slide add-media
+infoslides slideshow upload-pptx ./deck.pptx           # or ./deck.pdf; or: media upload + slide add-media
 infoslides media upload ./logo.png
 infoslides slide add-media <slideshow-id> --asset-id <media-id> --duration 8
 infoslides slide set-conditions <slide-id> --condition time=08:00-11:00

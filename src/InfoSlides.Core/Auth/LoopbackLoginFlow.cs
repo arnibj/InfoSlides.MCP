@@ -74,6 +74,10 @@ public static class LoopbackLoginFlow
         var bytes = Encoding.UTF8.GetBytes(html);
         response.StatusCode = success ? 200 : 400;
         response.ContentType = "text/html; charset=utf-8";
+        // Without an explicit length, HttpListenerResponse falls back to chunked encoding, and
+        // closing right after WriteAsync can drop the connection before the client reads the
+        // final chunk — the browser tab sees a reset instead of the confirmation page.
+        response.ContentLength64 = bytes.Length;
         await response.OutputStream.WriteAsync(bytes).ConfigureAwait(false);
         response.Close();
     }

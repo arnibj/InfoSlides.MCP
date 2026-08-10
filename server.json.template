@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.arnibj/infoslides",
   "title": "InfoSlides — put content on a TV or screen",
-  "description": "Put a PowerPoint, photo, or live data on any smart TV, menu board, or lobby screen.",
+  "description": "Put a PowerPoint, PDF, photo, or live data on any smart TV, menu board, or lobby screen.",
   "version": "__VERSION__",
   "repository": {
     "url": "https://github.com/arnibj/InfoSlides.MCP",

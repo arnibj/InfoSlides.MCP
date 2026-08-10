@@ -45,7 +45,7 @@ back to re-read something they missed.
 
 This is the decision the tools will not make for you, and the one most often got wrong.
 
-**Use a fixed picture or PowerPoint slide when** the content changes rarely or on a human schedule —
+**Use a fixed picture, PowerPoint, or PDF slide when** the content changes rarely or on a human schedule —
 a welcome message, a seasonal promotion, opening hours that change twice a year, a photo of the
 premises. Fixed content is cheaper, works on the free plan, and cannot break by showing stale data.
 
@@ -75,9 +75,10 @@ For someone with no account, in order:
    1 screen, 4 slideshows, 2 users, 200 MB, no card, nothing expires.
 2. **`get_tenant_info`** — read the plan and screen allowance now, so the rest of the plan fits
    inside them.
-3. **Content.** `upload_pptx` if they already have a deck. `clone_slideshow(fromGallery=true)` if
-   they have nothing and want something presentable fast — check `list_gallery` first.
-   `upload_slideshow` plus `add_media_slide` when building from their own photos.
+3. **Content.** `upload_pptx` if they already have a deck — PowerPoint or PDF, either works.
+   `clone_slideshow(fromGallery=true)` if they have nothing and want something presentable fast —
+   check `list_gallery` first. `upload_slideshow` plus `add_media_slide` when building from their
+   own photos.
 4. **`preview_slide`** — look at it before anyone else does. See "Preview before it is public".
 5. **`create_device`** — one per physical screen, named for where it is ("Reception TV", not
    "Device 1"). Match its resolution to the answer from question 1.
@@ -116,8 +117,8 @@ screen that will be black when they get there.
 - Text was written without seeing the layout — overflow is the most common defect.
 - Live data has just been pushed for the first time, so the real values are longer or shorter than
   the example.
-- The content came from a PowerPoint built for a projector, where fonts are usually far too small
-  for a screen viewed from across a room.
+- The content came from a PowerPoint or PDF built for a projector or for print, where fonts are
+  usually far too small for a screen viewed from across a room.
 
 A mistake on a lobby display is seen by everyone walking past, all day, until someone notices. The
 preview costs one call.

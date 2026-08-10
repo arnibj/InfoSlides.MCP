@@ -143,11 +143,11 @@ internal static class CommandTree
             InfoSlidesJsonContext.Default.Slideshow));
         slideshow.Subcommands.Add(upload);
 
-        var pptxFile = new Argument<string>("file") { Description = "Path to a .pptx file." };
+        var pptxFile = new Argument<string>("file") { Description = "Path to a .pptx or .pdf file." };
         var pptxTitle = new Option<string?>("--title") { Description = "Display name (default: the file name)." };
         var uploadPptx = new Command(
-            "upload-pptx", "Upload a .pptx file and create a slideshow from it (parses slide count/native " +
-                           "resolution and queues thumbnail/stream rendering server-side).")
+            "upload-pptx", "Upload a .pptx or .pdf file and create a slideshow from it (parses slide/page " +
+                           "count and native resolution and queues thumbnail/stream rendering server-side).")
         {
             pptxFile, pptxTitle,
         };
@@ -157,6 +157,13 @@ internal static class CommandTree
             if (!File.Exists(path))
             {
                 Console.Error.WriteLine($"error: file not found: {path}");
+                return 2;
+            }
+
+            var extension = Path.GetExtension(path).ToLowerInvariant();
+            if (extension is not (".pptx" or ".pdf"))
+            {
+                Console.Error.WriteLine($"error: unsupported file type '{extension}'; expected .pptx or .pdf");
                 return 2;
             }
 

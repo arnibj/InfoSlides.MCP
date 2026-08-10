@@ -98,7 +98,7 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
     [Theory]
     [InlineData("create_device", new[] { "screen", "TV", "menu board", "upplýsingaskjár" })]
     [InlineData("create_tenant", new[] { "TV or screen", "free plan" })]
-    [InlineData("upload_pptx", new[] { "PowerPoint", "screen" })]
+    [InlineData("upload_pptx", new[] { "PowerPoint", "PDF", "screen" })]
     [InlineData("get_stream_link", new[] { "TV" })]
     [InlineData("assign_schedule", new[] { "what to play", "screen" })]
     [InlineData("add_media_slide", new[] { "picture", "video", "screen" })]

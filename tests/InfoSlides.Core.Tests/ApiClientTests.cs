@@ -196,6 +196,36 @@ public sealed class ApiClientTests
     }
 
     [Fact]
+    public async Task UploadPptx_PdfFile_RoutesToPdfEndpoint()
+    {
+        var (client, handler) = CreateClient("isk_admin_abc");
+        handler.Enqueue(HttpStatusCode.Created,
+            """{"data":{"id":"s1","title":"Q3 Deck","resolution":{"width":1920,"height":1080}}}""");
+        using var fileStream = new MemoryStream([1, 2, 3, 4]);
+
+        var result = await client.UploadPptxAsync(fileStream, "deck.pdf", "Q3 Deck");
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Post, request.Method);
+        Assert.Equal("/v1/slideshows/pdf", request.Uri.AbsolutePath);
+        Assert.Contains("deck.pdf", request.Body);
+        Assert.Contains("Q3 Deck", request.Body);
+        Assert.False(string.IsNullOrEmpty(request.IdempotencyKey));
+        Assert.Equal("Q3 Deck", result.Data.Title);
+    }
+
+    [Fact]
+    public async Task UploadPptx_UnsupportedExtension_ThrowsWithoutSendingRequest()
+    {
+        var (client, handler) = CreateClient("isk_admin_abc");
+        using var fileStream = new MemoryStream([1]);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => client.UploadPptxAsync(fileStream, "deck.key", null));
+
+        Assert.Empty(handler.Requests);
+    }
+
+    [Fact]
     public async Task UploadMedia_SendsMultipartWithFile_AndReturnsAssetShape()
     {
         var (client, handler) = CreateClient("isk_admin_abc");

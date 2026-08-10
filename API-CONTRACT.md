@@ -121,6 +121,7 @@ surfaces backend errors/warnings verbatim.
 | --- | --- | --- |
 | `POST /v1/slideshows` ✅ | admin | Create/upload. Body `{ "title", "resolution": {"width","height"}, "slides": [...] }`. Default resolution 1920x1080; portrait supported. `resolution` (here and on devices) is snapped to the nearest supported preset — 1920x1080, 1280x720, 1080x1920, 720x1280, 1080x1080 — and responses echo the snapped value. `durationSeconds` are whole seconds; fractional input is rounded. Does **not** accept a raw `.pptx` file — use `POST /v1/slideshows/pptx` for that. |
 | `POST /v1/slideshows/pptx` ✅ | admin | Creates a slideshow from an uploaded `.pptx`. `multipart/form-data`: a `file` part plus an optional `title` form field (falls back to the file name). Parses slide count and native resolution server-side and queues thumbnail/stream rendering, same pipeline as the web app's upload. Honors `Idempotency-Key`. |
+| `POST /v1/slideshows/pdf` ✅ | admin | Same handler and request/response shape as `POST /v1/slideshows/pptx` above, for an uploaded `.pdf` instead — page count via PdfPig, `/MediaBox` resolution detection. Honors `Idempotency-Key`. |
 | `GET /v1/slideshows` ✅ | admin | List (paged: `?page=&pageSize=`). |
 | `GET /v1/slideshows/{id}` ✅ | admin | Full slideshow incl. slides, conditions, resolution. |
 | `PATCH /v1/slideshows/{id}` ✅ | admin | Partial update (title, resolution, slide order). |
