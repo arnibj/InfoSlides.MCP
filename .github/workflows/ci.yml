@@ -37,23 +37,24 @@ jobs:
           dotnet-version: "10.0.x"
       - run: dotnet publish src/InfoSlides.Cli -c Release -r ${{ matrix.rid }}
 
-      # Read the expected version out of the csproj rather than hardcoding it. The version already
-      # lives in two places that drift silently (csproj and VersionInfo.cs); a third copy here
-      # turns every release into a red build, which is what happened bumping 1.0.1 -> 1.1.0.
-      # This step also asserts the two source-of-truth copies agree with each other.
+      # Read the expected version out of the csproj rather than hardcoding it here — a third
+      # hardcoded copy in CI is what turned bumping 1.0.1 -> 1.1.0 into a red build.
+      #
+      # The csproj's <Version> is now the *only* source of truth: VersionInfo.cs no longer
+      # hardcodes a second copy — it reads the running assembly's own version metadata (which the
+      # release workflow sets via -p:Version= at publish time, and which defaults to <Version>
+      # for a local/CI build). That's what the "Smoke test native binary" step below actually
+      # proves, end to end, against the real published binary — a stronger guarantee than
+      # comparing two source-text copies ever was, since a text-level match can't catch the
+      # binary itself reporting something else at runtime.
       - name: Resolve expected version
         shell: bash
         run: |
           set -euo pipefail
           CSPROJ_VERSION="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/InfoSlides.Cli/InfoSlides.Cli.csproj)"
-          CODE_VERSION="$(sed -n 's:.*Version = "\(.*\)";.*:\1:p' src/InfoSlides.Cli/VersionInfo.cs)"
 
           if [[ -z "$CSPROJ_VERSION" ]]; then
             echo "::error::Could not parse <Version> from InfoSlides.Cli.csproj" >&2
-            exit 1
-          fi
-          if [[ "$CSPROJ_VERSION" != "$CODE_VERSION" ]]; then
-            echo "::error::Version drift — csproj says '$CSPROJ_VERSION', VersionInfo.cs says '$CODE_VERSION'. Bump both." >&2
             exit 1
           fi
 
