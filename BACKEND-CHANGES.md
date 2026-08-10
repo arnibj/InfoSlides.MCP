@@ -90,3 +90,17 @@ Ordered roughly by dependency.
 4. Existing controllers were reused via services (device/schedule/media/template/slide-rule
    services, provisioning, Paddle webhook sync); `/v1` controllers are separate and thin —
    no existing `api/*` routes were aliased or changed behaviorally.
+
+## Backend capabilities added since v1 that this client has NOT adopted
+
+The checklist above is closed. This section tracks the reverse direction: backend endpoints that
+shipped later and that the CLI/MCP surface does not yet expose.
+
+- ~~**`POST /v1/slideshows/pdf` (2026-08, InfoSlides `IMPORT-03`).**~~ **Adopted 2026-08-10
+  (`IMPORT-04` in `Docs/STORIES-FOLLOWUPS.md` in the InfoSlides repo).** The existing `upload_pptx`
+  tool, the `slideshow upload-pptx` CLI command, and `InfoSlidesApiClient.UploadPptxAsync` were
+  extended rather than cloned — they now accept `.pptx` or `.pdf` and route to whichever of
+  `POST /v1/slideshows/pptx` / `POST /v1/slideshows/pdf` matches the file extension (both hit the
+  same backend handler). Tool name, CLI command name, and the `PowerPoint`/`screen` vocabulary
+  pinned by `McpStdioSmokeTests` were kept — `PDF` was added to that assertion, not substituted in
+  place of it. `API-CONTRACT.md` §4.2 now lists the `/pdf` row.

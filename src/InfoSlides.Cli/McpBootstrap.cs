@@ -60,7 +60,7 @@ internal static class McpBootstrap
                 // server description before loading the tool list, so it has to state the whole
                 // outcome and carry the words a real user would type.
                 options.ServerInstructions =
-                    "InfoSlides turns a PowerPoint, an image, a video, or a live data feed into a video " +
+                    "InfoSlides turns a PowerPoint, a PDF, an image, a video, or a live data feed into a video " +
                     "stream that plays on any smart TV or display — the lunch menu on the screen in " +
                     "reception, opening hours in a shop window, a noticeboard in a school corridor, room " +
                     "information in a hotel lobby, or a live numbers dashboard in an office. The whole " +

@@ -67,20 +67,29 @@ public sealed class InfoSlidesApiClient
             InfoSlidesJsonContext.Default.Slideshow, false, idempotent: true, ct);
 
     /// <summary>
-    /// Uploads a <c>.pptx</c> file and creates a slideshow from it (parses slide count/native
-    /// resolution and queues thumbnail/stream rendering server-side — see
-    /// <c>POST /v1/slideshows/pptx</c> in API-CONTRACT.md §4.2).
+    /// Uploads a <c>.pptx</c> or <c>.pdf</c> file and creates a slideshow from it (parses slide
+    /// count/native resolution and queues thumbnail/stream rendering server-side).
+    /// <c>POST /v1/slideshows/pptx</c> and <c>POST /v1/slideshows/pdf</c> (API-CONTRACT.md §4.2)
+    /// hit the same backend handler; this picks the route from the file's extension, which is
+    /// also the server's own allow-list (<c>SlideshowUploadValidator</c> in the main repo) —
+    /// keep the two in sync rather than growing a second copy of the rule.
     /// </summary>
     /// <param name="fileContent">The file's content stream (left open/closed by the caller).</param>
-    /// <param name="fileName">The original file name (must end in <c>.pptx</c>).</param>
+    /// <param name="fileName">The original file name (must end in <c>.pptx</c> or <c>.pdf</c>).</param>
     /// <param name="title">Optional display name; falls back to the file name server-side.</param>
     public Task<ApiResult<Slideshow>> UploadPptxAsync(
         Stream fileContent, string fileName, string? title, CancellationToken ct = default)
     {
+        var (route, mediaType) = Path.GetExtension(fileName).ToLowerInvariant() switch
+        {
+            ".pptx" => ("/v1/slideshows/pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
+            ".pdf" => ("/v1/slideshows/pdf", "application/pdf"),
+            var ext => throw new ArgumentException($"Unsupported file type '{ext}'; expected .pptx or .pdf.", nameof(fileName)),
+        };
+
         var content = new MultipartFormDataContent();
         var filePart = new StreamContent(fileContent);
-        filePart.Headers.ContentType = new MediaTypeHeaderValue(
-            "application/vnd.openxmlformats-officedocument.presentationml.presentation");
+        filePart.Headers.ContentType = new MediaTypeHeaderValue(mediaType);
         content.Add(filePart, "file", fileName);
         if (!string.IsNullOrWhiteSpace(title))
         {
@@ -88,7 +97,7 @@ public sealed class InfoSlidesApiClient
         }
 
         return SendAsync(
-            HttpMethod.Post, "/v1/slideshows/pptx", content, InfoSlidesJsonContext.Default.Slideshow,
+            HttpMethod.Post, route, content, InfoSlidesJsonContext.Default.Slideshow,
             anonymousAllowed: false, idempotent: true, ct);
     }
 

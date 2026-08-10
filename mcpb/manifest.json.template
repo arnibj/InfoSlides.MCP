@@ -3,8 +3,8 @@
   "name": "infoslides",
   "display_name": "InfoSlides — put content on a TV or screen",
   "version": "__VERSION__",
-  "description": "Turn a PowerPoint, an image, or a live data feed into a video stream playing on any smart TV or display.",
-  "long_description": "InfoSlides is digital signage for smart TVs. This server lets an AI agent take a user from nothing to a live screen without opening a dashboard: provision a workspace anonymously, upload a PowerPoint or clone a ready-made design, register the physical display, assign a schedule, and hand back the stream link to open on the TV.\n\nNew workspaces land on a permanent free plan — 1 screen, 4 slideshows, no credit card, nothing expires — so the whole flow can be completed at zero cost.\n\nNo API key is needed to start: the `create_tenant` tool is anonymous and returns one. Set the API key afterwards to reconnect to an existing workspace.",
+  "description": "Turn a PowerPoint, a PDF, an image, or a live data feed into a video stream playing on any smart TV or display.",
+  "long_description": "InfoSlides is digital signage for smart TVs. This server lets an AI agent take a user from nothing to a live screen without opening a dashboard: provision a workspace anonymously, upload a PowerPoint/PDF or clone a ready-made design, register the physical display, assign a schedule, and hand back the stream link to open on the TV.\n\nNew workspaces land on a permanent free plan — 1 screen, 4 slideshows, no credit card, nothing expires — so the whole flow can be completed at zero cost.\n\nNo API key is needed to start: the `create_tenant` tool is anonymous and returns one. Set the API key afterwards to reconnect to an existing workspace.",
   "author": {
     "name": "Arni Bjorgvinsson",
     "url": "https://infoslides.app"
