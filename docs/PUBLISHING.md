@@ -70,12 +70,35 @@ curl -fsSL https://static.modelcontextprotocol.io/schemas/2025-12-11/server.sche
 python -c "import json,jsonschema; jsonschema.validate(json.load(open('out/server.json')), json.load(open('schema.json')))"
 ```
 
+## Where distribution actually stands
+
+*Checked 2026-08-29, against the live workflow history and the registry itself.*
+
+Seven releases have shipped (latest **v1.3.2**) and **steps 4-6 below have never been done for any
+of them.** The packaging all works — the bundle builds, both artefacts validate, the hash matches —
+but nothing has ever been listed anywhere, so no user can discover this server through a registry or
+directory today:
+
+| Step | State |
+| --- | --- |
+| 4. Install the `.mcpb` in a real client | Never done. Blocks step 5. |
+| 5. Publish to the MCP registry | **Publish to MCP Registry** has zero runs in its history, and `registry.modelcontextprotocol.io/v0/servers?search=infoslides` returns `count: 0`. No longer blocked on anything: the `homepage` URL the listing needs is `https://infoslides.app/developers`, which now exists. |
+| 6. Third-party directories | None submitted. |
+
+One further item from the same original story, tracked here because there is nowhere better: the
+tool descriptions have never had their **acceptance test** — a fresh Claude Code session with the
+server installed reaching for InfoSlides unprompted on a naturally phrased signage task. The
+mechanical rewrite is complete and `McpStdioSmokeTests` pins the vocabulary, but neither proves a
+model actually triggers on it. Tools added since that rewrite (PDF upload among them) want the same
+vocabulary pass before the test is judged.
+
 ## Release checklist
 
-1. Bump `<Version>` in `src/InfoSlides.Cli/InfoSlides.Cli.csproj` **and** `VersionInfo.Version` —
-   they are two separate constants and drift silently.
+1. Bump `<Version>` in `src/InfoSlides.Cli/InfoSlides.Cli.csproj`. It is the single source of truth:
+   `VersionInfo.Version` reads the assembly's own metadata rather than holding a second constant,
+   and CI fails if the README's install pin disagrees with the csproj.
 2. `dotnet test`.
-3. Tag and push: `git tag v1.1.0 && git push origin v1.1.0`. CI builds everything above.
+3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`. CI builds everything above.
 4. **Install the `.mcpb` from the release in a real MCP client and use it.** Not optional — this is
    the only step that exercises the manifest's command paths and platform overrides end to end. A
    manifest that validates can still point at the wrong file.
