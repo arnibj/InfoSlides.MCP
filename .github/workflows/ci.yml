@@ -17,6 +17,37 @@ jobs:
       - run: dotnet build --no-restore -warnaserror
       - run: dotnet test --no-build --verbosity normal
 
+      # The README's quickstart pins an exact download URL, which makes it a copy of the version
+      # number that no build step touches. It had already drifted three releases behind (v1.2.0
+      # while latest was v1.3.2), silently handing every new reader a stale binary. Same failure
+      # mode as the hardcoded version that turned 1.0.1 -> 1.1.0 into a red build, so it gets the
+      # same treatment: the csproj's <Version> stays the only source of truth, and drifting from
+      # it is an explicit error naming both values.
+      #
+      # The pin is deliberate rather than a /releases/latest redirect: the asset filename carries
+      # the version, so there is no fixed name for `latest/download/` to resolve to.
+      - name: README install pin matches the csproj version
+        shell: bash
+        run: |
+          set -euo pipefail
+          CSPROJ_VERSION="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/InfoSlides.Cli/InfoSlides.Cli.csproj)"
+
+          if [[ -z "$CSPROJ_VERSION" ]]; then
+            echo "::error::Could not parse <Version> from InfoSlides.Cli.csproj" >&2
+            exit 1
+          fi
+
+          # Every release-download URL in the README must name the current version.
+          BAD="$(grep -n 'releases/download/' README.md | grep -v "v${CSPROJ_VERSION}/" || true)"
+
+          if [[ -n "$BAD" ]]; then
+            echo "::error::README download links are pinned to a version other than the csproj's ${CSPROJ_VERSION}:" >&2
+            echo "$BAD" >&2
+            exit 1
+          fi
+
+          echo "README download links all pin v${CSPROJ_VERSION}."
+
   publish-aot:
     needs: test
     strategy:
