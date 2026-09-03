@@ -59,10 +59,14 @@ public sealed class DeviceTools(InfoSlidesApiClient api)
 
     [McpServerTool(Name = "get_stream_link", ReadOnly = true)]
     [Description("Get the link that makes the content appear on the TV — the last step of any setup. " +
-                 "Hand this URL to the user: opened in the smart TV's browser, the InfoSlides TV app, " +
-                 "or any HLS-capable player, it starts playing their content. The link is stable, so " +
-                 "the screen keeps working as content changes. A StreamNotReady warning means nothing " +
-                 "is playable yet — usually because the content is still rendering.")]
+                 "Hand over playerUrl: opened in the smart TV's browser or the InfoSlides TV app, it " +
+                 "plays the content correctly whichever way this screen is set up to play — the " +
+                 "usual rendered-video stream or a live HTML/CSS loop. hlsUrl is the raw HLS manifest " +
+                 "for something that only speaks HLS (an ffplay-style player, an old TV app build); " +
+                 "it comes back null whenever the screen is playing an HTML loop, so check it before " +
+                 "handing it out — do not assume it is always populated. The links are stable, so the " +
+                 "screen keeps working as content changes. A StreamNotReady warning means nothing is " +
+                 "playable yet — usually because the content is still rendering.")]
     public Task<CallToolResult> GetStreamLink(
         [Description("Id of the device.")] string deviceId,
         CancellationToken ct = default) =>

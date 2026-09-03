@@ -94,9 +94,12 @@ end by handing over the link and telling them what to do with it.
 The person at this end of the job is standing in a lobby holding a TV remote, not reading API docs.
 Two routes:
 
-- **The stream link.** Open the URL from `get_stream_link` in the TV's browser, in the InfoSlides TV
-  app, or in any HLS-capable player. The link is stable — it keeps working as the content changes,
-  so it only has to be entered once.
+- **The stream link.** Open `playerUrl` from `get_stream_link` in the TV's browser or the InfoSlides
+  TV app — it plays the content correctly whichever mode the screen is set up for. The link is
+  stable — it keeps working as the content changes, so it only has to be entered once. `hlsUrl` is
+  a raw HLS manifest link for something that only speaks HLS; it comes back `null` for a screen
+  playing an HTML loop (see `update_slideshow`'s `playbackMode`), so do not hand it out without
+  checking it is actually present.
 - **A pairing code**, on smart-TV platforms with the InfoSlides app installed: the TV shows a
   six-digit code, and the user enters it in the InfoSlides dashboard to bind that screen. This is a
   dashboard flow, not something these tools do — if the user is on that path, point them at

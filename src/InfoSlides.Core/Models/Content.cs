@@ -12,11 +12,20 @@ public sealed record Slide(
     int? Position = null,
     IReadOnlyList<SlideCondition>? Conditions = null);
 
+/// <summary>
+/// <paramref name="PlaybackModeOverride"/> is this slideshow's own playback-mode override
+/// (<c>"VideoStream"</c> or <c>"Html"</c>), or null when it inherits the tenant/system default.
+/// <paramref name="EffectivePlaybackMode"/> is always populated — the resolved mode actually used
+/// when the slideshow streams (override, else tenant default, else system default; defaults to
+/// <c>"VideoStream"</c> when nothing overrides anything).
+/// </summary>
 public sealed record Slideshow(
     string Id,
     string Title,
     Resolution Resolution,
-    IReadOnlyList<Slide>? Slides = null);
+    IReadOnlyList<Slide>? Slides = null,
+    string? PlaybackModeOverride = null,
+    string EffectivePlaybackMode = "VideoStream");
 
 public sealed record CreateSlideshowRequest(
     string Title,
@@ -28,10 +37,17 @@ public sealed record NewSlide(
     string? TemplateId = null,
     double? DurationSeconds = null);
 
+/// <summary>
+/// <paramref name="PlaybackMode"/> is three-state on the wire: omit it (leave <c>null</c> here) to
+/// leave the slideshow's playback-mode override alone; pass the literal string <c>"inherit"</c> to
+/// clear the override back to the tenant/system default; pass <c>"VideoStream"</c> or <c>"Html"</c>
+/// to set it. The enum names are matched case-sensitively by the backend; <c>"inherit"</c> is not.
+/// </summary>
 public sealed record UpdateSlideshowRequest(
     string? Title = null,
     Resolution? Resolution = null,
-    IReadOnlyList<string>? SlideOrder = null);
+    IReadOnlyList<string>? SlideOrder = null,
+    string? PlaybackMode = null);
 
 /// <summary>
 /// Request body for <c>POST /v1/slideshows/{id}/slides</c>. Exactly one of

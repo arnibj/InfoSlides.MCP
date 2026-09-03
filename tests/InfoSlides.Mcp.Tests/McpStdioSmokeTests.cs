@@ -165,6 +165,123 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         }
     }
 
+    /// <summary>
+    /// The wire's three-state playbackMode design (HTMLP-15): omitting the tool parameter must not
+    /// send the field at all, so the backend leaves the stored override untouched. Sending it as an
+    /// explicit JSON null here would be indistinguishable from "inherit" on the backend, silently
+    /// clearing an override nobody asked to clear.
+    /// </summary>
+    [Fact]
+    public async Task UpdateSlideshow_PlaybackModeOmitted_DoesNotSendTheFieldAtAll()
+    {
+        _backend.MapJson("PATCH", "/v1/slideshows/s1",
+            """{"data":{"id":"s1","title":"Menu","resolution":{"width":1920,"height":1080}}}""");
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var result = await client.CallToolAsync("update_slideshow",
+            new Dictionary<string, object?> { ["slideshowId"] = "s1", ["title"] = "Menu 2" },
+            cancellationToken: Timeout());
+
+        Assert.NotEqual(true, result.IsError);
+        lock (_backend.Requests)
+        {
+            var request = Assert.Single(_backend.Requests);
+            Assert.DoesNotContain("playbackMode", request.Body);
+        }
+    }
+
+    /// <summary>Setting an override sends the enum name verbatim (case-sensitive on the backend).</summary>
+    [Fact]
+    public async Task UpdateSlideshow_PlaybackModeHtml_SendsTheEnumNameVerbatim()
+    {
+        _backend.MapJson("PATCH", "/v1/slideshows/s1",
+            """{"data":{"id":"s1","title":"Menu","resolution":{"width":1920,"height":1080},"playbackModeOverride":"Html","effectivePlaybackMode":"Html"}}""");
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var result = await client.CallToolAsync("update_slideshow",
+            new Dictionary<string, object?> { ["slideshowId"] = "s1", ["playbackMode"] = "Html" },
+            cancellationToken: Timeout());
+
+        Assert.NotEqual(true, result.IsError);
+        var text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content)).Text;
+        Assert.Contains("\"effectivePlaybackMode\":\"Html\"", text);
+        lock (_backend.Requests)
+        {
+            var request = Assert.Single(_backend.Requests);
+            Assert.Contains("\"playbackMode\":\"Html\"", request.Body);
+        }
+    }
+
+    /// <summary>The "inherit" sentinel clears a stored override — distinct from omitting the field.</summary>
+    [Fact]
+    public async Task UpdateSlideshow_PlaybackModeInherit_SendsTheSentinelString()
+    {
+        _backend.MapJson("PATCH", "/v1/slideshows/s1",
+            """{"data":{"id":"s1","title":"Menu","resolution":{"width":1920,"height":1080}}}""");
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var result = await client.CallToolAsync("update_slideshow",
+            new Dictionary<string, object?> { ["slideshowId"] = "s1", ["playbackMode"] = "inherit" },
+            cancellationToken: Timeout());
+
+        Assert.NotEqual(true, result.IsError);
+        lock (_backend.Requests)
+        {
+            var request = Assert.Single(_backend.Requests);
+            Assert.Contains("\"playbackMode\":\"inherit\"", request.Body);
+        }
+    }
+
+    /// <summary>
+    /// Regression for the pre-existing VideoStream contract (HTMLP-16): hlsUrl stays populated
+    /// alongside the new playerUrl/playbackMode fields.
+    /// </summary>
+    [Fact]
+    public async Task GetStreamLink_VideoStreamMode_ReturnsHlsUrlAndPlayerUrl()
+    {
+        _backend.MapJson("GET", "/v1/devices/d1/stream",
+            """{"data":{"hlsUrl":"https://stream/x.m3u8","expiresAt":null,"playerUrl":"https://infoslides.app/player/tok1","playbackMode":"VideoStream"}}""");
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var result = await client.CallToolAsync("get_stream_link",
+            new Dictionary<string, object?> { ["deviceId"] = "d1" },
+            cancellationToken: Timeout());
+
+        Assert.NotEqual(true, result.IsError);
+        var text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content)).Text;
+        Assert.Contains("https://stream/x.m3u8", text);
+        Assert.Contains("https://infoslides.app/player/tok1", text);
+        Assert.Contains("\"playbackMode\":\"VideoStream\"", text);
+    }
+
+    /// <summary>
+    /// The headline HTMLP-16 case this tool now has to represent honestly: an Html-mode device's
+    /// hlsUrl is null, so the response must not claim a raw HLS URL exists — playerUrl is the only
+    /// playable link surfaced. A tool result that silently rendered a stale/absent hlsUrl as if it
+    /// were populated is exactly the bug this story fixes at the CLI/MCP layer.
+    /// </summary>
+    [Fact]
+    public async Task GetStreamLink_HtmlMode_OmitsHlsUrlAndReturnsPlayerUrl()
+    {
+        _backend.MapJson("GET", "/v1/devices/d1/stream",
+            """
+            {"data":{"hlsUrl":null,"expiresAt":null,"playerUrl":"https://infoslides.app/player/tok1","playbackMode":"Html"},
+             "warnings":[{"code":"HtmlPlaybackMode","message":"no raw HLS URL in Html mode"}]}
+            """);
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var result = await client.CallToolAsync("get_stream_link",
+            new Dictionary<string, object?> { ["deviceId"] = "d1" },
+            cancellationToken: Timeout());
+
+        Assert.NotEqual(true, result.IsError);
+        var text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content)).Text;
+        Assert.DoesNotContain("hlsUrl", text);
+        Assert.Contains("https://infoslides.app/player/tok1", text);
+        Assert.Contains("\"playbackMode\":\"Html\"", text);
+        Assert.Contains("\"HtmlPlaybackMode\"", text);
+    }
+
     [Fact]
     public async Task PreviewSlide_ReturnsPngImageContent()
     {

@@ -45,10 +45,12 @@ public sealed class JsonContextCoverageTests
         RoundTrip(new SlideCondition("weekday", "sat,sun"), c.SlideCondition);
         RoundTrip(slide, c.Slide);
         RoundTrip(new Slideshow("s1", "Menu", resolution, [slide]), c.Slideshow);
+        RoundTrip(new Slideshow("s1", "Menu", resolution, [slide], "Html", "Html"), c.Slideshow);
         RoundTrip(new List<Slideshow> { new("s1", "Menu", resolution) }, c.ListSlideshow);
         RoundTrip(new CreateSlideshowRequest("Menu", resolution, [new NewSlide("https://cdn/x.png")]),
             c.CreateSlideshowRequest);
         RoundTrip(new UpdateSlideshowRequest("Menu 2", null, ["sl2", "sl1"]), c.UpdateSlideshowRequest);
+        RoundTrip(new UpdateSlideshowRequest(PlaybackMode: "inherit"), c.UpdateSlideshowRequest);
         RoundTrip(new AddMediaSlideRequest("https://cdn/x.png", null, 10, 1), c.AddMediaSlideRequest);
         RoundTrip(new AddMediaSlideRequest(null, "asset1", 10, 1), c.AddMediaSlideRequest);
         RoundTrip(new UploadedMedia("asset1", "image", 800, 600), c.UploadedMedia);
@@ -70,7 +72,8 @@ public sealed class JsonContextCoverageTests
         RoundTrip(new DeviceStatus(true, now, new NowPlaying("s1", "sl1")), c.DeviceStatus);
         RoundTrip(new AssignScheduleRequest(["s1"]), c.AssignScheduleRequest);
         RoundTrip(new Schedule("d1", ["s1"]), c.Schedule);
-        RoundTrip(new StreamLink("https://stream/x.m3u8", now), c.StreamLink);
+        RoundTrip(new StreamLink("https://stream/x.m3u8", now, "https://infoslides.app/player/tok1", "VideoStream"), c.StreamLink);
+        RoundTrip(new StreamLink(null, null, "https://infoslides.app/player/tok2", "Html"), c.StreamLink);
 
         RoundTrip(new CreateApiKeyRequest("dataProvider", "crm-push", ["sl1"]), c.CreateApiKeyRequest);
         RoundTrip(new CreateApiKeyResult("k1", "isk_dp_x", "dataProvider", "crm-push"), c.CreateApiKeyResult);

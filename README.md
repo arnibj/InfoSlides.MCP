@@ -39,7 +39,8 @@ curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.3.2/infosl
 ./infoslides stream link <device-id>
 ```
 
-Open that URL in the TV's browser, the InfoSlides TV app, or any HLS-capable player.
+Open that URL in the TV's browser or the InfoSlides TV app — it plays the content whichever way
+this screen is set up to play it.
 
 https://github.com/user-attachments/assets/8da62e05-59f4-4a70-9351-dfa3fd47ce4e
 
@@ -77,9 +78,11 @@ Or configure it by hand (stdio transport):
 the admin key), slideshows including direct `.pptx`/`.pdf` upload (`upload_pptx`), media slides by URL or
 direct file upload (`upload_media`), visibility conditions (time of day, weekday, data triggers),
 self-updating template slides driven by live data pushes (`update_source`), devices, schedules with
-`AspectMismatch` warnings, HLS stream links, PNG slide previews for self-verification, API keys
-including push-only keys scoped to a single slide, and Paddle upgrade links. The backend enforces
-every plan limit — the tool layer cannot bypass them.
+`AspectMismatch` warnings, playback-mode control (`update_slideshow`'s `playbackMode` switches a
+slideshow between the rendered-video stream and a live HTML/CSS loop), playable stream links that
+work whichever mode a screen is in, PNG slide previews for self-verification, API keys including
+push-only keys scoped to a single slide, and Paddle upgrade links. The backend enforces every plan
+limit — the tool layer cannot bypass them.
 
 **A [Skill](SKILL.md)**, which is the judgement the tools do not carry: when a self-updating slide
 beats a fixed one, how to pick between landscape and portrait, how long a slide should stay up for

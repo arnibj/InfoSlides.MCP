@@ -194,9 +194,14 @@ internal static class CommandTree
             Description = "Complete slide id order (repeatable or comma-separated).",
             AllowMultipleArgumentsPerToken = true,
         };
-        var update = new Command("update", "Update title, resolution or slide order.")
+        var playbackMode = new Option<string?>("--playback-mode")
         {
-            updateId, newTitle, newWidth, newHeight, order,
+            Description = "\"VideoStream\" or \"Html\" to override how this slideshow plays; " +
+                           "\"inherit\" to clear the override and fall back to the workspace default.",
+        };
+        var update = new Command("update", "Update title, resolution, slide order or playback mode.")
+        {
+            updateId, newTitle, newWidth, newHeight, order, playbackMode,
         };
         update.SetAction((parse, ct) =>
         {
@@ -211,7 +216,7 @@ internal static class CommandTree
             return CliContext.Run(parse,
                 api => api.UpdateSlideshowAsync(parse.GetValue(updateId)!, new UpdateSlideshowRequest(
                     parse.GetValue(newTitle), w.HasValue ? new Resolution(w.Value, h!.Value) : null,
-                    SplitIds(parse.GetValue(order))), ct),
+                    SplitIds(parse.GetValue(order)), parse.GetValue(playbackMode)), ct),
                 InfoSlidesJsonContext.Default.Slideshow);
         });
         slideshow.Subcommands.Add(update);
@@ -509,13 +514,17 @@ internal static class CommandTree
 
     private static Command Stream()
     {
-        var stream = new Command("stream", "Live HLS streams.");
+        var stream = new Command("stream", "Live streams.");
         var deviceId = new Argument<string>("device-id") { Description = "Device id." };
-        var link = new Command("link", "Get the live HLS stream URL for a device.") { deviceId };
+        var link = new Command("link", "Get the playable link for a device (plays either playback mode).") { deviceId };
         link.SetAction((parse, ct) => CliContext.Run(parse,
             api => api.GetStreamLinkAsync(parse.GetValue(deviceId)!, ct),
             InfoSlidesJsonContext.Default.StreamLink,
-            data => data.HlsUrl));
+            // playerUrl is always populated and plays either mode, so it is the link worth leading
+            // with; hlsUrl is raw-HLS-only and null in Html mode — shown only when present.
+            data => data.HlsUrl is { } hlsUrl
+                ? $"{data.PlayerUrl} (mode: {data.PlaybackMode}; raw HLS: {hlsUrl})"
+                : $"{data.PlayerUrl} (mode: {data.PlaybackMode}; no raw HLS URL — this device plays an HTML loop)"));
         stream.Subcommands.Add(link);
         return stream;
     }

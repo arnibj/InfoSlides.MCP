@@ -30,14 +30,21 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
 
     [McpServerTool(Name = "update_slideshow")]
     [Description("Change what is already playing on a screen: rename it, switch it between landscape " +
-                 "and portrait, or reorder the slides. Pass slideOrder as the complete list of slide " +
-                 "ids in the sequence you want them shown.")]
+                 "and portrait, reorder the slides, or force how it plays. Pass slideOrder as the " +
+                 "complete list of slide ids in the sequence you want them shown. playbackMode " +
+                 "overrides the usual rendered-video stream with a smooth HTML/CSS loop (or back " +
+                 "again) for this one slideshow; pass \"inherit\" to drop the override and go back to " +
+                 "whatever the workspace normally uses.")]
     public Task<CallToolResult> UpdateSlideshow(
         [Description("Id of the slideshow to update.")] string slideshowId,
         [Description("New title, if changing.")] string? title = null,
         [Description("New width in pixels, if changing (requires height too).")] int? width = null,
         [Description("New height in pixels, if changing (requires width too).")] int? height = null,
         [Description("Complete ordered list of slide ids, if reordering.")] List<string>? slideOrder = null,
+        [Description("\"VideoStream\" or \"Html\" to force how this slideshow plays; \"inherit\" to " +
+                     "clear the override and fall back to the workspace default; omit to leave the " +
+                     "current setting untouched.")]
+        string? playbackMode = null,
         CancellationToken ct = default)
     {
         if (width.HasValue != height.HasValue)
@@ -47,7 +54,8 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
 
         var resolution = width.HasValue ? new Resolution(width.Value, height!.Value) : null;
         return ToolResults.Execute(
-            () => api.UpdateSlideshowAsync(slideshowId, new UpdateSlideshowRequest(title, resolution, slideOrder), ct),
+            () => api.UpdateSlideshowAsync(
+                slideshowId, new UpdateSlideshowRequest(title, resolution, slideOrder, playbackMode), ct),
             InfoSlidesJsonContext.Default.Slideshow);
     }
 

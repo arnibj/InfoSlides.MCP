@@ -245,6 +245,91 @@ public sealed class ApiClientTests
     }
 
     [Fact]
+    public async Task UpdateSlideshow_PlaybackModeOmitted_DoesNotSendTheField()
+    {
+        var (client, handler) = CreateClient("isk_admin_abc");
+        handler.Enqueue(HttpStatusCode.OK,
+            """{"data":{"id":"s1","title":"Menu 2","resolution":{"width":1920,"height":1080}}}""");
+
+        await client.UpdateSlideshowAsync("s1", new UpdateSlideshowRequest(Title: "Menu 2"));
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Equal(HttpMethod.Patch, request.Method);
+        Assert.DoesNotContain("playbackMode", request.Body);
+    }
+
+    /// <summary>The HTMLP-15 clear-the-override path: the literal "inherit" sentinel, distinct from omitting the field above.</summary>
+    [Fact]
+    public async Task UpdateSlideshow_PlaybackModeInherit_SendsTheSentinelString_AndParsesResolvedFields()
+    {
+        var (client, handler) = CreateClient("isk_admin_abc");
+        handler.Enqueue(HttpStatusCode.OK,
+            """{"data":{"id":"s1","title":"Menu","resolution":{"width":1920,"height":1080},"playbackModeOverride":null,"effectivePlaybackMode":"VideoStream"}}""");
+
+        var result = await client.UpdateSlideshowAsync("s1", new UpdateSlideshowRequest(PlaybackMode: "inherit"));
+
+        var request = Assert.Single(handler.Requests);
+        Assert.Contains("\"playbackMode\":\"inherit\"", request.Body);
+        Assert.Null(result.Data.PlaybackModeOverride);
+        Assert.Equal("VideoStream", result.Data.EffectivePlaybackMode);
+    }
+
+    [Fact]
+    public async Task UpdateSlideshow_PlaybackModeHtml_SendsTheEnumNameVerbatim()
+    {
+        var (client, handler) = CreateClient("isk_admin_abc");
+        handler.Enqueue(HttpStatusCode.OK,
+            """{"data":{"id":"s1","title":"Menu","resolution":{"width":1920,"height":1080},"playbackModeOverride":"Html","effectivePlaybackMode":"Html"}}""");
+
+        var result = await client.UpdateSlideshowAsync("s1", new UpdateSlideshowRequest(PlaybackMode: "Html"));
+
+        Assert.Contains("\"playbackMode\":\"Html\"", Assert.Single(handler.Requests).Body);
+        Assert.Equal("Html", result.Data.PlaybackModeOverride);
+        Assert.Equal("Html", result.Data.EffectivePlaybackMode);
+    }
+
+    /// <summary>
+    /// Regression for the pre-existing VideoStream contract (HTMLP-16): hlsUrl stays populated
+    /// alongside the new playerUrl/playbackMode fields.
+    /// </summary>
+    [Fact]
+    public async Task GetStreamLink_VideoStreamMode_ParsesHlsUrlAndPlayerUrl()
+    {
+        var (client, handler) = CreateClient("isk_admin_abc");
+        handler.Enqueue(HttpStatusCode.OK,
+            """{"data":{"hlsUrl":"https://stream/x.m3u8","expiresAt":null,"playerUrl":"https://infoslides.app/player/tok1","playbackMode":"VideoStream"}}""");
+
+        var result = await client.GetStreamLinkAsync("d1");
+
+        Assert.Equal("https://stream/x.m3u8", result.Data.HlsUrl);
+        Assert.Equal("https://infoslides.app/player/tok1", result.Data.PlayerUrl);
+        Assert.Equal("VideoStream", result.Data.PlaybackMode);
+    }
+
+    /// <summary>
+    /// The HTMLP-16 mode-switch trap at the client layer: an Html-mode device's hlsUrl parses as
+    /// null rather than the client coercing a missing/absent value into an empty string or throwing
+    /// — the caller must be able to tell "no HLS URL" from "URL not yet fetched".
+    /// </summary>
+    [Fact]
+    public async Task GetStreamLink_HtmlMode_ParsesNullHlsUrl_AndPlayerUrlStaysPopulated()
+    {
+        var (client, handler) = CreateClient("isk_admin_abc");
+        handler.Enqueue(HttpStatusCode.OK,
+            """
+            {"data":{"hlsUrl":null,"expiresAt":null,"playerUrl":"https://infoslides.app/player/tok1","playbackMode":"Html"},
+             "warnings":[{"code":"HtmlPlaybackMode","message":"no raw HLS URL in Html mode"}]}
+            """);
+
+        var result = await client.GetStreamLinkAsync("d1");
+
+        Assert.Null(result.Data.HlsUrl);
+        Assert.Equal("https://infoslides.app/player/tok1", result.Data.PlayerUrl);
+        Assert.Equal("Html", result.Data.PlaybackMode);
+        Assert.Contains(result.Warnings, w => w.Code == "HtmlPlaybackMode");
+    }
+
+    [Fact]
     public async Task AddDynamicSlide_SendsTemplateId_AndIdempotencyKey()
     {
         var (client, handler) = CreateClient("isk_admin_abc");
