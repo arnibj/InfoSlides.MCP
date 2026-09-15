@@ -22,7 +22,7 @@ credit card, no trial clock, nothing expires. The whole flow below costs nothing
 ```sh
 # 1. Install (macOS/Linux; see Install for Windows and MCP clients)
 #    Version-pinned — check /releases/latest for the current one.
-curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.3.2/infoslides-v1.3.2-linux-x64.tar.gz | tar xz
+curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.4.0/infoslides-v1.4.0-linux-x64.tar.gz | tar xz
 
 # 2. Create a workspace — anonymous, prints an admin API key, saves it to ~/.infoslides
 ./infoslides tenant create "Acme Cafe" owner@acme.test --save
@@ -126,12 +126,12 @@ is for next time — so no command is slower for it and being offline costs noth
 
 Download from the [latest release](https://github.com/arnibj/InfoSlides.MCP/releases/latest):
 
-| Platform | Artefact |
-| --- | --- |
-| Windows | `infoslides-v<version>-win-x64.zip` |
-| Linux | `infoslides-v<version>-linux-x64.tar.gz` |
+| Platform              | Artefact                                 |
+| --------------------- | ---------------------------------------- |
+| Windows               | `infoslides-v<version>-win-x64.zip`      |
+| Linux                 | `infoslides-v<version>-linux-x64.tar.gz` |
 | macOS (Apple Silicon) | `infoslides-v<version>-osx-arm64.tar.gz` |
-| MCP clients | `infoslides-mcp-v<version>.mcpb` |
+| MCP clients           | `infoslides-mcp-v<version>.mcpb`         |
 
 Every release ships `sha256sums.txt`. Nothing is needed at runtime — the binary is Native AOT
 compiled. Or build from source:
@@ -148,16 +148,16 @@ dotnet publish src/InfoSlides.Cli -c Release -r linux-x64   # or win-x64 / osx-a
 
 ## Repository layout
 
-| Path | Purpose |
-| --- | --- |
-| `SKILL.md` | The Skill: signage judgement to pair with the tools. |
-| `API-CONTRACT.md` | The agent-facing REST contract the InfoSlides backend implements. |
-| `BACKEND-CHANGES.md` | Checklist of InfoSlides-side work (TenantApiKeys table, gatekeeping, …). |
-| `docs/PUBLISHING.md` | Release, MCPB bundling, and MCP registry publishing runbook. |
-| `mcpb/` | MCPB bundle manifest template. |
-| `src/InfoSlides.Core` | Shared API client, models, AOT JSON context, config, auth. |
-| `src/InfoSlides.Cli` | The `infoslides` executable: CLI verbs + MCP server. |
-| `tests/` | Unit tests and end-to-end MCP stdio smoke tests. |
+| Path                  | Purpose                                                                  |
+| --------------------- | ------------------------------------------------------------------------ |
+| `SKILL.md`            | The Skill: signage judgement to pair with the tools.                     |
+| `API-CONTRACT.md`     | The agent-facing REST contract the InfoSlides backend implements.        |
+| `BACKEND-CHANGES.md`  | Checklist of InfoSlides-side work (TenantApiKeys table, gatekeeping, …). |
+| `docs/PUBLISHING.md`  | Release, MCPB bundling, and MCP registry publishing runbook.             |
+| `mcpb/`               | MCPB bundle manifest template.                                           |
+| `src/InfoSlides.Core` | Shared API client, models, AOT JSON context, config, auth.               |
+| `src/InfoSlides.Cli`  | The `infoslides` executable: CLI verbs + MCP server.                     |
+| `tests/`              | Unit tests and end-to-end MCP stdio smoke tests.                         |
 
 ## Development
 
