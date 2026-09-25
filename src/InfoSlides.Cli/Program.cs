@@ -39,7 +39,11 @@ public static class Program
 
         var refresh = UpdateChecker.RefreshAsync(configDirectory);
 
-        var exitCode = await CommandTree.Build().Parse(args).InvokeAsync();
+        // Response files off: options documented as "inline or @file" read the file themselves
+        // (CliContext.ValueOrFile); left on, System.CommandLine splices the file's words into the
+        // command line first and `--html @page.html` fails to parse.
+        var parser = new ParserConfiguration { ResponseFileTokenReplacer = null };
+        var exitCode = await CommandTree.Build().Parse(args, parser).InvokeAsync();
 
         // Give the background refresh a chance to land so the cache actually gets written for
         // short commands. Measured against the real GitHub API: a cold request (DNS + TLS +

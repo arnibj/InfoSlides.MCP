@@ -62,6 +62,38 @@ public sealed class InfoSlidesApiClient
             Json(request, InfoSlidesJsonContext.Default.UpdateSlideshowRequest),
             InfoSlidesJsonContext.Default.Slideshow, false, false, ct);
 
+    /// <summary>Deletes a slideshow (<c>DELETE /v1/slideshows/{id}</c>): its schedules go and screens paired to it stop showing it.</summary>
+    public Task<ApiResult<OkResult>> DeleteSlideshowAsync(string slideshowId, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Delete, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}", null,
+            InfoSlidesJsonContext.Default.OkResult, false, false, ct);
+
+    /// <summary>
+    /// Replaces a slideshow's <c>.pptx</c> or <c>.pdf</c> (<c>PUT /v1/slideshows/{id}/file</c>),
+    /// keeping its media and dynamic slides and settings. Returns the updated slideshow.
+    /// </summary>
+    /// <param name="slideshowId">The slideshow to replace the file of.</param>
+    /// <param name="fileContent">The file's content stream (left open/closed by the caller).</param>
+    /// <param name="fileName">The original file name (must end in <c>.pptx</c> or <c>.pdf</c>).</param>
+    public Task<ApiResult<Slideshow>> ReplaceSlideshowFileAsync(
+        string slideshowId, Stream fileContent, string fileName, CancellationToken ct = default)
+    {
+        var mediaType = Path.GetExtension(fileName).ToLowerInvariant() switch
+        {
+            ".pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            ".pdf" => "application/pdf",
+            var ext => throw new ArgumentException($"Unsupported file type '{ext}'; expected .pptx or .pdf.", nameof(fileName)),
+        };
+
+        var content = new MultipartFormDataContent();
+        var filePart = new StreamContent(fileContent);
+        filePart.Headers.ContentType = new MediaTypeHeaderValue(mediaType);
+        content.Add(filePart, "file", fileName);
+
+        return SendAsync(
+            HttpMethod.Put, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}/file", content,
+            InfoSlidesJsonContext.Default.Slideshow, anonymousAllowed: false, idempotent: false, ct);
+    }
+
     public Task<ApiResult<Slideshow>> CloneSlideshowAsync(string slideshowId, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}/clone", null,
             InfoSlidesJsonContext.Default.Slideshow, false, idempotent: true, ct);
@@ -132,25 +164,68 @@ public sealed class InfoSlidesApiClient
 
     /// <summary>
     /// Creates a template-driven dynamic slide in an existing slideshow (see
-    /// <c>POST /v1/slideshows/{id}/slides/dynamic</c> in API-CONTRACT.md §4.2). The new slide
-    /// starts with no content source and empty override data — push data via
-    /// <see cref="UpdateSourceAsync"/>.
+    /// <c>POST /v1/slideshows/{id}/slides/dynamic</c> in API-CONTRACT.md §4.2). For a push
+    /// template the result carries the new Push source's <see cref="Slide.SourceId"/> (and, with
+    /// <see cref="AddDynamicSlideRequest.CreatePushKey"/>, a <see cref="Slide.PushKey"/>); push data
+    /// with <see cref="PushSourceDataAsync"/>. Other templates take data via <see cref="UpdateSourceAsync"/>.
     /// </summary>
     public Task<ApiResult<Slide>> AddDynamicSlideAsync(string slideshowId, AddDynamicSlideRequest request, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}/slides/dynamic",
             Json(request, InfoSlidesJsonContext.Default.AddDynamicSlideRequest),
             InfoSlidesJsonContext.Default.Slide, false, idempotent: true, ct);
 
-    public Task<ApiResult<Slide>> SetSlideConditionsAsync(string slideId, IReadOnlyList<SlideCondition> conditions, CancellationToken ct = default) =>
+    public Task<ApiResult<Slide>> SetSlideConditionsAsync(
+        string slideId, IReadOnlyList<SlideCondition> conditions, string? mode = null, string? match = null,
+        CancellationToken ct = default) =>
         SendAsync(HttpMethod.Put, $"/v1/slides/{Uri.EscapeDataString(slideId)}/conditions",
-            Json(new SetConditionsRequest(conditions), InfoSlidesJsonContext.Default.SetConditionsRequest),
+            Json(new SetConditionsRequest(conditions, mode, match), InfoSlidesJsonContext.Default.SetConditionsRequest),
             InfoSlidesJsonContext.Default.Slide, false, false, ct);
+
+    /// <summary>
+    /// Changes one slide (<c>PATCH /v1/slides/{id}</c>): its duration, whether it is hidden and, for a
+    /// dynamic slide, its template, source, data and countdown. Returns the slide as it now stands.
+    /// </summary>
+    public Task<ApiResult<Slide>> UpdateSlideAsync(string slideId, UpdateSlideRequest request, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Patch, $"/v1/slides/{Uri.EscapeDataString(slideId)}",
+            Json(request, InfoSlidesJsonContext.Default.UpdateSlideRequest),
+            InfoSlidesJsonContext.Default.Slide, false, false, ct);
+
+    /// <summary>Removes one slide from its slideshow (<c>DELETE /v1/slides/{id}</c>); a condition on it goes too.</summary>
+    public Task<ApiResult<OkResult>> DeleteSlideAsync(string slideId, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Delete, $"/v1/slides/{Uri.EscapeDataString(slideId)}", null,
+            InfoSlidesJsonContext.Default.OkResult, false, false, ct);
+
+    /// <summary>Lists the workspace's content sources (<c>GET /v1/sources</c>): ids to pick ticker sources from.</summary>
+    public Task<ApiResult<List<Source>>> ListSourcesAsync(CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Get, "/v1/sources", null, InfoSlidesJsonContext.Default.ListSource, false, false, ct);
 
     public Task<ApiResult<OkResult>> UpdateSourceAsync(string slideId, JsonElement payload, bool dryRun = false, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post,
             $"/v1/slides/{Uri.EscapeDataString(slideId)}/source{(dryRun ? "?dryRun=true" : "")}",
             Json(payload, InfoSlidesJsonContext.Default.JsonElement),
             InfoSlidesJsonContext.Default.OkResult, false, false, ct);
+
+    /// <summary>
+    /// Pushes a JSON object to a Push source (<c>POST /v1/sources/{id}/data</c>). It is checked
+    /// against every template the source feeds and stored as its latest data. A push-only key bound
+    /// to the source may call this.
+    /// </summary>
+    public Task<ApiResult<PushReceived>> PushSourceDataAsync(string sourceId, JsonElement payload, bool dryRun = false, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post,
+            $"/v1/sources/{Uri.EscapeDataString(sourceId)}/data{(dryRun ? "?dryRun=true" : "")}",
+            Json(payload, InfoSlidesJsonContext.Default.JsonElement),
+            InfoSlidesJsonContext.Default.PushReceived, false, false, ct);
+
+    /// <summary>Reads a Push source's state: when data last arrived and whether its slides show it.</summary>
+    public Task<ApiResult<PushSourceStatus>> GetSourceStatusAsync(string sourceId, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Get, $"/v1/sources/{Uri.EscapeDataString(sourceId)}", null,
+            InfoSlidesJsonContext.Default.PushSourceStatus, false, false, ct);
+
+    /// <summary>Creates a push-only key bound to a Push source (<c>POST /v1/sources/{id}/keys</c>).</summary>
+    public Task<ApiResult<PushKey>> CreateSourceKeyAsync(string sourceId, string? name = null, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, $"/v1/sources/{Uri.EscapeDataString(sourceId)}/keys",
+            Json(new CreatePushKeyRequest(name), InfoSlidesJsonContext.Default.CreatePushKeyRequest),
+            InfoSlidesJsonContext.Default.PushKey, false, false, ct);
 
     public async Task<byte[]> GetSlidePreviewPngAsync(string slideId, CancellationToken ct = default)
     {

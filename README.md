@@ -22,7 +22,7 @@ credit card, no trial clock, nothing expires. The whole flow below costs nothing
 ```sh
 # 1. Install (macOS/Linux; see Install for Windows and MCP clients)
 #    Version-pinned — check /releases/latest for the current one.
-curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.4.0/infoslides-v1.4.0-linux-x64.tar.gz | tar xz
+curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.5.0/infoslides-v1.5.0-linux-x64.tar.gz | tar xz
 
 # 2. Create a workspace — anonymous, prints an admin API key, saves it to ~/.infoslides
 ./infoslides tenant create "Acme Cafe" owner@acme.test --save
@@ -74,19 +74,28 @@ Or configure it by hand (stdio transport):
 
 ### What the agent gets
 
-**27 tools**, covering the whole path: workspace provisioning (`create_tenant`, anonymous, returns
+**The tools** cover the whole path: workspace provisioning (`create_tenant`, anonymous, returns
 the admin key), slideshows including direct `.pptx`/`.pdf` upload (`upload_pptx`), media slides by URL or
-direct file upload (`upload_media`), visibility conditions (time of day, weekday, data triggers),
-self-updating template slides driven by live data pushes (`update_source`), devices, schedules with
+direct file upload (`upload_media`), visibility conditions (time of day, weekday, date range, data triggers; show or hide, all or any),
+edits to what is already playing (`update_slide` for a slide's duration, hidden flag and live data;
+`update_slideshow` for the news ticker, clock, default duration and sharing; `delete_slide`,
+`delete_slideshow`, `replace_slideshow_file`; `list_sources` for the ticker's sources),
+self-updating template slides driven by live data pushes (`update_source`, and push sources fed by
+the user's own system: `push_data`, `get_source_status`, `create_source_key`), devices, schedules with
 `AspectMismatch` warnings, playback-mode control (`update_slideshow`'s `playbackMode` switches a
 slideshow between the rendered-video stream and a live HTML/CSS loop), playable stream links that
 work whichever mode a screen is in, PNG slide previews for self-verification, API keys including
 push-only keys scoped to a single slide, and Paddle upgrade links. The backend enforces every plan
 limit — the tool layer cannot bypass them.
 
+**Designing your own live data slide:** the [agent's guide to templates and pushed data](https://infoslides.app/blog/agents-guide-to-the-infoslides-galaxy)
+covers how to write a template that reads well on a screen and how to connect a system that pushes
+data to it.
+
 **A [Skill](SKILL.md)**, which is the judgement the tools do not carry: when a self-updating slide
 beats a fixed one, how to pick between landscape and portrait, how long a slide should stay up for
-someone queueing versus someone walking past, and how to talk a person through the TV end of it
+someone queueing versus someone walking past, how to find a screen by name, edit what is on it and
+confirm the change reached the wall (`renderStatus`), and how to talk a person through the TV end of it
 while they are holding a remote.
 
 ## CLI
@@ -100,9 +109,20 @@ infoslides slideshow upload-pptx ./deck.pptx           # or ./deck.pdf; or: medi
 infoslides media upload ./logo.png
 infoslides slide add-media <slideshow-id> --asset-id <media-id> --duration 8
 infoslides slide set-conditions <slide-id> --condition time=08:00-11:00
+infoslides slide set-conditions <slide-id> --condition date=2026-12-01..2026-12-26 --mode hide
+infoslides slide update <slide-id> --hidden true                       # or --duration 15; dynamic: --override-data '{"price":"1.990 kr"}'
+infoslides slide delete <slide-id>
+infoslides slideshow update <slideshow-id> --ticker false --default-duration 15 --clock true
+infoslides slideshow replace-file <slideshow-id> ./new-deck.pptx
+infoslides slideshow delete <slideshow-id>
+infoslides source list                                                 # ids for --ticker-source
 infoslides template create "Weather" --html ./weather.html --css ./weather.css
 infoslides slide add-dynamic <slideshow-id> <template-id>
 infoslides source update <slide-id> --data '{"tempC": 12}'
+infoslides template create "Queue" --html ./queue.html --css ./queue.css --data-mode push
+infoslides slide add-dynamic <slideshow-id> <template-id> --create-push-key   # prints sourceId + a push key
+infoslides source push <source-id> --data '{"nowServing": "A-142"}'
+infoslides source status <source-id>
 infoslides device create "Lobby screen" --width 1080 --height 1920
 infoslides schedule assign <device-id> <slideshow-id>
 infoslides stream link <device-id>

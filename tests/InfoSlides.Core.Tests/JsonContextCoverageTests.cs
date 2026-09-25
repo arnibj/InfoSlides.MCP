@@ -47,6 +47,32 @@ public sealed class JsonContextCoverageTests
         RoundTrip(new Slideshow("s1", "Menu", resolution, [slide]), c.Slideshow);
         RoundTrip(new Slideshow("s1", "Menu", resolution, [slide], "Html", "Html"), c.Slideshow);
         RoundTrip(new List<Slideshow> { new("s1", "Menu", resolution) }, c.ListSlideshow);
+
+        var rule = new SlideRule("hide", "any", [new SlideCondition("date", "2026-12-01..2026-12-26")], false, "Hidden in December");
+        RoundTrip(rule, c.SlideRule);
+        RoundTrip(new List<SlideRule> { rule, new("show", "all", null, true, "Shown on some slides") }, c.ListSlideRule);
+        RoundTrip(new Screen("d1", "Front lobby", "https://infoslides.app/player/tok1"), c.Screen);
+        RoundTrip(new List<Screen> { new("d1", "Front lobby", "https://infoslides.app/player/tok1") }, c.ListScreen);
+        RoundTrip(new Ticker(false), c.Ticker);
+        RoundTrip(new Ticker(true, ["src1"]), c.Ticker);
+        RoundTrip(new Clock(true, "TopRight", false, "#000000", "#ffffff"), c.Clock);
+        RoundTrip(new Source("src1", "BBC News", "RssFeed", now), c.Source);
+        RoundTrip(new List<Source> { new("src1", "BBC News", "RssFeed") }, c.ListSource);
+        RoundTrip(new Slide("sl3", null, "tmpl1", 10, 2, null, null, null, "dynamic", true,
+            "https://infoslides.app/t.png", "Specials", [rule]), c.Slide);
+        RoundTrip(new Slideshow("s1", "Lobby", resolution, [slide], null, "VideoStream", 15,
+            new Ticker(false), new Clock(true, "TopLeft"), true, "Completed", now,
+            [new Screen("d1", "Front lobby", "https://infoslides.app/player/tok1")], 1), c.Slideshow);
+        RoundTrip(new UpdateSlideshowRequest(DefaultDurationSeconds: 15, Ticker: new Ticker(false),
+            Clock: new Clock(false), Shared: true), c.UpdateSlideshowRequest);
+        RoundTrip(new SetConditionsRequest([new SlideCondition("date", "..2026-12-26")], "hide", "any"),
+            c.SetConditionsRequest);
+        RoundTrip(new Device("d1", "Lobby", resolution, "s1", "Lobby show"), c.Device);
+
+        using var patch = JsonDocument.Parse("""{"price":"1.990 kr"}""");
+        RoundTrip(new UpdateSlideRequest(20, true, "tmpl1", "src1", patch.RootElement.Clone(),
+            patch.RootElement.Clone(), patch.RootElement.Clone()), c.UpdateSlideRequest);
+        RoundTrip(new UpdateSlideRequest(Hidden: true), c.UpdateSlideRequest);
         RoundTrip(new CreateSlideshowRequest("Menu", resolution, [new NewSlide("https://cdn/x.png")]),
             c.CreateSlideshowRequest);
         RoundTrip(new UpdateSlideshowRequest("Menu 2", null, ["sl2", "sl1"]), c.UpdateSlideshowRequest);
@@ -55,6 +81,8 @@ public sealed class JsonContextCoverageTests
         RoundTrip(new AddMediaSlideRequest(null, "asset1", 10, 1), c.AddMediaSlideRequest);
         RoundTrip(new UploadedMedia("asset1", "image", 800, 600), c.UploadedMedia);
         RoundTrip(new AddDynamicSlideRequest("tmpl1", 10, 1), c.AddDynamicSlideRequest);
+        RoundTrip(new AddDynamicSlideRequest("tmpl1", CreatePushKey: true), c.AddDynamicSlideRequest);
+        RoundTrip(new Slide("sl2", TemplateId: "tmpl1", SourceId: "src1", PushKey: "isk_dp_x"), c.Slide);
         RoundTrip(new SetConditionsRequest([new SlideCondition("data_trigger", "sales_today > 1000000")]),
             c.SetConditionsRequest);
 
@@ -63,6 +91,12 @@ public sealed class JsonContextCoverageTests
             c.Template);
         RoundTrip(new List<Template> { new("tp1", "Board") }, c.ListTemplate);
         RoundTrip(new CreateTemplateRequest("Board", "prompt", sample.RootElement.Clone()), c.CreateTemplateRequest);
+        RoundTrip(new CreateTemplateRequest("Queue", Html: "<div>{{n}}</div>", Css: "", DataMode: "push"), c.CreateTemplateRequest);
+        RoundTrip(new PushReceived(now), c.PushReceived);
+        RoundTrip(new PushReceived(), c.PushReceived);
+        RoundTrip(new PushSourceStatus("src1", "Queue data", now, 30, true, ["sl2"]), c.PushSourceStatus);
+        RoundTrip(new CreatePushKeyRequest("queue system"), c.CreatePushKeyRequest);
+        RoundTrip(new PushKey("k1", "queue system", "isk_dp_AbCd", "isk_dp_full"), c.PushKey);
         RoundTrip(new GalleryItem("g1", "Cafe", "desc", "https://cdn/p.png", resolution), c.GalleryItem);
         RoundTrip(new List<GalleryItem> { new("g1", "Cafe", null, null, null) }, c.ListGalleryItem);
 
