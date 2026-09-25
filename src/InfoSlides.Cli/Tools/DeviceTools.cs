@@ -28,9 +28,12 @@ public sealed class DeviceTools(InfoSlidesApiClient api)
             InfoSlidesJsonContext.Default.Device);
 
     [McpServerTool(Name = "list_devices", ReadOnly = true)]
-    [Description("See every screen registered to this workspace and the shape each one is set up for. " +
-                 "Use it to find the id of a screen before assigning content to it, or to check how " +
-                 "many of the account's allowed screens are already used.")]
+    [Description("See every screen registered to this workspace, the shape each one is set up for " +
+                 "and what it is playing now (nowPlayingTitle and nowPlayingSlideshowId). This is how " +
+                 "\"the front lobby screen\" becomes content you can read and edit: find the screen by " +
+                 "name, then get_slideshow with its nowPlayingSlideshowId. Also use it to find the id " +
+                 "of a screen before assigning content to it, or to check how many of the account's " +
+                 "allowed screens are already used.")]
     public Task<CallToolResult> ListDevices(CancellationToken ct = default) =>
         ToolResults.Execute(() => api.ListDevicesAsync(ct), InfoSlidesJsonContext.Default.ListDevice);
 

@@ -199,9 +199,38 @@ internal static class CommandTree
             Description = "\"VideoStream\" or \"Html\" to override how this slideshow plays; " +
                            "\"inherit\" to clear the override and fall back to the workspace default.",
         };
-        var update = new Command("update", "Update title, resolution, slide order or playback mode.")
+        var defaultDuration = new Option<int?>("--default-duration")
+        {
+            Description = "Seconds each slide shows unless it has its own duration (1-300).",
+        };
+        var tickerEnabled = new Option<bool?>("--ticker")
+        {
+            Description = "true shows the news ticker, false turns it off (and clears its sources).",
+        };
+        var tickerSources = new Option<string[]>("--ticker-source")
+        {
+            Description = "Content source ids for the ticker (repeatable or comma-separated; see `source list`).",
+            AllowMultipleArgumentsPerToken = true,
+        };
+        var clockEnabled = new Option<bool?>("--clock") { Description = "true shows the on-screen clock, false hides it." };
+        var clockPosition = new Option<string?>("--clock-position")
+        {
+            Description = "TopLeft, TopRight, BottomLeft or BottomRight.",
+        };
+        var clockShowDate = new Option<bool?>("--clock-date") { Description = "Whether the date shows under the time." };
+        var clockBackground = new Option<string?>("--clock-background") { Description = "Hex colour, e.g. #000000 or #00000080." };
+        var clockText = new Option<string?>("--clock-text") { Description = "Hex colour, e.g. #ffffff." };
+        var shared = new Option<bool?>("--shared")
+        {
+            Description = "Whether other slideshows may import slides from this one.",
+        };
+        var update = new Command(
+            "update", "Update title, resolution, slide order, playback mode, default duration, ticker, clock or sharing. " +
+                      "Only what you pass changes.")
         {
             updateId, newTitle, newWidth, newHeight, order, playbackMode,
+            defaultDuration, tickerEnabled, tickerSources, clockEnabled, clockPosition, clockShowDate,
+            clockBackground, clockText, shared,
         };
         update.SetAction((parse, ct) =>
         {
@@ -213,13 +242,66 @@ internal static class CommandTree
                 return Task.FromResult(2);
             }
 
+            var sourceIds = SplitIds(parse.GetValue(tickerSources));
+            var ticker = parse.GetValue(tickerEnabled) is null && sourceIds is null
+                ? null
+                : new Ticker(parse.GetValue(tickerEnabled), sourceIds);
+            var clock = parse.GetValue(clockEnabled) is null && parse.GetValue(clockPosition) is null
+                        && parse.GetValue(clockShowDate) is null && parse.GetValue(clockBackground) is null
+                        && parse.GetValue(clockText) is null
+                ? null
+                : new Clock(parse.GetValue(clockEnabled), parse.GetValue(clockPosition), parse.GetValue(clockShowDate),
+                    parse.GetValue(clockBackground), parse.GetValue(clockText));
+
             return CliContext.Run(parse,
                 api => api.UpdateSlideshowAsync(parse.GetValue(updateId)!, new UpdateSlideshowRequest(
                     parse.GetValue(newTitle), w.HasValue ? new Resolution(w.Value, h!.Value) : null,
-                    SplitIds(parse.GetValue(order)), parse.GetValue(playbackMode)), ct),
+                    SplitIds(parse.GetValue(order)), parse.GetValue(playbackMode),
+                    parse.GetValue(defaultDuration), ticker, clock, parse.GetValue(shared)), ct),
                 InfoSlidesJsonContext.Default.Slideshow);
         });
         slideshow.Subcommands.Add(update);
+
+        var deleteId = new Argument<string>("slideshow-id") { Description = "Slideshow id." };
+        var deleteShow = new Command(
+            "delete", "Delete a slideshow. Its schedules go and screens playing it stop showing it. There is no undelete.")
+        {
+            deleteId,
+        };
+        deleteShow.SetAction((parse, ct) => CliContext.Run(parse,
+            api => api.DeleteSlideshowAsync(parse.GetValue(deleteId)!, ct), InfoSlidesJsonContext.Default.OkResult,
+            _ => "Slideshow deleted."));
+        slideshow.Subcommands.Add(deleteShow);
+
+        var replaceId = new Argument<string>("slideshow-id") { Description = "Slideshow whose file to replace." };
+        var replaceFile = new Argument<string>("file") { Description = "Path to the new .pptx or .pdf file." };
+        var replace = new Command(
+            "replace-file", "Replace the .pptx or .pdf behind a slideshow, keeping its media and dynamic slides and settings.")
+        {
+            replaceId, replaceFile,
+        };
+        replace.SetAction(async (parse, ct) =>
+        {
+            var path = parse.GetValue(replaceFile)!;
+            if (!File.Exists(path))
+            {
+                Console.Error.WriteLine($"error: file not found: {path}");
+                return 2;
+            }
+
+            var extension = Path.GetExtension(path).ToLowerInvariant();
+            if (extension is not (".pptx" or ".pdf"))
+            {
+                Console.Error.WriteLine($"error: unsupported file type '{extension}'; expected .pptx or .pdf");
+                return 2;
+            }
+
+            await using var stream = File.OpenRead(path);
+            return await CliContext.Run(parse,
+                api => api.ReplaceSlideshowFileAsync(parse.GetValue(replaceId)!, stream, Path.GetFileName(path), ct),
+                InfoSlidesJsonContext.Default.Slideshow);
+        });
+        slideshow.Subcommands.Add(replace);
 
         var sourceId = new Argument<string>("source-id") { Description = "Source slideshow id (or gallery item id with --from-gallery)." };
         var fromGallery = new Option<bool>("--from-gallery") { Description = "Clone from the starter gallery." };
@@ -329,16 +411,21 @@ internal static class CommandTree
         var templateId = new Argument<string>("template-id") { Description = "Id of a template (from `template create`/`template list`)." };
         var dynDuration = new Option<double?>("--duration") { Description = "Display duration in seconds." };
         var dynPosition = new Option<int?>("--position") { Description = "Zero-based position; appended when omitted." };
+        var createPushKey = new Option<bool>("--create-push-key")
+        {
+            Description = "For a push template: also create a push-only key for the new push source (shown once).",
+        };
         var addDynamic = new Command(
             "add-dynamic",
-            "Add a template-driven dynamic slide to a slideshow. Starts with no data — push it " +
-            "with `source update`.")
+            "Add a template-driven dynamic slide to a slideshow. A push template gets a push source " +
+            "(push to it with `source push`); other templates take data with `source update`.")
         {
-            dynShowId, templateId, dynDuration, dynPosition,
+            dynShowId, templateId, dynDuration, dynPosition, createPushKey,
         };
         addDynamic.SetAction((parse, ct) => CliContext.Run(parse,
             api => api.AddDynamicSlideAsync(parse.GetValue(dynShowId)!, new AddDynamicSlideRequest(
-                parse.GetValue(templateId)!, parse.GetValue(dynDuration), parse.GetValue(dynPosition)), ct),
+                parse.GetValue(templateId)!, parse.GetValue(dynDuration), parse.GetValue(dynPosition),
+                parse.GetValue(createPushKey) ? true : null), ct),
             InfoSlidesJsonContext.Default.Slide));
         slide.Subcommands.Add(addDynamic);
 
@@ -346,11 +433,22 @@ internal static class CommandTree
         var condition = new Option<string[]>("--condition")
         {
             Description = "Visibility condition as type=value; repeatable. Types: time ('08:00-11:00'), " +
-                          "weekday ('sat,sun'), data_trigger ('sales_today > 1000000'). No conditions clears all.",
+                          "weekday ('sat,sun'), date ('2026-12-01..2026-12-26', either end optional), " +
+                          "data_trigger ('sales_today > 1000000'). No conditions clears all.",
         };
+        var conditionMode = new Option<string?>("--mode")
+        {
+            Description = "show (default): show the slide only while the conditions hold. hide: hide it while they hold.",
+        };
+        conditionMode.AcceptOnlyFromAmong("show", "hide");
+        var conditionMatch = new Option<string?>("--match")
+        {
+            Description = "all (default): every condition must hold. any: one is enough.",
+        };
+        conditionMatch.AcceptOnlyFromAmong("all", "any");
         var setConditions = new Command("set-conditions", "Replace a slide's visibility conditions.")
         {
-            slideId, condition,
+            slideId, condition, conditionMode, conditionMatch,
         };
         setConditions.SetAction((parse, ct) =>
         {
@@ -358,9 +456,9 @@ internal static class CommandTree
             foreach (var raw in parse.GetValue(condition) ?? [])
             {
                 var split = raw.Split('=', 2);
-                if (split.Length != 2 || split[0] is not ("time" or "weekday" or "data_trigger"))
+                if (split.Length != 2 || split[0] is not ("time" or "weekday" or "date" or "data_trigger"))
                 {
-                    Console.Error.WriteLine($"error: invalid condition '{raw}'; expected time=…, weekday=… or data_trigger=….");
+                    Console.Error.WriteLine($"error: invalid condition '{raw}'; expected time=…, weekday=…, date=… or data_trigger=….");
                     return Task.FromResult(2);
                 }
 
@@ -368,10 +466,67 @@ internal static class CommandTree
             }
 
             return CliContext.Run(parse,
-                api => api.SetSlideConditionsAsync(parse.GetValue(slideId)!, conditions, ct),
+                api => api.SetSlideConditionsAsync(
+                    parse.GetValue(slideId)!, conditions, parse.GetValue(conditionMode), parse.GetValue(conditionMatch), ct),
                 InfoSlidesJsonContext.Default.Slide);
         });
         slide.Subcommands.Add(setConditions);
+
+        var updateSlideId = new Argument<string>("slide-id") { Description = "Slide id." };
+        var updateDuration = new Option<double?>("--duration") { Description = "Display duration in seconds (1-300)." };
+        var updateHidden = new Option<bool?>("--hidden") { Description = "true hides the slide, false shows it again." };
+        var updateTemplate = new Option<string?>("--template-id") { Description = "Dynamic slides: switch to this template." };
+        var updateSource = new Option<string?>("--source-id") { Description = "Dynamic slides: take data from this source (see `source list`)." };
+        var updateMapping = new Option<string?>("--field-mapping")
+        {
+            Description = "Dynamic slides: JSON object mapping template fields to source paths, inline or @file.",
+        };
+        var updateData = new Option<string?>("--override-data")
+        {
+            Description = "Dynamic slides: JSON object of values to change (merged; null removes a field), inline or @file.",
+        };
+        var updateCountdown = new Option<string?>("--countdown")
+        {
+            Description = "Dynamic slides: countdown JSON object or array ([] clears), inline or @file.",
+        };
+        var updateSlide = new Command(
+            "update", "Change a slide's duration, hide or show it, and for a dynamic slide its template, source or data. " +
+                      "Only what you pass changes.")
+        {
+            updateSlideId, updateDuration, updateHidden, updateTemplate, updateSource, updateMapping, updateData, updateCountdown,
+        };
+        updateSlide.SetAction((parse, ct) =>
+        {
+            if (parse.GetValue(updateDuration) is null && parse.GetValue(updateHidden) is null
+                && parse.GetValue(updateTemplate) is null && parse.GetValue(updateSource) is null
+                && parse.GetValue(updateMapping) is null && parse.GetValue(updateData) is null
+                && parse.GetValue(updateCountdown) is null)
+            {
+                Console.Error.WriteLine("error: pass at least one field to change.");
+                return Task.FromResult(2);
+            }
+
+            return CliContext.Run(parse,
+                api => api.UpdateSlideAsync(parse.GetValue(updateSlideId)!, new UpdateSlideRequest(
+                    parse.GetValue(updateDuration), parse.GetValue(updateHidden),
+                    parse.GetValue(updateTemplate), parse.GetValue(updateSource),
+                    parse.GetValue(updateMapping) is { } fm ? CliContext.ParseJson(fm) : null,
+                    parse.GetValue(updateData) is { } od ? CliContext.ParseJson(od) : null,
+                    parse.GetValue(updateCountdown) is { } cd ? CliContext.ParseJson(cd) : null), ct),
+                InfoSlidesJsonContext.Default.Slide);
+        });
+        slide.Subcommands.Add(updateSlide);
+
+        var deleteSlideId = new Argument<string>("slide-id") { Description = "Slide id." };
+        var deleteSlide = new Command(
+            "delete", "Remove a slide from its slideshow (its condition goes too). To keep it for later, use `slide update --hidden true`.")
+        {
+            deleteSlideId,
+        };
+        deleteSlide.SetAction((parse, ct) => CliContext.Run(parse,
+            api => api.DeleteSlideAsync(parse.GetValue(deleteSlideId)!, ct), InfoSlidesJsonContext.Default.OkResult,
+            _ => "Slide deleted."));
+        slide.Subcommands.Add(deleteSlide);
 
         var previewId = new Argument<string>("slide-id") { Description = "Slide id to render." };
         var output = new Option<string?>("--output") { Description = "Output PNG path (default slide-<id>.png)." };
@@ -407,10 +562,14 @@ internal static class CommandTree
         var sampleJson = new Option<string?>("--sample-json") { Description = "Sample JSON schema, inline or @file (AI mode)." };
         var html = new Option<string?>("--html") { Description = "Raw HTML with {{field}} placeholders, inline or @file (code mode)." };
         var css = new Option<string?>("--css") { Description = "Stylesheet, inline or @file (code mode)." };
+        var dataMode = new Option<string?>("--data-mode")
+        {
+            Description = "`push` when an outside system will send the data: the slide gets a push source.",
+        };
         var dryRun = new Option<bool>("--dry-run") { Description = "Validate without creating." };
         var create = new Command("create", "Create a template from an AI prompt or raw HTML/CSS.")
         {
-            title, prompt, sampleJson, html, css, dryRun,
+            title, prompt, sampleJson, html, css, dataMode, dryRun,
         };
         create.SetAction((parse, ct) =>
         {
@@ -428,13 +587,21 @@ internal static class CommandTree
                 return Task.FromResult(2);
             }
 
+            var dataModeValue = parse.GetValue(dataMode);
+            if (dataModeValue is not null && !string.Equals(dataModeValue, "push", StringComparison.OrdinalIgnoreCase))
+            {
+                Console.Error.WriteLine("error: --data-mode must be `push` or omitted.");
+                return Task.FromResult(2);
+            }
+
             return CliContext.Run(parse,
                 api => api.CreateTemplateAsync(new CreateTemplateRequest(
                         parse.GetValue(title)!,
                         promptValue,
                         parse.GetValue(sampleJson) is { } sj ? CliContext.ParseJson(sj) : null,
                         htmlValue is { } hv ? CliContext.ValueOrFile(hv) : null,
-                        parse.GetValue(css) is { } cv ? CliContext.ValueOrFile(cv) : null),
+                        parse.GetValue(css) is { } cv ? CliContext.ValueOrFile(cv) : null,
+                        dataModeValue?.ToLowerInvariant()),
                     parse.GetValue(dryRun), ct),
                 InfoSlidesJsonContext.Default.Template);
         });
@@ -449,7 +616,12 @@ internal static class CommandTree
 
     private static Command Source()
     {
-        var source = new Command("source", "Push data to template-based slides.");
+        var source = new Command("source", "Content sources: list them, and push data to template-based slides and push sources.");
+
+        var list = new Command("list", "List the workspace's content sources (ids for `slideshow update --ticker-source`).");
+        list.SetAction((parse, ct) => CliContext.Run(parse,
+            api => api.ListSourcesAsync(ct), InfoSlidesJsonContext.Default.ListSource));
+        source.Subcommands.Add(list);
 
         var slideId = new Argument<string>("slide-id") { Description = "Slide id." };
         var data = new Option<string>("--data") { Description = "JSON payload, inline or @file.", Required = true };
@@ -464,6 +636,44 @@ internal static class CommandTree
             InfoSlidesJsonContext.Default.OkResult,
             _ => parse.GetValue(dryRun) ? "Payload is valid." : "Source updated; slide re-render triggered."));
         source.Subcommands.Add(update);
+
+        var sourceId = new Argument<string>("source-id") { Description = "Push source id (the sourceId from `slide add-dynamic`)." };
+        var pushData = new Option<string>("--data") { Description = "JSON payload, inline or @file.", Required = true };
+        var pushDryRun = new Option<bool>("--dry-run") { Description = "Validate against the templates without storing." };
+        var push = new Command("push", "Push a JSON payload to a push source; every slide on it updates (push-only keys allowed).")
+        {
+            sourceId, pushData, pushDryRun,
+        };
+        push.SetAction((parse, ct) => CliContext.Run(parse,
+            api => api.PushSourceDataAsync(parse.GetValue(sourceId)!,
+                CliContext.ParseJson(parse.GetValue(pushData)!), parse.GetValue(pushDryRun), ct),
+            InfoSlidesJsonContext.Default.PushReceived,
+            r => r.ReceivedAt is { } at ? $"Received at {at:u}." : "Payload is valid."));
+        source.Subcommands.Add(push);
+
+        var statusId = new Argument<string>("source-id") { Description = "Push source id." };
+        var status = new Command("status", "Show when a push source last received data and whether its slides show it.")
+        {
+            statusId,
+        };
+        status.SetAction((parse, ct) => CliContext.Run(parse,
+            api => api.GetSourceStatusAsync(parse.GetValue(statusId)!, ct),
+            InfoSlidesJsonContext.Default.PushSourceStatus,
+            r => $"{r.Name}: " + (r.LastReceivedAt is { } at ? $"last data {at:u}" : "waiting for the first data")
+                 + (r.IsShowingData ? ", showing" : ", hidden") + $", feeds {r.SlideIds.Count} slide(s)."));
+        source.Subcommands.Add(status);
+
+        var keySourceId = new Argument<string>("source-id") { Description = "Push source id." };
+        var keyName = new Option<string?>("--name") { Description = "A label for the key, e.g. the system that will use it." };
+        var key = new Command("key", "Create a push-only key bound to a push source. Shown once.")
+        {
+            keySourceId, keyName,
+        };
+        key.SetAction((parse, ct) => CliContext.Run(parse,
+            api => api.CreateSourceKeyAsync(parse.GetValue(keySourceId)!, parse.GetValue(keyName), ct),
+            InfoSlidesJsonContext.Default.PushKey,
+            r => $"{r.Key}\n(shown once; it can only push to this source)"));
+        source.Subcommands.Add(key);
         return source;
     }
 

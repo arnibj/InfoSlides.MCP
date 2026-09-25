@@ -65,7 +65,7 @@ through untouched (agents react to them).
 | `EmailNotVerified` | 403 | Owner email not verified; remediation: `resend-verification`. |
 | `EntitlementRequired` | 403 | Needs Premium; `details.upgradeUrl` carries a Paddle checkout link. |
 | `DeviceLimitReached` | 403 | Free tier allows exactly 1 active device. |
-| `KeyScopeViolation` | 403 | Data-provider key used outside `update_source` / its bound slide ids. |
+| `KeyScopeViolation` | 403 | Data-provider key used outside `update_source` for its bound slide ids, or `POST /v1/sources/{id}/data` for its bound push sources. |
 | `ValidationFailed` | 400 | Schema/field validation error; `details.fields` lists offenders. |
 | `NotFound` | 404 | Resource does not exist in this tenant. |
 | `RateLimited` | 429 | Too many requests (also AI credit caps on template generation); `Retry-After` header set when rate-limited. |
@@ -85,14 +85,16 @@ API keys are rows in the backend `TenantApiKeys` table:
 | Key type | Prefix | Scope |
 | --- | --- | --- |
 | Admin | `isk_admin_` | Full tenant access: devices, schedules, content, keys, settings. |
-| Data Provider | `isk_dp_` | Hard-bound to specific `slideIds`; may ONLY call `POST /v1/slides/{id}/source`. |
+| Data Provider | `isk_dp_` | Hard-bound to specific `slideIds` (may ONLY call `POST /v1/slides/{id}/source` for them) or to push sources (may ONLY call `POST /v1/sources/{id}/data` for them). |
 
 Gatekeeping (backend mapping): email verification lives on the tenant owner's identity
 (`Identity.EmailVerified`; OAuth-created owners count as verified since the IdP asserted the
 email). `subscriptionLevel` is the license tier name: `Starter` (free), `Professional` (PRO),
 `Business` (ENTERPRISE). Device limits are per-tenant (`deviceQuota.max`; 1 on the free tier).
-`update_source` requires Professional+; templates (both modes) require the AI Studio
-entitlement (Premium plans).
+`update_source` onto a slide's own data requires Professional+; templates (both modes) require the
+AI Studio entitlement (Premium plans). Exception, the **live data slide** included on every plan:
+one push source feeding one slide, plus one code-mode template with `dataMode: "push"`. Pushes to a
+slide on a push source are allowed on any plan.
 
 | State | Condition | Allowed |
 | --- | --- | --- |
@@ -123,14 +125,18 @@ surfaces backend errors/warnings verbatim.
 | `POST /v1/slideshows/pptx` ✅ | admin | Creates a slideshow from an uploaded `.pptx`. `multipart/form-data`: a `file` part plus an optional `title` form field (falls back to the file name). Parses slide count and native resolution server-side and queues thumbnail/stream rendering, same pipeline as the web app's upload. Honors `Idempotency-Key`. |
 | `POST /v1/slideshows/pdf` ✅ | admin | Same handler and request/response shape as `POST /v1/slideshows/pptx` above, for an uploaded `.pdf` instead — page count via PdfPig, `/MediaBox` resolution detection. Honors `Idempotency-Key`. |
 | `GET /v1/slideshows` ✅ | admin | List (paged: `?page=&pageSize=`). Each entry includes `playbackModeOverride` (`"VideoStream"`\|`"Html"`\|`null`) and `effectivePlaybackMode` (always populated — the resolved mode actually used to stream). |
-| `GET /v1/slideshows/{id}` ✅ | admin | Full slideshow incl. slides, conditions, resolution, `playbackModeOverride`, `effectivePlaybackMode`. |
-| `PATCH /v1/slideshows/{id}` ✅ | admin | Partial update (title, resolution, slide order, playback mode). `playbackMode` is three-state: omit the field to leave the stored override alone; `"inherit"` (case-insensitive) clears it back to the tenant/system default; `"VideoStream"`\|`"Html"` (case-sensitive) sets it. |
+| `GET /v1/slideshows/{id}` ✅ | admin | Full slideshow incl. slides, conditions, resolution, `playbackModeOverride`, `effectivePlaybackMode`, `defaultDurationSeconds`, `ticker`, `clock`, `shared`, `renderStatus` (`Pending`\|`Rendering`\|`Completed`\|`Failed`), `lastRenderedAt` and `screens: [{ deviceId, name, playerUrl }]` (the screens playing it now). Each slide carries `type` (`pptx`\|`media`\|`dynamic`), `hidden`, `thumbnailUrl`, `templateName` (dynamic) and `rules` (every visibility rule, page-made ones included, `readOnly: true` when `PUT .../conditions` cannot replace them). List entries carry `renderStatus` and `screenCount`. |
+| `PATCH /v1/slideshows/{id}` ✅ | admin | Partial update (title, resolution, slide order, playback mode, `defaultDurationSeconds` 1-300, `ticker { enabled, sourceIds? }`, `clock { enabled, position, showDate, backgroundColor, textColor }`, `shared`); omitted fields are unchanged and `ticker.enabled: false` clears the ticker sources. The response is the full slideshow, which reads all of these back. `playbackMode` is three-state: omit the field to leave the stored override alone; `"inherit"` (case-insensitive) clears it back to the tenant/system default; `"VideoStream"`\|`"Html"` (case-sensitive) sets it. |
 | `POST /v1/slideshows/{id}/clone` ✅ | admin | Clone an existing slideshow. |
 | `POST /v1/slideshows/{id}/slides` ✅ | admin | Add media slide. Body `{ "mediaUrl" }` (downloaded server-side) **or** `{ "mediaAssetId" }` (an id already in the tenant's media library, e.g. from `POST /v1/media` — no download involved); exactly one of the two, plus optional `durationSeconds`, `position`. May return `AspectMismatch`. |
 | `POST /v1/media` ✅ | admin | Uploads a file directly into the tenant's media library. `multipart/form-data`: a single `file` part. → `{ "id", "fileType": "image"\|"video"\|"document", "width", "height" }` (`width`/`height` only for images). Pass `id` as `mediaAssetId` to `POST /v1/slideshows/{id}/slides` to add it as a slide without a publicly reachable URL. Honors `Idempotency-Key`. |
-| `PUT /v1/slides/{id}/conditions` ✅ | admin | Replace visibility conditions. Body `{ "conditions": [{ "type": "time"\|"weekday"\|"data_trigger", "value": "..." }] }`. Value grammars: `time` = `"HH:mm-HH:mm"`; `weekday` = comma-separated English day names (`"Monday,Tuesday"`); `data_trigger` = `"{contentSourceId}"` (has items) or `"{contentSourceId}:contains:{text}"` (the source must be linked to the slideshow). `time`/`weekday` evaluate in the **tenant's workspace timezone** (device-local timezones are not supported). Evaluated server-side during HLS rendering. |
-| `POST /v1/slideshows/{id}/slides/dynamic` ✅ | admin | Add a template-driven dynamic slide to a slideshow. Body `{ "templateId", "durationSeconds"?, "position"? }`. `templateId` must reference a visible (global or tenant-owned) template — see `POST /v1/templates`. The new slide starts with no content source and empty override data; push initial/ongoing values with `POST /v1/slides/{id}/source`. Honors `Idempotency-Key`. |
-| `POST /v1/slides/{id}/source` ✅ | admin or data-provider (bound) | Push JSON matching the template's data schema; triggers server-side re-render. `?dryRun=true` validates without rendering. Requires Professional+ (`EntitlementRequired` otherwise). Only dynamic (template-driven) slides accept data. **Only endpoint valid for `isk_dp_` keys.** |
+| `PUT /v1/slides/{id}/conditions` ✅ | admin | Replace visibility conditions. Body `{ "conditions": [{ "type": "time"\|"weekday"\|"date"\|"data_trigger", "value": "..." }], "mode"?: "show"\|"hide", "match"?: "all"\|"any" }` (default: show while all hold). Value grammars: `date` = `"YYYY-MM-DD..YYYY-MM-DD"` (either end optional); `time` = `"HH:mm-HH:mm"`; `weekday` = comma-separated English day names (`"Monday,Tuesday"`); `data_trigger` = `"{contentSourceId}"` (has items) or `"{contentSourceId}:contains:{text}"` (the source must be linked to the slideshow). `time`/`weekday` evaluate in the **tenant's workspace timezone** (device-local timezones are not supported). Evaluated server-side during HLS rendering. |
+| `POST /v1/slideshows/{id}/slides/dynamic` ✅ | admin | Add a template-driven dynamic slide to a slideshow. Body `{ "templateId", "durationSeconds"?, "position"?, "createPushKey"? }`. `templateId` must reference a visible (global or tenant-owned) template — see `POST /v1/templates`. For a push template (`dataMode: "push"`) a push source is created for the slide and returned as `sourceId`; with `createPushKey: true` the response also carries `pushKey`, a push-only key bound to that source, shown once. The slide stays hidden until the first push. Other templates start with no source; push their values with `POST /v1/slides/{id}/source`. Honors `Idempotency-Key`. |
+| `POST /v1/slides/{id}/source` ✅ | admin or data-provider (bound) | Push JSON matching the template's data schema; triggers server-side re-render. `?dryRun=true` validates without rendering. For a slide on a push source the data is stored on that source (any plan); otherwise requires Professional+ (`EntitlementRequired` otherwise). Only dynamic (template-driven) slides accept data. Valid for `isk_dp_` keys bound to the slide. |
+| `PATCH /v1/slides/{id}` ✅ | admin | Body `{ "durationSeconds"?, "hidden"?, "templateId"?, "sourceId"?, "fieldMapping"?, "overrideData"?, "countdown"? }`; omitted fields are unchanged. Duration is 1-300 s. The last five are for dynamic slides only (`ValidationFailed` otherwise); `overrideData` is a merge patch (null removes a field), `countdown: []` clears the countdowns, and the field mapping is regenerated when the template or source changes without one. Returns the slide as it now stands. |
+| `DELETE /v1/slides/{id}` ✅ | admin | Removes the slide; the rule on it goes too. |
+| `DELETE /v1/slideshows/{id}` ✅ | admin | Deletes the slideshow: schedules removed, screens playing it stop showing it. No API undelete. |
+| `PUT /v1/slideshows/{id}/file` ✅ | admin | Replaces the `.pptx`/`.pdf` (`multipart/form-data`, a `file` part, 100 MB), keeping media and dynamic slides and settings. Returns the full slideshow. |
 | `GET /v1/slides/{id}/preview.png` ✅ | admin | Rendered PNG of the slide's current state (agent self-verification). Non-PNG image slides are re-encoded to PNG; video/document slides return `ValidationFailed`. |
 
 ### 4.3 Gallery
@@ -144,16 +150,28 @@ surfaces backend errors/warnings verbatim.
 
 | Method & path | Auth | Notes |
 | --- | --- | --- |
-| `POST /v1/templates` ✅ | admin, Premium | Body is `{ "title", "prompt", "sampleJson" }` (AI Studio) **XOR** `{ "title", "html", "css" }` (code; `{{field}}` placeholders). `title` required. `?dryRun=true` validates only. AI mode may return `RateLimited` (429) when the tenant's AI credit caps are exhausted. |
+| `POST /v1/templates` ✅ | admin, Premium | Body is `{ "title", "prompt", "sampleJson" }` (AI Studio) **XOR** `{ "title", "html", "css" }` (code; `{{field}}` placeholders), plus optional `"dataMode": "push"` for a template whose data a system pushes to a push source. `title` required. `?dryRun=true` validates only. AI mode may return `RateLimited` (429) when the tenant's AI credit caps are exhausted. Without Premium, one code-mode push template is allowed (the included live data slide). Design guide: https://infoslides.app/blog/agents-guide-to-the-infoslides-galaxy |
 | `GET /v1/templates` ✅ | admin | List templates. `sampleJson` in responses is synthesized from the template's stored data schema (type-appropriate sample values), not a stored literal. |
 | `GET /v1/templates/{id}` ✅ | admin | Single template. |
+
+### 4.4a Push sources
+
+A push source receives data from the customer's system instead of being fetched. It keeps one
+latest payload and feeds every slide bound to it; those slides stay hidden until the first push.
+
+| Endpoint | Auth | Notes |
+| --- | --- | --- |
+| `POST /v1/sources/{id}/data` ✅ | admin or data-provider (bound to the source) | Push a JSON object. Validated against every template the source feeds (required fields, types; extra fields ignored). Returns `{ "receivedAt" }` (null on `?dryRun=true`). |
+| `GET /v1/sources` | admin | Lists the workspace's content sources: `[{ "id", "name", "adapterType", "lastFetchedAt" }]`. Ids for a slideshow's `ticker.sourceIds` and a dynamic slide's `sourceId`. Ships with APX-13 in the main repo; the `list_sources` tool and `source list` command call it. |
+| `GET /v1/sources/{id}` ✅ | admin | `{ "id", "name", "lastReceivedAt", "hideAfterMinutes", "isShowingData", "slideIds" }`. |
+| `POST /v1/sources/{id}/keys` ✅ | admin | Body `{ "name"? }`. Returns `{ "id", "name", "keyPrefix", "key" }`: a push-only key bound to the source, shown once. Revoke with `DELETE /v1/apikeys/{id}`. |
 
 ### 4.5 Devices, schedules & streams
 
 | Method & path | Auth | Notes |
 | --- | --- | --- |
 | `POST /v1/devices` ✅ | admin | Body `{ "name", "resolution" }`. Unverified owner email → `EmailNotVerified`; at limit → `DeviceLimitReached` (limit is per-tenant `deviceQuota.max`, 1 on free). `resolution` snapped to the supported presets (see §4.2); response echoes the effective value. Honors `Idempotency-Key`. |
-| `GET /v1/devices` ✅ | admin | List active devices (incl. broadcast channels). |
+| `GET /v1/devices` ✅ | admin | List active devices (incl. broadcast channels), each with `nowPlayingSlideshowId` and `nowPlayingTitle`. |
 | `GET /v1/devices/{id}/status` ✅ | admin | `{ "online", "lastSeenAt", "nowPlaying": { "slideshowId", "slideId" } }`. `online` = heartbeat within the server's offline threshold (broadcast devices always report online). `nowPlaying.slideId` is **always null** in v1 — HLS playback is slideshow-granular; the backend cannot know the on-screen slide. |
 | `POST /v1/devices/{id}/schedule` ✅ | admin | Assign a slideshow: `{ "slideshowIds": [...] }` must contain **exactly one id** in v1 (the backend has no playlist model; more → `ValidationFailed`). Becomes the device's always-on default. Returns `AspectMismatch` warning when the device has an explicit resolution differing in orientation from the slideshow (still succeeds). |
 | `GET /v1/devices/{id}/stream` ✅ | admin | `{ "hlsUrl", "expiresAt", "playerUrl", "playbackMode" }`. `playerUrl` is always populated and plays either mode — the mode-agnostic link to hand over. `hlsUrl` is the raw HLS manifest link and is **`null` whenever `playbackMode` is `"Html"`** (an HTML-mode slideshow has no HLS stream); it stays populated for `"VideoStream"`. `expiresAt` is **always null** in v1 (stable long-lived token URLs; rotation is the invalidation mechanism). A `StreamNotReady` warning accompanies links whose slideshow isn't assigned or rendered yet; an additive `HtmlPlaybackMode` warning accompanies every `"Html"`-mode response, so a caller reading only `hlsUrl` learns why it came back null. |

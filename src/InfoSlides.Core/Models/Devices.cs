@@ -1,6 +1,13 @@
 namespace InfoSlides.Core.Models;
 
-public sealed record Device(string Id, string Name, Resolution Resolution);
+/// <param name="NowPlayingSlideshowId">The slideshow on this screen right now; null when nothing is assigned.</param>
+/// <param name="NowPlayingTitle">That slideshow's title, so "the lobby screen" resolves to content in one call.</param>
+public sealed record Device(
+    string Id,
+    string Name,
+    Resolution Resolution,
+    string? NowPlayingSlideshowId = null,
+    string? NowPlayingTitle = null);
 
 public sealed record CreateDeviceRequest(string Name, Resolution? Resolution = null);
 
