@@ -176,7 +176,7 @@ internal static class CommandTree
 
         var list = new Command("list", "List slideshows.");
         list.SetAction((parse, ct) => CliContext.Run(parse,
-            api => api.ListSlideshowsAsync(ct), InfoSlidesJsonContext.Default.ListSlideshow));
+            api => api.ListSlideshowsAsync(ct: ct), InfoSlidesJsonContext.Default.ListSlideshow));
         slideshow.Subcommands.Add(list);
 
         var id = new Argument<string>("slideshow-id") { Description = "Slideshow id." };
@@ -693,7 +693,7 @@ internal static class CommandTree
 
         var list = new Command("list", "List devices.");
         list.SetAction((parse, ct) => CliContext.Run(parse,
-            api => api.ListDevicesAsync(ct), InfoSlidesJsonContext.Default.ListDevice));
+            api => api.ListDevicesAsync(ct: ct), InfoSlidesJsonContext.Default.ListDevice));
         device.Subcommands.Add(list);
 
         var id = new Argument<string>("device-id") { Description = "Device id." };

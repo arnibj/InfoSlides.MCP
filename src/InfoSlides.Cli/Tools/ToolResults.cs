@@ -65,6 +65,27 @@ internal static class ToolResults
         }
     }
 
+    /// <summary>Builds a JSON request body from the pairs whose value is not null.</summary>
+    /// <param name="props">Property names (camelCase, as on the wire) and values.</param>
+    /// <returns>The body; empty when nothing is set.</returns>
+    public static JsonObject Body(params (string Name, JsonNode? Value)[] props)
+    {
+        var body = new JsonObject();
+        foreach (var (name, value) in props)
+        {
+            if (value is not null)
+            {
+                body[name] = value;
+            }
+        }
+
+        return body;
+    }
+
+    /// <summary>Runs a pass-through call (<see cref="InfoSlidesApiClient.SendJsonAsync"/>) as a tool result.</summary>
+    public static Task<CallToolResult> Json(Func<Task<ApiResult<JsonElement>>> call) =>
+        Execute(call, InfoSlidesJsonContext.Default.JsonElement);
+
     public static CallToolResult ValidationError(string message) =>
         ErrorResult("ValidationFailed", message, null);
 
@@ -73,17 +94,27 @@ internal static class ToolResults
 
     private static CallToolResult Error(Exception exception) => exception switch
     {
-        ApiException api => ErrorResult(api.Code, api.Message, api.UpgradeUrl),
+        ApiException api => ErrorResult(api.Code, api.Message, api.UpgradeUrl, api.Details),
         MissingCredentialException missing => ErrorResult("MissingCredential", missing.Message, null),
         _ => ErrorResult("NetworkError", $"Could not reach the InfoSlides API: {exception.Message}", null),
     };
 
-    private static CallToolResult ErrorResult(string code, string message, string? upgradeUrl)
+    /// <summary>
+    /// Builds the in-band error. <paramref name="details"/> is passed on as the API sent it: a
+    /// <c>NeedsClarification</c> carries its question and ready-made choices there, and a
+    /// <c>ValidationFailed</c> its per-field messages, which the agent needs to recover.
+    /// </summary>
+    private static CallToolResult ErrorResult(string code, string message, string? upgradeUrl, JsonElement? details = null)
     {
         var error = new JsonObject { ["code"] = code, ["message"] = message };
         if (upgradeUrl is not null)
         {
             error["upgradeUrl"] = upgradeUrl;
+        }
+
+        if (details is { ValueKind: JsonValueKind.Object or JsonValueKind.Array } d)
+        {
+            error["details"] = JsonNode.Parse(d.GetRawText());
         }
 
         return new CallToolResult

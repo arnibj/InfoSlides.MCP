@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using InfoSlides.Core.Models;
 using InfoSlides.Core.Serialization;
@@ -15,6 +16,9 @@ namespace InfoSlides.Core.Api;
 public sealed class InfoSlidesApiClient
 {
     private static readonly MediaTypeHeaderValue JsonMediaType = new("application/json") { CharSet = "utf-8" };
+
+    /// <summary>What <see cref="SendJsonAsync"/> returns for a success without a body.</summary>
+    private static readonly JsonElement OkJson = JsonDocument.Parse("""{"ok":true}""").RootElement;
 
     private readonly HttpClient _http;
     private readonly string? _credential;
@@ -50,8 +54,10 @@ public sealed class InfoSlidesApiClient
         SendAsync(HttpMethod.Post, "/v1/slideshows", Json(request, InfoSlidesJsonContext.Default.CreateSlideshowRequest),
             InfoSlidesJsonContext.Default.Slideshow, false, idempotent: true, ct);
 
-    public Task<ApiResult<List<Slideshow>>> ListSlideshowsAsync(CancellationToken ct = default) =>
-        SendAsync(HttpMethod.Get, "/v1/slideshows", null, InfoSlidesJsonContext.Default.ListSlideshow, false, false, ct);
+    /// <summary>Lists slideshows (<c>GET /v1/slideshows</c>).</summary>
+    /// <param name="q">Optional title filter, case- and accent-insensitive.</param>
+    public Task<ApiResult<List<Slideshow>>> ListSlideshowsAsync(string? q = null, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Get, "/v1/slideshows" + Query(("q", q)), null, InfoSlidesJsonContext.Default.ListSlideshow, false, false, ct);
 
     public Task<ApiResult<Slideshow>> GetSlideshowAsync(string slideshowId, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Get, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}", null,
@@ -269,8 +275,12 @@ public sealed class InfoSlidesApiClient
         SendAsync(HttpMethod.Post, "/v1/devices", Json(request, InfoSlidesJsonContext.Default.CreateDeviceRequest),
             InfoSlidesJsonContext.Default.Device, false, idempotent: true, ct);
 
-    public Task<ApiResult<List<Device>>> ListDevicesAsync(CancellationToken ct = default) =>
-        SendAsync(HttpMethod.Get, "/v1/devices", null, InfoSlidesJsonContext.Default.ListDevice, false, false, ct);
+    /// <summary>Lists screens (<c>GET /v1/devices</c>).</summary>
+    /// <param name="q">Optional name filter, case- and accent-insensitive.</param>
+    /// <param name="near">Optional <c>lat,lon</c>: sorts screens with a saved location nearest-first.</param>
+    public Task<ApiResult<List<Device>>> ListDevicesAsync(string? q = null, string? near = null, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Get, "/v1/devices" + Query(("q", q), ("near", near)), null,
+            InfoSlidesJsonContext.Default.ListDevice, false, false, ct);
 
     public Task<ApiResult<DeviceStatus>> GetDeviceStatusAsync(string deviceId, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Get, $"/v1/devices/{Uri.EscapeDataString(deviceId)}/status", null,
@@ -300,6 +310,44 @@ public sealed class InfoSlidesApiClient
 
     public Task<ApiResult<CheckoutLink>> CreateCheckoutAsync(CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, "/v1/billing/checkout", null, InfoSlidesJsonContext.Default.CheckoutLink, false, false, ct);
+
+    // Pass-through JSON
+
+    /// <summary>
+    /// Calls a <c>/v1</c> endpoint and returns its <c>data</c> unchanged. The newer endpoints
+    /// (pairings, play, takeovers, schedule entries, play time, team, sources, tenant settings) go
+    /// through here so a field the API adds reaches the agent without a model change in this repo.
+    /// A success with no body (204) returns <c>{"ok":true}</c>.
+    /// </summary>
+    /// <param name="method">HTTP method.</param>
+    /// <param name="path">Path including any query string; build it with <see cref="Query"/>.</param>
+    /// <param name="body">Optional JSON body.</param>
+    /// <param name="idempotent">True to send an <c>Idempotency-Key</c> (creating calls).</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The response's <c>data</c> and warnings.</returns>
+    public Task<ApiResult<JsonElement>> SendJsonAsync(
+        HttpMethod method, string path, JsonNode? body = null, bool idempotent = false, CancellationToken ct = default)
+    {
+        StringContent? content = null;
+        if (body is not null)
+        {
+            content = new StringContent(body.ToJsonString(), Encoding.UTF8);
+            content.Headers.ContentType = JsonMediaType;
+        }
+
+        return SendAsync(method, path, content, InfoSlidesJsonContext.Default.JsonElement, false, idempotent, ct);
+    }
+
+    /// <summary>Builds a query string from the pairs whose value is not null or empty.</summary>
+    /// <param name="pairs">Name and value pairs; values are URL-escaped.</param>
+    /// <returns><c>?a=1&amp;b=2</c>, or an empty string when nothing is set.</returns>
+    public static string Query(params (string Name, string? Value)[] pairs)
+    {
+        var set = pairs.Where(p => !string.IsNullOrEmpty(p.Value))
+            .Select(p => $"{p.Name}={Uri.EscapeDataString(p.Value!)}")
+            .ToList();
+        return set.Count == 0 ? "" : "?" + string.Join('&', set);
+    }
 
     // Plumbing
 
@@ -381,6 +429,11 @@ public sealed class InfoSlidesApiClient
             if (OkResult.Instance is T ok)
             {
                 return new ApiResult<T>(ok, warnings);
+            }
+
+            if (typeof(T) == typeof(JsonElement))
+            {
+                return new ApiResult<T>((T)(object)OkJson.Clone(), warnings);
             }
 
             throw new ApiException("InvalidResponse", "The server response is missing the data payload.", status);

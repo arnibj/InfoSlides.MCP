@@ -79,13 +79,20 @@ the admin key), slideshows including direct `.pptx`/`.pdf` upload (`upload_pptx`
 direct file upload (`upload_media`), visibility conditions (time of day, weekday, date range, data triggers; show or hide, all or any),
 edits to what is already playing (`update_slide` for a slide's duration, hidden flag and live data;
 `update_slideshow` for the news ticker, clock, default duration and sharing; `delete_slide`,
-`delete_slideshow`, `replace_slideshow_file`; `list_sources` for the ticker's sources),
+`delete_slideshow`, `replace_slideshow_file`; `list_sources` for the ticker's sources, and
+`list_adapters`, `create_source`, `edit_source`, `delete_source` for fetched feeds),
 self-updating template slides driven by live data pushes (`update_source`, and push sources fed by
 the user's own system: `push_data`, `get_source_status`, `create_source_key`), devices, schedules with
 `AspectMismatch` warnings, playback-mode control (`update_slideshow`'s `playbackMode` switches a
 slideshow between the rendered-video stream and a live HTML/CSS loop), playable stream links that
-work whichever mode a screen is in, PNG slide previews for self-verification, API keys including
-push-only keys scoped to a single slide, and Paddle upgrade links. The backend enforces every plan
+work whichever mode a screen is in, pairing the TV in front of the person (`pair_screen`),
+"play this there" in one call (`play_now`), timed schedules (`get_schedule`, `add_schedule_entry`,
+`delete_schedule_entry`), temporary takeovers (`create_takeover`, `list_takeovers`, `end_takeover`),
+play-time reports (`get_play_time`), screen locations (`set_device_location`, `list_devices` near a
+point), the team (`list_team`, `invite_team_member`, `revoke_invitation`, `remove_team_member`),
+workspace time zone and locale (`update_workspace_settings`), PNG slide previews for
+self-verification, API keys including push-only keys scoped to a single slide, and Paddle checkout
+links for a chosen plan and billing period. The backend enforces every plan
 limit — the tool layer cannot bypass them.
 
 **Designing your own live data slide:** the [agent's guide to templates and pushed data](https://infoslides.app/blog/agents-guide-to-the-infoslides-galaxy)

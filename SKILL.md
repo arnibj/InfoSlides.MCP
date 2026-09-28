@@ -102,7 +102,11 @@ For someone with no account, in order:
 
 1. **`create_tenant`** — anonymous, returns the admin API key. Land it somewhere the user can find
    it again and say plainly that it is shown once. The account starts on the permanent free plan:
-   1 screen, 4 slideshows, 2 users, 200 MB, no card, nothing expires.
+   1 screen, 4 slideshows, 2 users, 200 MB, no card, nothing expires. First give the person the
+   [Terms of Service](https://infoslides.app/terms) and [Privacy Policy](https://infoslides.app/privacy)
+   links. Use an owner address you can open (your own is best), verify it, then bring the person in
+   with `invite_team_member` as `TenantAdmin`. Pass `timeZone` when they are outside Iceland, or
+   set it later with `update_workspace_settings`: it decides when schedules switch.
 2. **`get_tenant_info`** — read the plan and screen allowance now, so the rest of the plan fits
    inside them.
 3. **Content.** `upload_pptx` if they already have a deck — PowerPoint or PDF, either works.
@@ -126,7 +130,8 @@ slide", "make every slide show 15 seconds". People name a screen or a slide, nev
 is to find it, change it, and confirm the change reached the wall.
 
 1. **Find the screen.** `list_devices` shows each screen with `nowPlayingTitle` and
-   `nowPlayingSlideshowId`. Match the person's words ("the lobby", "the cafe TV") to the screen name.
+   `nowPlayingSlideshowId`; `q` filters by name, and `near` with the person's position finds "this
+   screen" among screens with a saved location. Match the person's words ("the lobby", "the cafe TV") to the screen name.
    Several matches or none: ask, do not guess. A screen with nothing playing has no slideshow to edit.
 2. **Read the slideshow.** `get_slideshow` with that id shows every slide (its `type`, `hidden`,
    duration, `thumbnailUrl` and `rules`), the ticker, clock and default duration, and the `screens`
@@ -143,7 +148,11 @@ is to find it, change it, and confirm the change reached the wall.
    | move a slide | `update_slideshow` with the full `slideOrder` |
    | remove a slide for good | `delete_slide` |
    | replace the whole presentation with a new file | `replace_slideshow_file` (keeps the screens and schedule) |
-   | scroll headlines from a feed | `list_sources`, then `update_slideshow` with `tickerSourceIds` |
+   | scroll headlines from a feed | `list_sources`, then `update_slideshow` with `tickerSourceIds` (a new feed: `list_adapters`, `create_source`) |
+   | "play the Q1 slides on the lobby screen" | `play_now` (`dryRun` first if unsure) |
+   | breakfast menu 6-11, lunch menu after | `add_schedule_entry`; `get_schedule` / `delete_schedule_entry` to review or undo |
+   | fire drill notice on every screen for 30 minutes | `create_takeover`; `end_takeover` to stop early |
+   | "how long did it play last week?" | `get_play_time` (estimated minutes, say so) |
 
 4. **Wait for it to land.** After an edit the slideshow re-renders. `get_slideshow` until
    `renderStatus` is `Completed`; `Failed` means it did not reach the screen, say so.
@@ -158,18 +167,41 @@ so and offer `replace_slideshow_file` with their updated file, rather than prete
 ## Getting it onto the actual TV
 
 The person at this end of the job is standing in a lobby holding a TV remote, not reading API docs.
-Two routes:
+When the content is ready (`renderStatus` is `Completed`), walk them through it one step at a time
+and wait for each answer:
 
-- **The stream link.** Open `playerUrl` from `get_stream_link` in the TV's browser or the InfoSlides
-  TV app — it plays the content correctly whichever mode the screen is set up for. The link is
-  stable — it keeps working as the content changes, so it only has to be entered once. `hlsUrl` is
-  a raw HLS manifest link for something that only speaks HLS; it comes back `null` for a screen
-  playing an HTML loop (see `update_slideshow`'s `playbackMode`), so do not hand it out without
-  checking it is actually present.
-- **A pairing code**, on smart-TV platforms with the InfoSlides app installed: the TV shows a
-  six-digit code, and the user enters it in the InfoSlides dashboard to bind that screen. This is a
-  dashboard flow, not something these tools do — if the user is on that path, point them at
-  <https://infoslides.app> rather than pretending to drive it.
+1. **Turn it on.** Ask them to switch on the TV or display where it should play.
+2. **Find out what it is.** A smart TV (which brand?), or a plain screen with a box or stick plugged
+   in (Android TV box, Fire TV, a computer). The brand is usually on the frame or the remote.
+3. **Open the player:**
+
+   | Screen | What the person does |
+   | --- | --- |
+   | Android TV / Google TV, or an Android box | Install **InfoSlides** from Google Play and open it |
+   | LG (webOS) | Install **InfoSlides** from the LG Content Store and open it |
+   | Samsung (Tizen) | The app is awaiting store approval: open the TV's browser at `https://infoslides.app/pair.html` |
+   | Anything else with a browser | Open `https://infoslides.app/pair.html`, full screen |
+
+   **HTML playback (live pushed data):** for now only the browser page and the Android app from
+   1.2.0 play it; the LG and Samsung versions that do are in store review. For an HTML slideshow,
+   use the browser page unless the screen runs an up-to-date Android app.
+4. **Pair it.** The screen shows a QR code, a short nickname and a box for a 6-character code:
+   - They scan the QR code with their phone. If its browser is signed in to InfoSlides, a device
+     picker opens; a workspace with one screen pairs straight away.
+   - They read you the QR code or the nickname (or you see it through their glasses):
+     `pair_screen` with `qr` or `nickname`, plus `slideshowId` for a new screen or `deviceId` for
+     an existing one. With neither, the answer lists the choices.
+   - Nothing to scan with: `pair_screen` with `deviceId` alone returns a code for them to type on
+     the screen before it expires.
+
+   Then save where the screen is with `set_device_location`, so "this screen" finds it later.
+5. **Confirm it plays.** Ask whether it is on the screen. If it shows "no slideshow", check
+   `supportsHtml` in `list_devices` against the HTML note above.
+
+**The stream link** is the fallback for anything else: `playerUrl` from `get_stream_link`, opened in
+any browser, plays either mode and stays stable as the content changes. `hlsUrl` is a raw HLS link
+for something that only speaks HLS; it is `null` for a screen playing an HTML loop, so check it
+before handing it out.
 
 Phrase instructions for a remote, not a keyboard: "press the Home button, open the web browser, and
 type this address" beats "navigate to the URL". Long URLs are miserable to enter with a remote — if
@@ -224,7 +256,10 @@ Worth naming before they are hit rather than after:
 
 Everything else genuinely works, forever, without a card. When a limit does get hit,
 `upgrade_subscription` returns a checkout link — offer it rather than declaring the thing
-impossible.
+impossible. Ask monthly or annual and pass `plan` and `billingPeriod`: the link is then a checkout
+that needs no sign-in, with its price. Paying needs the person's clear yes to that plan and price,
+after you have told them it renews until cancelled, that they can cancel any time and keep the plan
+to the end of the period, and linked <https://infoslides.app/refund-policy>.
 
 ## Things not to do
 

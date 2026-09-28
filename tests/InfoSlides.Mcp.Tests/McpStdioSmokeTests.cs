@@ -22,6 +22,10 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         "create_api_key", "list_api_keys", "revoke_api_key",
         "upgrade_subscription",
         "update_slide", "delete_slide", "delete_slideshow", "replace_slideshow_file", "list_sources",
+        "pair_screen", "play_now", "get_schedule", "add_schedule_entry", "delete_schedule_entry",
+        "create_takeover", "list_takeovers", "end_takeover", "get_play_time", "set_device_location",
+        "list_team", "invite_team_member", "revoke_invitation", "remove_team_member", "update_workspace_settings",
+        "list_adapters", "create_source", "edit_source", "delete_source",
     ];
 
     private readonly FakeBackend _backend = new();
@@ -391,12 +395,101 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
 
         var tools = await client.ListToolsAsync(cancellationToken: Timeout());
 
-        foreach (var name in new[] { "delete_slide", "delete_slideshow", "replace_slideshow_file" })
+        foreach (var name in new[]
+                 {
+                     "delete_slide", "delete_slideshow", "replace_slideshow_file", "delete_schedule_entry",
+                     "end_takeover", "revoke_invitation", "remove_team_member", "delete_source",
+                 })
         {
             Assert.True(tools.Single(t => t.Name == name).ProtocolTool.Annotations?.DestructiveHint, name);
         }
 
         Assert.True(tools.Single(t => t.Name == "list_sources").ProtocolTool.Annotations?.ReadOnlyHint);
+    }
+
+    /// <summary>A pass-through tool sends only the arguments given, and returns the API's data unchanged.</summary>
+    [Fact]
+    public async Task PairScreen_SendsTheGivenFields_AndReturnsTheApisData()
+    {
+        _backend.MapJson("POST", "/v1/pairings",
+            """{"data":{"deviceId":"d1","deviceName":"Lobby TV","playerUrl":"https://infoslides.app/player/x","newField":1}}""", 201);
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var result = await client.CallToolAsync("pair_screen",
+            new Dictionary<string, object?> { ["nickname"] = "swift-oak-42", ["slideshowId"] = "s1" },
+            cancellationToken: Timeout());
+
+        Assert.NotEqual(true, result.IsError);
+        var text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content)).Text;
+        Assert.Contains("\"newField\":1", text);
+        lock (_backend.Requests)
+        {
+            var body = JsonDocument.Parse(Assert.Single(_backend.Requests).Body).RootElement;
+            Assert.Equal(["nickname", "slideshowId"], body.EnumerateObject().Select(p => p.Name).ToArray());
+        }
+    }
+
+    /// <summary>NeedsClarification carries its choices in details; the tool error must pass them on.</summary>
+    [Fact]
+    public async Task PlayNow_NeedsClarification_PassesTheChoicesOn()
+    {
+        _backend.MapJson("POST", "/v1/play",
+            """{"error":{"code":"NeedsClarification","message":"Which screen?","details":{"question":"Which screen?","choices":[{"id":"d1","label":"Lobby","recommended":false}]}}}""", 409);
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var result = await client.CallToolAsync("play_now",
+            new Dictionary<string, object?> { ["slideshowId"] = "s1" }, cancellationToken: Timeout());
+
+        Assert.True(result.IsError);
+        var text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content)).Text;
+        Assert.Contains("\"choices\"", text);
+        Assert.Contains("\"label\":\"Lobby\"", text);
+    }
+
+    /// <summary>A 204 with no body is a success, not "missing data payload".</summary>
+    [Fact]
+    public async Task DeleteScheduleEntry_NoContent_IsASuccess()
+    {
+        _backend.MapJson("DELETE", "/v1/devices/d1/schedule/entries/e1", "", 204);
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var result = await client.CallToolAsync("delete_schedule_entry",
+            new Dictionary<string, object?> { ["deviceId"] = "d1", ["entryId"] = "e1" }, cancellationToken: Timeout());
+
+        Assert.NotEqual(true, result.IsError);
+        Assert.Contains("\"ok\":true", Assert.IsType<TextContentBlock>(Assert.Single(result.Content)).Text);
+    }
+
+    [Fact]
+    public async Task GetPlayTime_NeedsExactlyOneOfDeviceOrSlideshow()
+    {
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var result = await client.CallToolAsync("get_play_time", cancellationToken: Timeout());
+
+        Assert.True(result.IsError);
+        lock (_backend.Requests)
+        {
+            Assert.Empty(_backend.Requests);
+        }
+    }
+
+    [Fact]
+    public async Task UpgradeSubscription_SendsPlanAndPeriod()
+    {
+        _backend.MapJson("POST", "/v1/billing/checkout",
+            """{"data":{"checkoutUrl":"https://infoslides.app/checkout?_ptxn=txn_1","plan":"Starter","billingPeriod":"annual","price":{"amount":84.0,"currency":"EUR"}}}""");
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var result = await client.CallToolAsync("upgrade_subscription",
+            new Dictionary<string, object?> { ["plan"] = "Starter", ["billingPeriod"] = "annual" }, cancellationToken: Timeout());
+
+        Assert.NotEqual(true, result.IsError);
+        Assert.Contains("\"amount\":84", Assert.IsType<TextContentBlock>(Assert.Single(result.Content)).Text);
+        lock (_backend.Requests)
+        {
+            Assert.Contains("\"billingPeriod\":\"annual\"", Assert.Single(_backend.Requests).Body);
+        }
     }
 
     [Fact]

@@ -33,9 +33,15 @@ public sealed class DeviceTools(InfoSlidesApiClient api)
                  "\"the front lobby screen\" becomes content you can read and edit: find the screen by " +
                  "name, then get_slideshow with its nowPlayingSlideshowId. Also use it to find the id " +
                  "of a screen before assigning content to it, or to check how many of the account's " +
-                 "allowed screens are already used.")]
-    public Task<CallToolResult> ListDevices(CancellationToken ct = default) =>
-        ToolResults.Execute(() => api.ListDevicesAsync(ct), InfoSlidesJsonContext.Default.ListDevice);
+                 "allowed screens are already used. q filters by name (\"lobby\" finds \"Lobby Screen\"). " +
+                 "For \"this screen\" or \"the screen in front of me\", pass near with the person's " +
+                 "position: screens with a saved location (set_device_location) come nearest-first with " +
+                 "distanceMeters. supportsHtml says whether the screen's app plays HTML playback.")]
+    public Task<CallToolResult> ListDevices(
+        [Description("Optional name filter, case- and accent-insensitive.")] string? q = null,
+        [Description("Optional 'latitude,longitude' to sort screens nearest-first, e.g. '64.1466,-21.9426'.")] string? near = null,
+        CancellationToken ct = default) =>
+        ToolResults.Execute(() => api.ListDevicesAsync(q, near, ct), InfoSlidesJsonContext.Default.ListDevice);
 
     [McpServerTool(Name = "get_device_status", ReadOnly = true)]
     [Description("Find out whether a screen is actually on and what it is showing right now — is the " +

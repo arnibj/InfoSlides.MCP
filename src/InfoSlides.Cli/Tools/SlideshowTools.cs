@@ -128,9 +128,12 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
                  "portrait) each one is built for, whether its latest render has finished " +
                  "(renderStatus) and how many screens are playing it (screenCount). Use it to find the " +
                  "id of existing content before editing it or assigning it to a display; to go from a " +
-                 "screen's name to its content, list_devices shows what each screen is playing.")]
-    public Task<CallToolResult> ListSlideshows(CancellationToken ct = default) =>
-        ToolResults.Execute(() => api.ListSlideshowsAsync(ct), InfoSlidesJsonContext.Default.ListSlideshow);
+                 "screen's name to its content, list_devices shows what each screen is playing. q " +
+                 "filters by title (\"q1\" finds \"Q1 Results 2026\").")]
+    public Task<CallToolResult> ListSlideshows(
+        [Description("Optional title filter, case- and accent-insensitive.")] string? q = null,
+        CancellationToken ct = default) =>
+        ToolResults.Execute(() => api.ListSlideshowsAsync(q, ct), InfoSlidesJsonContext.Default.ListSlideshow);
 
     [McpServerTool(Name = "get_slideshow", ReadOnly = true)]
     [Description("Look inside one piece of screen content: every slide (its type, whether it is " +
