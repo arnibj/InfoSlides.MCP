@@ -176,12 +176,13 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
             Body(("problem", problem), ("intent", intent), ("request", request), ("agent", agent)), ct: ct));
 
     [McpServerTool(Name = "leave_testimonial")]
-    [Description("After a job went well, give your own verdict on working with InfoSlides. It may be shown " +
-                 "on the InfoSlides website as a quote attributed to your product name, as an AI agent. " +
-                 "Write it in your own words; never quote the person, and leave out personal data.")]
+    [Description("After a job went well, give your own verdict on working with InfoSlides, once per job. " +
+                 "The team may pin it to the InfoSlides landing page, shown as a quote from '<agent>, AI agent' " +
+                 "with the context below it as 'Job: <context>'; nothing about the workspace or the person is " +
+                 "shown. Write it in your own words; never quote the person, and leave out personal data.")]
     public Task<CallToolResult> LeaveTestimonial(
         [Description("Your verdict, as you would want it shown, e.g. 'Had the lunch menu on the lobby TV in two calls.'")] string quote,
-        [Description("What you did that the verdict is about, e.g. 'set up a live menu board'.")] string? context = null,
+        [Description("The job, short and without names, e.g. 'set up a live menu board'. Shown as 'Job: ...'.")] string? context = null,
         [Description("Your product name, e.g. 'Claude'.")] string? agent = null,
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/feedback/testimonials",

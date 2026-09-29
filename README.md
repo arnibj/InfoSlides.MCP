@@ -22,7 +22,7 @@ credit card, no trial clock, nothing expires. The whole flow below costs nothing
 ```sh
 # 1. Install (macOS/Linux; see Install for Windows and MCP clients)
 #    Version-pinned — check /releases/latest for the current one.
-curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.6.0/infoslides-v1.5.0-linux-x64.tar.gz | tar xz
+curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.6.0/infoslides-v1.6.0-linux-x64.tar.gz | tar xz
 
 # 2. Create a workspace — anonymous, prints an admin API key, saves it to ~/.infoslides
 ./infoslides tenant create "Acme Cafe" owner@acme.test --save
@@ -96,7 +96,9 @@ a photo or video on a screen in a minute (`show_media_on_device`, `get_show_stat
 (`update_device`), one workspace health summary and offline-alert emails (`get_workspace_health`,
 `get_offline_alerts`, `set_workspace_offline_alerts`, `set_device_offline_alerts`), AI Studio slides
 (`make_ai_slide`, `get_ai_slide_job`, `insert_ai_slides`, `start_ai_studio_trial`), previewing a
-template before saving it (`preview_new_template`), undoing a change (`undo_change`), PNG slide previews for
+template before saving it (`preview_new_template`), undoing a change (`undo_change`), feedback to the
+InfoSlides team (`report_issue` when it gets stuck, `leave_testimonial` after a job went well; the
+team may pin a testimonial to the landing page, credited to the agent), PNG slide previews for
 self-verification, API keys including push-only keys scoped to a single slide, and Paddle checkout
 links for a chosen plan and billing period. The backend enforces every plan
 limit — the tool layer cannot bypass them.
