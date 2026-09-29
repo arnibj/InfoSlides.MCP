@@ -113,6 +113,14 @@ someone queueing versus someone walking past, how to find a screen by name, edit
 confirm the change reached the wall (`renderStatus`), and how to talk a person through the TV end of it
 while they are holding a remote.
 
+**The InfoSlides Digital Signage Assistant skill** covers the conversation side: it turns what a
+person says ("turn off the ticker in the lobby", "breakfast menu before 11") into the right tool
+calls in the right order, says what to tell them back, and includes worked scenarios, designing a
+slide yourself, and when to report an issue or leave a testimonial. The tool names are the same.
+Read it at <https://infoslides.app/skills/infoslides-assistant/SKILL.md> or download
+[infoslides-assistant.zip](https://infoslides.app/skills/infoslides-assistant.zip) to install it in
+Claude or another agent that loads skills.
+
 ## CLI
 
 ```sh
@@ -150,7 +158,7 @@ infoslides device pair --nickname swift-oak-42 --slideshow-id <slideshow-id>   #
 infoslides device play <slideshow-id> --device-id <device-id> --until 2026-10-01T17:00   # --dry-run to see what would happen
 infoslides device list --q lobby --near 64.1466,-21.9426
 infoslides device set-location <device-id> 64.1466 -21.9426 --label "Front lobby"
-infoslides device identify                                  # a number on every online screen for ~90 s
+infoslides device identify                                  # each online screen shows its name for ~90 s
 infoslides device now <device-id> --output lobby.png        # what the screen should show right now
 infoslides device diagnose <device-id>                      # why is it black?
 infoslides device show <device-id> --file ./photo.jpg --until 2026-10-01T17:00   # or --url; default 30 minutes
@@ -230,6 +238,8 @@ dotnet publish src/InfoSlides.Cli -c Release -r linux-x64   # or win-x64 / osx-a
 - **InfoSlides** — <https://infoslides.app>
 - **REST API reference** — <https://infoslides.app/docs/api> (the `/v1` surface these tools wrap)
 - **Guide for AI agents** — <https://infoslides.app/agents.md>
+- **Blog** — <https://infoslides.app/blog> (guides on templates, live data, screen design and agents)
+- **Digital Signage Assistant skill** — <https://infoslides.app/skills/infoslides-assistant/SKILL.md> ([zip](https://infoslides.app/skills/infoslides-assistant.zip))
 
 ## Repository layout
 

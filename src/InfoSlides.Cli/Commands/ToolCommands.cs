@@ -67,7 +67,7 @@ internal static class ToolCommands
             playShow, playDevice, playUntil, playDry));
 
         var identifyIds = new Argument<string[]>("device-ids") { Description = "Only these screens; all online screens when omitted.", Arity = ArgumentArity.ZeroOrMore };
-        device.Subcommands.Add(Verb("identify", "Show a number on screens for about 90 seconds to tell them apart.",
+        device.Subcommands.Add(Verb("identify", "Show each screen's name on it for about 90 seconds to tell them apart.",
             (p, ct) => CliContext.RunTool(p, api => new ScreenTools(api).IdentifyScreens(Split(p.GetValue(identifyIds)), ct)),
             identifyIds));
 

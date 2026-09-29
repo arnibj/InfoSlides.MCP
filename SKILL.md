@@ -16,8 +16,9 @@ REST API at <https://infoslides.app/docs/api> or the `infoslides` CLI.
 This skill is the judgement layer for building a screen. For the conversation side (turning what
 a person says into the right tool calls, request by request, with worked scenarios, designing a
 slide yourself, and when to report an issue or leave a testimonial), load the InfoSlides
-assistant skill: <https://infoslides.app/skills/infoslides-assistant/SKILL.md>. The tool names
-are the same in both.
+Digital Signage Assistant skill: <https://infoslides.app/skills/infoslides-assistant/SKILL.md>
+(installable zip: <https://infoslides.app/skills/infoslides-assistant.zip>). The tool names are
+the same in both.
 
 ## Ask these three things first
 

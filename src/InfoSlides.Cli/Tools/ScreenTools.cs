@@ -147,9 +147,9 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
             $"/v1/devices/{Id(deviceId)}/plays" + InfoSlidesApiClient.Query(("from", from), ("to", to)), ct: ct));
 
     [McpServerTool(Name = "identify_devices")]
-    [Description("\"Which screen is this?\" Shows a large number on every online screen (or just the given " +
-                 "ones) for about 90 seconds so the person can read out the number they see. The result " +
-                 "maps each number to a deviceId and name, and says how many seconds it takes to appear " +
+    [Description("\"Which screen is this?\" Shows each online screen's own name in large text (or just the given " +
+                 "ones) for about 90 seconds so the person can read out the name they see. The result " +
+                 "lists each screen's deviceId and name, and says how many seconds it takes to appear " +
                  "(up to 60): tell the person to wait that long before looking. Try list_devices with near " +
                  "first; use this when several screens are in one room.")]
     public Task<CallToolResult> IdentifyScreens(
