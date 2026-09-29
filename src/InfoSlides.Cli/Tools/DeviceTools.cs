@@ -35,7 +35,7 @@ public sealed class DeviceTools(InfoSlidesApiClient api)
                  "of a screen before assigning content to it, or to check how many of the account's " +
                  "allowed screens are already used. q filters by name (\"lobby\" finds \"Lobby Screen\"). " +
                  "For \"this screen\" or \"the screen in front of me\", pass near with the person's " +
-                 "position: screens with a saved location (set_device_location) come nearest-first with " +
+                 "position: screens with a saved location (update_device) come nearest-first with " +
                  "distanceMeters. supportsHtml says whether the screen's app plays HTML playback.")]
     public Task<CallToolResult> ListDevices(
         [Description("Optional name filter, case- and accent-insensitive.")] string? q = null,

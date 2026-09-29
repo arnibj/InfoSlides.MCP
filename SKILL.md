@@ -13,6 +13,12 @@ once content is on a wall where the public can see it.
 If the tools are not loaded, everything here still applies — the same work can be done through the
 REST API at <https://infoslides.app/docs/api> or the `infoslides` CLI.
 
+This skill is the judgement layer for building a screen. For the conversation side (turning what
+a person says into the right tool calls, request by request, with worked scenarios, designing a
+slide yourself, and when to report an issue or leave a testimonial), load the InfoSlides
+assistant skill: <https://infoslides.app/skills/infoslides-assistant/SKILL.md>. The tool names
+are the same in both.
+
 ## Ask these three things first
 
 Almost every bad signage setup traces back to a question nobody asked.
@@ -106,7 +112,7 @@ For someone with no account, in order:
    [Terms of Service](https://infoslides.app/terms) and [Privacy Policy](https://infoslides.app/privacy)
    links. Use an owner address you can open (your own is best), verify it, then bring the person in
    with `invite_team_member` as `TenantAdmin`. Pass `timeZone` when they are outside Iceland, or
-   set it later with `update_workspace_settings`: it decides when schedules switch.
+   set it later with `update_tenant`: it decides when schedules switch.
 2. **`get_tenant_info`** — read the plan and screen allowance now, so the rest of the plan fits
    inside them.
 3. **Content.** `upload_pptx` if they already have a deck — PowerPoint or PDF, either works.
@@ -149,10 +155,17 @@ is to find it, change it, and confirm the change reached the wall.
    | remove a slide for good | `delete_slide` |
    | replace the whole presentation with a new file | `replace_slideshow_file` (keeps the screens and schedule) |
    | scroll headlines from a feed | `list_sources`, then `update_slideshow` with `tickerSourceIds` (a new feed: `list_adapters`, `create_source`) |
-   | "play the Q1 slides on the lobby screen" | `play_now` (`dryRun` first if unsure) |
+   | "play the Q1 slides on the lobby screen" | `play_slideshow_find_device` (`dryRun` first if unsure) |
    | breakfast menu 6-11, lunch menu after | `add_schedule_entry`; `get_schedule` / `delete_schedule_entry` to review or undo |
    | fire drill notice on every screen for 30 minutes | `create_takeover`; `end_takeover` to stop early |
-   | "how long did it play last week?" | `get_play_time` (estimated minutes, say so) |
+   | "how long did it play last week?" | `get_slideshow_plays` (per screen) or `get_device_plays` (per slideshow); estimated minutes, say so |
+   | "which screen is this?" | `list_devices` with `near`, else `identify_devices` (wait the seconds it says) |
+   | "what's on the lobby screen?" / "why is it black?" | `get_now_slide_png` (what it should show), `get_device_diagnosis` |
+   | "show this photo on the lobby screen for an hour" | `show_media_on_device`, then `get_show_status` for the percent |
+   | "how are my screens?" | `get_workspace_health`, read its `summary` out |
+   | "don't email me about screens at night" | `set_workspace_offline_alerts`; one TV switched off on purpose: `set_device_offline_alerts` |
+   | "make this photo, page or text into a slide" | `make_ai_slide`, poll `get_ai_slide_job`, show the previews, then `insert_ai_slides` (trial: ask before `start_ai_studio_trial`) |
+   | "undo that" | `undo_change` with the `undo.body.token` of the earlier result (24 hours; ask before `force`) |
 
 4. **Wait for it to land.** After an edit the slideshow re-renders. `get_slideshow` until
    `renderStatus` is `Completed`; `Failed` means it did not reach the screen, say so.
@@ -189,12 +202,12 @@ and wait for each answer:
    - They scan the QR code with their phone. If its browser is signed in to InfoSlides, a device
      picker opens; a workspace with one screen pairs straight away.
    - They read you the QR code or the nickname (or you see it through their glasses):
-     `pair_screen` with `qr` or `nickname`, plus `slideshowId` for a new screen or `deviceId` for
+     `pair_device` with `qr` or `nickname`, plus `slideshowId` for a new screen or `deviceId` for
      an existing one. With neither, the answer lists the choices.
-   - Nothing to scan with: `pair_screen` with `deviceId` alone returns a code for them to type on
+   - Nothing to scan with: `pair_device` with `deviceId` alone returns a code for them to type on
      the screen before it expires.
 
-   Then save where the screen is with `set_device_location`, so "this screen" finds it later.
+   Then save where the screen is with `update_device`, so "this screen" finds it later.
 5. **Confirm it plays.** Ask whether it is on the screen. If it shows "no slideshow", check
    `supportsHtml` in `list_devices` against the HTML note above.
 

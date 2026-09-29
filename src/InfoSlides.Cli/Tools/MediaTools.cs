@@ -33,7 +33,7 @@ public sealed class MediaTools(InfoSlidesApiClient api)
     /// Best-effort MIME type from the file extension — advisory only; the server re-derives the
     /// real type from the file's extension/signature.
     /// </summary>
-    private static string ResolveContentType(string filePath) => Path.GetExtension(filePath).ToLowerInvariant() switch
+    internal static string ResolveContentType(string filePath) => Path.GetExtension(filePath).ToLowerInvariant() switch
     {
         ".png" => "image/png",
         ".jpg" or ".jpeg" => "image/jpeg",

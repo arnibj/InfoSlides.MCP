@@ -29,6 +29,12 @@ internal static class ToolResults
                     result.Warnings.ToList(), InfoSlidesJsonContext.Default.ListApiWarning);
             }
 
+            if (result.Undo is { } undo)
+            {
+                // A ready-made request that reverts this change; undo_change takes its token.
+                envelope["undo"] = JsonNode.Parse(undo.GetRawText());
+            }
+
             return new CallToolResult
             {
                 Content = [new TextContentBlock { Text = envelope.ToJsonString() }],

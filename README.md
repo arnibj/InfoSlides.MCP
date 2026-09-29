@@ -22,7 +22,7 @@ credit card, no trial clock, nothing expires. The whole flow below costs nothing
 ```sh
 # 1. Install (macOS/Linux; see Install for Windows and MCP clients)
 #    Version-pinned — check /releases/latest for the current one.
-curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.5.0/infoslides-v1.5.0-linux-x64.tar.gz | tar xz
+curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.6.0/infoslides-v1.5.0-linux-x64.tar.gz | tar xz
 
 # 2. Create a workspace — anonymous, prints an admin API key, saves it to ~/.infoslides
 ./infoslides tenant create "Acme Cafe" owner@acme.test --save
@@ -80,17 +80,23 @@ direct file upload (`upload_media`), visibility conditions (time of day, weekday
 edits to what is already playing (`update_slide` for a slide's duration, hidden flag and live data;
 `update_slideshow` for the news ticker, clock, default duration and sharing; `delete_slide`,
 `delete_slideshow`, `replace_slideshow_file`; `list_sources` for the ticker's sources, and
-`list_adapters`, `create_source`, `edit_source`, `delete_source` for fetched feeds),
+`list_adapters`, `create_source`, `update_source_settings`, `delete_source` for fetched feeds),
 self-updating template slides driven by live data pushes (`update_source`, and push sources fed by
 the user's own system: `push_data`, `get_source_status`, `create_source_key`), devices, schedules with
 `AspectMismatch` warnings, playback-mode control (`update_slideshow`'s `playbackMode` switches a
 slideshow between the rendered-video stream and a live HTML/CSS loop), playable stream links that
-work whichever mode a screen is in, pairing the TV in front of the person (`pair_screen`),
-"play this there" in one call (`play_now`), timed schedules (`get_schedule`, `add_schedule_entry`,
+work whichever mode a screen is in, pairing the TV in front of the person (`pair_device`),
+"play this there" in one call (`play_slideshow_find_device`), timed schedules (`get_schedule`, `add_schedule_entry`,
 `delete_schedule_entry`), temporary takeovers (`create_takeover`, `list_takeovers`, `end_takeover`),
-play-time reports (`get_play_time`), screen locations (`set_device_location`, `list_devices` near a
-point), the team (`list_team`, `invite_team_member`, `revoke_invitation`, `remove_team_member`),
-workspace time zone and locale (`update_workspace_settings`), PNG slide previews for
+play-time reports (`get_slideshow_plays`, `get_device_plays`), screen locations (`update_device`, `list_devices` near a
+point), the team (`list_team`, `invite_team_member`, `revoke_team_invitation`, `remove_team_member`),
+workspace time zone and locale (`update_tenant`), "which screen is this?"
+(`identify_devices`), what is on a screen and why it is black (`get_now_slide_png`, `get_device_diagnosis`),
+a photo or video on a screen in a minute (`show_media_on_device`, `get_show_status`), renaming a screen
+(`update_device`), one workspace health summary and offline-alert emails (`get_workspace_health`,
+`get_offline_alerts`, `set_workspace_offline_alerts`, `set_device_offline_alerts`), AI Studio slides
+(`make_ai_slide`, `get_ai_slide_job`, `insert_ai_slides`, `start_ai_studio_trial`), previewing a
+template before saving it (`preview_new_template`), undoing a change (`undo_change`), PNG slide previews for
 self-verification, API keys including push-only keys scoped to a single slide, and Paddle checkout
 links for a chosen plan and billing period. The backend enforces every plan
 limit — the tool layer cannot bypass them.
@@ -134,6 +140,56 @@ infoslides device create "Lobby screen" --width 1080 --height 1920
 infoslides schedule assign <device-id> <slideshow-id>
 infoslides stream link <device-id>
 ```
+
+Screens, schedules and the workspace:
+
+```sh
+infoslides device pair --nickname swift-oak-42 --slideshow-id <slideshow-id>   # or --qr <url>; --device-id alone prints a code to type on the TV
+infoslides device play <slideshow-id> --device-id <device-id> --until 2026-10-01T17:00   # --dry-run to see what would happen
+infoslides device list --q lobby --near 64.1466,-21.9426
+infoslides device set-location <device-id> 64.1466 -21.9426 --label "Front lobby"
+infoslides device identify                                  # a number on every online screen for ~90 s
+infoslides device now <device-id> --output lobby.png        # what the screen should show right now
+infoslides device diagnose <device-id>                      # why is it black?
+infoslides device show <device-id> --file ./photo.jpg --until 2026-10-01T17:00   # or --url; default 30 minutes
+infoslides device show-status <device-id> <media-asset-id> <slideshow-id>
+infoslides device update <device-id> --name "Lobby TV" --width 1080 --height 1920
+infoslides device offline-alerts <device-id> false          # true --quiet-start 22:00 --quiet-end 07:00 for own quiet hours
+infoslides device plays <device-id> --from 2026-09-01 --to 2026-09-30   # slideshow plays <slideshow-id> for the other way round
+infoslides schedule show <device-id>
+infoslides schedule add <device-id> <slideshow-id> 06:00 11:00 --priority 1
+infoslides schedule remove <device-id> <entry-id>
+infoslides takeover create <slideshow-id> --device <id>,<id> --minutes 30   # or --starts-at/--ends-at
+infoslides takeover list --active
+infoslides takeover end <takeover-id>
+infoslides source adapters
+infoslides source create RssFeed "RÚV news" --config '{"feedUrl":"https://..."}' --interval 900
+infoslides source edit <source-id> --enabled false
+infoslides source delete <source-id>
+infoslides team invite colleague@acme.test --role TenantAdmin
+infoslides team list                                        # team revoke <invitation-id>, team remove <member-id>
+infoslides workspace settings --time-zone Europe/London --locale en-GB
+infoslides workspace health
+infoslides workspace offline-alerts
+infoslides workspace set-offline-alerts --quiet-start 22:00 --quiet-end 07:00   # neither option: alert at any hour
+infoslides billing upgrade --plan Starter --period annual
+```
+
+AI Studio, template previews and undo:
+
+```sh
+infoslides ai make <slideshow-id> prompt --prompt "Lunch special: soup and bread 1.990 kr, 11-14"
+infoslides ai make <slideshow-id> photo --media-asset-id <media-id>   # also: url --url <page>, document --media-asset-id <pdf-id>
+infoslides ai status <slideshow-id> <job-id>                # poll until Ready, then look at the previews
+infoslides ai insert <slideshow-id> <job-id>
+infoslides ai trial                                         # the free trial, once per workspace
+infoslides template preview @./menu.html --css @./menu.css --sample-data @./sample.json --output menu.png
+infoslides undo <token>                                     # --force overwrites a later change
+```
+
+A command that changes something prints `undo with: infoslides undo <token>` to stderr; the token
+works for 24 hours. When the API needs a decision (`NeedsClarification`), the question and its
+choices are printed to stderr; run the command again with the chosen id.
 
 Global options: `--api-url`, `--api-key`, `--json`. Credential precedence: flags →
 `INFOSLIDES_API_KEY` / `INFOSLIDES_API_URL` → `~/.infoslides/` → defaults.

@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using System.ComponentModel;
 using InfoSlides.Core.Api;
 using ModelContextProtocol.Protocol;
@@ -16,7 +17,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
 {
     private static string Id(string id) => Uri.EscapeDataString(id);
 
-    [McpServerTool(Name = "pair_screen")]
+    [McpServerTool(Name = "pair_device")]
     [Description("Connect a physical TV to this workspace. The TV shows a pairing screen (the InfoSlides " +
                  "TV app, or https://infoslides.app/pair.html in its browser) with a QR code and a short " +
                  "nickname such as swift-oak-42. If the person reads you the QR code or nickname, or you " +
@@ -38,7 +39,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
             Body(("qr", qr), ("nickname", nickname), ("deviceId", deviceId), ("slideshowId", slideshowId), ("deviceName", deviceName)),
             idempotent: true, ct));
 
-    [McpServerTool(Name = "play_now")]
+    [McpServerTool(Name = "play_slideshow_find_device")]
     [Description("\"Play my Q1 slides on the lobby screen\" in one call. Checks that the slideshow has " +
                  "rendered, whether the screen is online and what it plays now, then does it. Without " +
                  "deviceId it picks the only screen, or the one already playing the slideshow; otherwise the " +
@@ -122,36 +123,167 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Delete, $"/v1/takeovers/{Id(takeoverId)}", ct: ct));
 
-    [McpServerTool(Name = "get_play_time", ReadOnly = true)]
-    [Description("\"How long did the lobby screen play?\" or \"where did the Q1 slideshow run last week?\" " +
-                 "Estimated minutes per day: per slideshow for a screen (deviceId), or per screen for a " +
-                 "slideshow (slideshowId). Estimated from screen heartbeats, not exact, and there are no " +
-                 "per-slide counts: say so when you report it.")]
-    public Task<CallToolResult> GetPlayTime(
-        [Description("A screen: report per slideshow it played.")] string? deviceId = null,
-        [Description("A slideshow: report per screen it played on.")] string? slideshowId = null,
-        [Description("Start date, yyyy-MM-dd.")] string? from = null,
-        [Description("End date, yyyy-MM-dd.")] string? to = null,
+    [McpServerTool(Name = "get_slideshow_plays", ReadOnly = true)]
+    [Description("\"Where did the Q1 slideshow run last week?\" Estimated minutes per day on each screen " +
+                 "that played the slideshow, with a total and an approximate loop count. Estimated from " +
+                 "screen heartbeats, not exact, and there are no per-slide counts: say so when you report it.")]
+    public Task<CallToolResult> GetSlideshowPlays(
+        [Description("The slideshow.")] string slideshowId,
+        [Description("Start date, yyyy-MM-dd (UTC day).")] string from,
+        [Description("End date, yyyy-MM-dd (UTC day).")] string to,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Get,
+            $"/v1/slideshows/{Id(slideshowId)}/plays" + InfoSlidesApiClient.Query(("from", from), ("to", to)), ct: ct));
+
+    [McpServerTool(Name = "get_device_plays", ReadOnly = true)]
+    [Description("\"How long did the lobby screen play, and what?\" Estimated minutes per day for each " +
+                 "slideshow the screen played. Estimated from screen heartbeats, not exact: say so when you report it.")]
+    public Task<CallToolResult> GetDevicePlays(
+        [Description("The screen.")] string deviceId,
+        [Description("Start date, yyyy-MM-dd (UTC day).")] string from,
+        [Description("End date, yyyy-MM-dd (UTC day).")] string to,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Get,
+            $"/v1/devices/{Id(deviceId)}/plays" + InfoSlidesApiClient.Query(("from", from), ("to", to)), ct: ct));
+
+    [McpServerTool(Name = "identify_devices")]
+    [Description("\"Which screen is this?\" Shows a large number on every online screen (or just the given " +
+                 "ones) for about 90 seconds so the person can read out the number they see. The result " +
+                 "maps each number to a deviceId and name, and says how many seconds it takes to appear " +
+                 "(up to 60): tell the person to wait that long before looking. Try list_devices with near " +
+                 "first; use this when several screens are in one room.")]
+    public Task<CallToolResult> IdentifyScreens(
+        [Description("Only these screens; all online screens when omitted.")] List<string>? deviceIds = null,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/devices/identify",
+            Body(("deviceIds", deviceIds is { Count: > 0 } ? new JsonArray(deviceIds.Select(d => (JsonNode?)d).ToArray()) : null)),
+            ct: ct));
+
+    [McpServerTool(Name = "get_now_slide_png", ReadOnly = true)]
+    [Description("\"What's on the lobby screen?\" Returns the slide the screen should be showing right now " +
+                 "as an image, worked out from its schedule, takeovers, slide rules and slide durations. " +
+                 "It is what should be on the screen, not a camera: an offline TV may show something else, " +
+                 "so check get_device_status too.")]
+    public Task<CallToolResult> GetScreenNow(
+        [Description("Id of the screen.")] string deviceId,
+        CancellationToken ct = default) =>
+        ExecutePng(() => api.GetPngAsync(HttpMethod.Get, $"/v1/devices/{Id(deviceId)}/now.png", null, ct),
+            $"What screen {deviceId} should show now");
+
+    [McpServerTool(Name = "get_device_diagnosis", ReadOnly = true)]
+    [Description("\"Why is the lobby screen black?\" Lists every cause that could explain a screen looking " +
+                 "wrong, most likely first: offline since a time, an empty or failed slideshow, nothing " +
+                 "scheduled, every slide hidden by its rules, expired plan, or paired elsewhere. Each cause " +
+                 "has a sentence to read out and, where there is one, a ready-made fix request. No causes " +
+                 "means the screen looks healthy.")]
+    public Task<CallToolResult> DiagnoseScreen(
+        [Description("Id of the screen.")] string deviceId,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Get, $"/v1/devices/{Id(deviceId)}/diagnosis", ct: ct));
+
+    [McpServerTool(Name = "show_media_on_device")]
+    [Description("\"Show this photo on the lobby screen for an hour.\" Puts a photo or video on a screen as " +
+                 "a temporary takeover, then the normal schedule returns. Give filePath (a local file) or " +
+                 "mediaUrl (a public address), not both. The screen switches once processing finishes " +
+                 "(seconds for a photo, longer for video): poll get_show_status with the returned ids and " +
+                 "report the percent. A photo whose shape does not match the screen gets a blurred fill, " +
+                 "not black bars.")]
+    public async Task<CallToolResult> ShowOnScreen(
+        [Description("Id of the screen.")] string deviceId,
+        [Description("Absolute path to a photo or video on disk.")] string? filePath = null,
+        [Description("Public address of a photo or video to download instead.")] string? mediaUrl = null,
+        [Description("How long it stays, e.g. '2026-10-01T17:00' (workspace local time) or with Z/offset; default 30 minutes from now.")] string? until = null,
+        [Description("Optional name for the slideshow that is created.")] string? caption = null,
         CancellationToken ct = default)
     {
-        if ((deviceId is null) == (slideshowId is null))
+        if ((filePath is null) == (mediaUrl is null))
         {
-            return Task.FromResult(ValidationError("Give exactly one of deviceId or slideshowId."));
+            return ValidationError("Give exactly one of filePath or mediaUrl.");
         }
 
-        var path = deviceId is not null ? $"/v1/devices/{Id(deviceId)}/plays" : $"/v1/slideshows/{Id(slideshowId!)}/plays";
-        return Json(() => api.SendJsonAsync(HttpMethod.Get, path + InfoSlidesApiClient.Query(("from", from), ("to", to)), ct: ct));
+        if (filePath is null)
+        {
+            return await Json(() => api.ShowOnDeviceAsync(deviceId, null, null, null, mediaUrl, until, caption, ct));
+        }
+
+        if (!File.Exists(filePath))
+        {
+            return ValidationError($"File not found: {filePath}");
+        }
+
+        await using var stream = File.OpenRead(filePath);
+        return await Json(() => api.ShowOnDeviceAsync(deviceId, stream, Path.GetFileName(filePath),
+            MediaTools.ResolveContentType(filePath), null, until, caption, ct));
     }
 
-    [McpServerTool(Name = "set_device_location")]
-    [Description("Save where a screen is, so \"this screen\" or \"the screen in front of me\" can be found " +
-                 "later with list_devices near the person's position. Do it once, right after pairing.")]
-    public Task<CallToolResult> SetDeviceLocation(
+    [McpServerTool(Name = "get_show_status", ReadOnly = true)]
+    [Description("Check a photo or video sent with show_media_on_device: one combined percent for the video " +
+                 "processing and the slideshow render, and status Processing, Ready or Failed. Poll at " +
+                 "most every 5 seconds.")]
+    public Task<CallToolResult> GetShowStatus(
         [Description("Id of the screen.")] string deviceId,
-        [Description("Latitude in degrees.")] double latitude,
-        [Description("Longitude in degrees.")] double longitude,
-        [Description("Optional label, e.g. 'Front lobby entrance'.")] string? locationName = null,
+        [Description("mediaAssetId from the show_media_on_device result.")] string mediaAssetId,
+        [Description("slideshowId from the show_media_on_device result.")] string slideshowId,
         CancellationToken ct = default) =>
-        Json(() => api.SendJsonAsync(HttpMethod.Patch, $"/v1/devices/{Id(deviceId)}",
-            Body(("latitude", latitude), ("longitude", longitude), ("locationName", locationName)), ct: ct));
+        Json(() => api.SendJsonAsync(HttpMethod.Get,
+            $"/v1/devices/{Id(deviceId)}/show/{Id(mediaAssetId)}" + InfoSlidesApiClient.Query(("slideshowId", slideshowId)), ct: ct));
+
+    [McpServerTool(Name = "update_device")]
+    [Description("Rename a screen, change its resolution (use 1080x1920 for a screen turned on its end), or " +
+                 "save where it is so \"this screen\" can be found later with list_devices near the person's " +
+                 "position (do that once, right after pairing). Send only what should change.")]
+    public Task<CallToolResult> UpdateDevice(
+        [Description("Id of the screen.")] string deviceId,
+        [Description("New name, e.g. 'Lobby TV'.")] string? name = null,
+        [Description("New width in pixels; give with height.")] int? width = null,
+        [Description("New height in pixels; give with width.")] int? height = null,
+        [Description("Latitude in degrees; give with longitude.")] double? latitude = null,
+        [Description("Longitude in degrees; give with latitude.")] double? longitude = null,
+        [Description("Optional label for the location, e.g. 'Front lobby entrance'.")] string? locationName = null,
+        CancellationToken ct = default)
+    {
+        if ((width is null) != (height is null))
+        {
+            return Task.FromResult(ValidationError("Give width and height together."));
+        }
+
+        if ((latitude is null) != (longitude is null))
+        {
+            return Task.FromResult(ValidationError("Give latitude and longitude together."));
+        }
+
+        if (name is null && width is null && latitude is null && locationName is null)
+        {
+            return Task.FromResult(ValidationError("Give a name, a resolution, a location, or a combination."));
+        }
+
+        return Json(() => api.SendJsonAsync(HttpMethod.Patch, $"/v1/devices/{Id(deviceId)}",
+            Body(("name", name),
+                ("resolution", width is null ? null : new JsonObject { ["width"] = width, ["height"] = height }),
+                ("latitude", latitude), ("longitude", longitude), ("locationName", locationName)), ct: ct));
+    }
+
+    [McpServerTool(Name = "set_device_offline_alerts")]
+    [Description("Stop or restart the \"screen went offline\" emails for one screen, e.g. a TV that is " +
+                 "switched off on purpose, and optionally give it its own quiet hours. This replaces the " +
+                 "screen's settings, so send enabled every time; without quiet hours the workspace's apply.")]
+    public Task<CallToolResult> SetScreenOfflineAlerts(
+        [Description("Id of the screen.")] string deviceId,
+        [Description("False stops the emails for this screen.")] bool enabled,
+        [Description("Optional quiet hours start, HH:mm in the workspace time zone; give with quietEnd.")] string? quietStart = null,
+        [Description("Optional quiet hours end, HH:mm; before quietStart spans midnight.")] string? quietEnd = null,
+        CancellationToken ct = default)
+    {
+        if ((quietStart is null) != (quietEnd is null))
+        {
+            return Task.FromResult(ValidationError("Give quietStart and quietEnd together, or neither."));
+        }
+
+        return Json(() => api.SendJsonAsync(HttpMethod.Put, $"/v1/devices/{Id(deviceId)}/offline-alerts",
+            new JsonObject { ["enabled"] = enabled, ["quietHours"] = Quiet(quietStart, quietEnd) }, ct: ct));
+    }
+
+    /// <summary>Builds a <c>{start, end}</c> quiet-hours object, or null (no quiet hours) when neither end is given.</summary>
+    internal static JsonNode? Quiet(string? start, string? end) =>
+        start is null && end is null ? null : new JsonObject { ["start"] = start, ["end"] = end };
 }

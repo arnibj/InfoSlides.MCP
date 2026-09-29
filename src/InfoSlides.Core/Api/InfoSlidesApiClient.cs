@@ -233,10 +233,28 @@ public sealed class InfoSlidesApiClient
             Json(new CreatePushKeyRequest(name), InfoSlidesJsonContext.Default.CreatePushKeyRequest),
             InfoSlidesJsonContext.Default.PushKey, false, false, ct);
 
-    public async Task<byte[]> GetSlidePreviewPngAsync(string slideId, CancellationToken ct = default)
+    public Task<byte[]> GetSlidePreviewPngAsync(string slideId, CancellationToken ct = default) =>
+        GetPngAsync(HttpMethod.Get, $"/v1/slides/{Uri.EscapeDataString(slideId)}/preview.png", null, ct);
+
+    /// <summary>
+    /// Calls an endpoint that answers with raw <c>image/png</c> bytes (slide preview, a screen's
+    /// <c>now.png</c>, <c>POST /v1/templates/preview</c>).
+    /// </summary>
+    /// <param name="method">HTTP method.</param>
+    /// <param name="path">Path including any query string.</param>
+    /// <param name="body">Optional JSON body.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The PNG bytes.</returns>
+    public async Task<byte[]> GetPngAsync(HttpMethod method, string path, JsonNode? body = null, CancellationToken ct = default)
     {
-        using var request = CreateRequest(HttpMethod.Get,
-            $"/v1/slides/{Uri.EscapeDataString(slideId)}/preview.png", null, anonymousAllowed: false, idempotent: false);
+        StringContent? content = null;
+        if (body is not null)
+        {
+            content = new StringContent(body.ToJsonString(), Encoding.UTF8);
+            content.Headers.ContentType = JsonMediaType;
+        }
+
+        using var request = CreateRequest(method, path, content, anonymousAllowed: false, idempotent: false);
         using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
@@ -244,6 +262,44 @@ public sealed class InfoSlidesApiClient
         }
 
         return await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Shows a photo or video on a screen (<c>POST /v1/devices/{id}/show</c>): sends either the file
+    /// itself or a <c>mediaUrl</c> as multipart form data.
+    /// </summary>
+    /// <param name="deviceId">The screen.</param>
+    /// <param name="file">The file to upload, or null when <paramref name="mediaUrl"/> is given.</param>
+    /// <param name="fileName">Name of the uploaded file.</param>
+    /// <param name="contentType">Best-effort MIME type of the file.</param>
+    /// <param name="mediaUrl">Public address to download instead of uploading a file.</param>
+    /// <param name="until">Optional end time; the server defaults to 30 minutes.</param>
+    /// <param name="caption">Optional name for the one-slide slideshow.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The API's <c>data</c>: the ids and the status link.</returns>
+    public Task<ApiResult<JsonElement>> ShowOnDeviceAsync(
+        string deviceId, Stream? file, string? fileName, string? contentType, string? mediaUrl,
+        string? until, string? caption, CancellationToken ct = default)
+    {
+        var content = new MultipartFormDataContent();
+        if (file is not null)
+        {
+            var filePart = new StreamContent(file);
+            filePart.Headers.ContentType = new MediaTypeHeaderValue(
+                string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType);
+            content.Add(filePart, "file", fileName ?? "media");
+        }
+
+        foreach (var (name, value) in new[] { ("mediaUrl", mediaUrl), ("until", until), ("caption", caption) })
+        {
+            if (!string.IsNullOrEmpty(value))
+            {
+                content.Add(new StringContent(value), name);
+            }
+        }
+
+        return SendAsync(HttpMethod.Post, $"/v1/devices/{Uri.EscapeDataString(deviceId)}/show", content,
+            InfoSlidesJsonContext.Default.JsonElement, false, idempotent: true, ct);
     }
 
     // Gallery
@@ -416,6 +472,9 @@ public sealed class InfoSlidesApiClient
         {
             var root = doc.RootElement;
             var warnings = ReadWarnings(root);
+            JsonElement? undo = root.ValueKind == JsonValueKind.Object &&
+                root.TryGetProperty("undo", out var u) && u.ValueKind == JsonValueKind.Object
+                ? u.Clone() : null;
 
             if (root.ValueKind == JsonValueKind.Object &&
                 root.TryGetProperty("data", out var data) &&
@@ -423,17 +482,17 @@ public sealed class InfoSlidesApiClient
             {
                 var payload = data.Deserialize(responseType)
                     ?? throw new ApiException("InvalidResponse", "The server returned an empty data payload.", status);
-                return new ApiResult<T>(payload, warnings);
+                return new ApiResult<T>(payload, warnings, undo);
             }
 
             if (OkResult.Instance is T ok)
             {
-                return new ApiResult<T>(ok, warnings);
+                return new ApiResult<T>(ok, warnings, undo);
             }
 
             if (typeof(T) == typeof(JsonElement))
             {
-                return new ApiResult<T>((T)(object)OkJson.Clone(), warnings);
+                return new ApiResult<T>((T)(object)OkJson.Clone(), warnings, undo);
             }
 
             throw new ApiException("InvalidResponse", "The server response is missing the data payload.", status);

@@ -72,8 +72,8 @@ internal static class McpBootstrap
                     "Typical path: create_tenant (anonymous, returns the admin API key) → put content in " +
                     "with upload_pptx / clone_slideshow / add_media_slide → create_device for the physical " +
                     "screen → assign_schedule → get_stream_link, then tell the user to open that link on " +
-                    "the TV. With the TV in front of the person, pair_screen connects the TV showing its " +
-                    "pairing screen instead, and play_now puts a slideshow on a screen in one call. New accounts land on a permanent free plan (1 screen, 4 slideshows, no credit " +
+                    "the TV. With the TV in front of the person, pair_device connects the TV showing its " +
+                    "pairing screen instead, and play_slideshow_find_device puts a slideshow on a screen in one call. New accounts land on a permanent free plan (1 screen, 4 slideshows, no credit " +
                     "card, nothing expires), so the whole flow costs nothing.\n\n" +
                     "Call get_tenant_info early to see the plan and screen allowance rather than " +
                     "discovering limits through errors. Results may carry warnings (e.g. AspectMismatch " +

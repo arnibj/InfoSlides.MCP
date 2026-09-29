@@ -1,10 +1,12 @@
 using System.CommandLine;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using InfoSlides.Core.Api;
 using InfoSlides.Core.Config;
 using InfoSlides.Core.Serialization;
+using ModelContextProtocol.Protocol;
 
 namespace InfoSlides.Cli.Commands;
 
@@ -70,9 +72,22 @@ internal static class CliContext
                         result.Warnings.ToList(), InfoSlidesJsonContext.Default.ListApiWarning);
                 }
 
+                if (result.Undo is { } undo)
+                {
+                    envelope["undo"] = JsonNode.Parse(undo.GetRawText());
+                }
+
                 Console.WriteLine(envelope.ToJsonString());
+                return 0;
             }
-            else if (human is not null)
+
+            if (result.Undo is { } undoRequest &&
+                undoRequest.TryGetProperty("body", out var body) && body.TryGetProperty("token", out var token))
+            {
+                Console.Error.WriteLine($"undo with: infoslides undo {token}");
+            }
+
+            if (human is not null)
             {
                 Console.WriteLine(human(result.Data));
             }
@@ -88,6 +103,76 @@ internal static class CliContext
         {
             return Fail(exception);
         }
+    }
+
+    /// <summary>
+    /// Runs an MCP tool method as a CLI verb, so the CLI and the MCP server share one set of
+    /// argument checks and request bodies. Data goes to stdout as pretty JSON (the whole envelope with
+    /// --json); warnings, the undo hint and errors, including a NeedsClarification's question and
+    /// choices, go to stderr. An image result is saved to <paramref name="pngPath"/>.
+    /// </summary>
+    /// <param name="parse">The parse result, for the client settings and --json.</param>
+    /// <param name="call">Calls the tool with a client built from the settings.</param>
+    /// <param name="pngPath">Where an image result is written.</param>
+    /// <returns>0 on success, 1 on an error.</returns>
+    public static async Task<int> RunTool(
+        ParseResult parse, Func<InfoSlidesApiClient, Task<CallToolResult>> call, string pngPath = "image.png")
+    {
+        CallToolResult result;
+        try
+        {
+            result = await call(Client(parse));
+        }
+        catch (Exception exception)
+        {
+            return Fail(exception);
+        }
+
+        if (result.Content.OfType<ImageContentBlock>().FirstOrDefault() is { } image)
+        {
+            // ImageContentBlock.Data holds the base64 text as UTF-8 bytes.
+            await File.WriteAllBytesAsync(pngPath, Convert.FromBase64String(Encoding.UTF8.GetString(image.Data.ToArray())));
+            Console.WriteLine(Path.GetFullPath(pngPath));
+            return 0;
+        }
+
+        var text = result.Content.OfType<TextContentBlock>().FirstOrDefault()?.Text ?? "{}";
+        var node = JsonNode.Parse(text);
+        if (result.IsError == true)
+        {
+            var error = node?["error"];
+            Console.Error.WriteLine($"error [{error?["code"]}]: {error?["message"]}");
+            if (error?["upgradeUrl"] is { } upgradeUrl)
+            {
+                Console.Error.WriteLine($"Upgrade at: {upgradeUrl}");
+            }
+
+            if (error?["details"] is { } details)
+            {
+                Console.Error.WriteLine(details.ToJsonString(Indented));
+            }
+
+            return 1;
+        }
+
+        if (parse.GetValue(JsonOption))
+        {
+            Console.WriteLine(text);
+            return 0;
+        }
+
+        foreach (var warning in node?["warnings"]?.AsArray() ?? [])
+        {
+            Console.Error.WriteLine($"warning [{warning?["code"]}]: {warning?["message"]}");
+        }
+
+        if (node?["undo"]?["body"]?["token"] is { } token)
+        {
+            Console.Error.WriteLine($"undo with: infoslides undo {token}");
+        }
+
+        Console.WriteLine(node?["data"]?.ToJsonString(Indented) ?? "null");
+        return 0;
     }
 
     public static int Fail(Exception exception)
