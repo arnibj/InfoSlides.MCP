@@ -29,6 +29,11 @@ internal static class CommandTree
         root.Subcommands.Add(Device());
         root.Subcommands.Add(Schedule());
         root.Subcommands.Add(Stream());
+        root.Subcommands.Add(ToolCommands.Takeover());
+        root.Subcommands.Add(ToolCommands.Team());
+        root.Subcommands.Add(ToolCommands.Workspace());
+        root.Subcommands.Add(ToolCommands.Ai());
+        root.Subcommands.Add(ToolCommands.Undo());
         root.Subcommands.Add(Billing());
         root.Subcommands.Add(Config());
         root.Subcommands.Add(Mcp());
@@ -41,10 +46,12 @@ internal static class CommandTree
 
         var name = new Argument<string>("name") { Description = "Tenant/workspace name." };
         var email = new Argument<string>("owner-email") { Description = "Owner email address." };
+        var timeZone = new Option<string?>("--time-zone") { Description = "IANA time zone, e.g. Europe/London." };
+        var locale = new Option<string?>("--locale") { Description = "Locale for number and date formats, e.g. en-GB." };
         var save = new Option<bool>("--save") { Description = "Store the returned admin API key in ~/.infoslides." };
         var create = new Command("create", "Create a tenant anonymously; returns the Primary Admin API Key.")
         {
-            name, email, save,
+            name, email, timeZone, locale, save,
         };
         create.SetAction((parse, ct) => CliContext.Run(parse,
             async api =>
@@ -52,7 +59,8 @@ internal static class CommandTree
                 // "cli" here, "mcp" from TenantTools — the backend counts agent-originated signups
                 // separately from command-line ones.
                 var result = await api.CreateTenantAsync(
-                    new CreateTenantRequest(parse.GetValue(name)!, parse.GetValue(email)!, "cli"), ct);
+                    new CreateTenantRequest(parse.GetValue(name)!, parse.GetValue(email)!, "cli",
+                        parse.GetValue(timeZone), parse.GetValue(locale)), ct);
                 if (parse.GetValue(save))
                 {
                     new CredentialStore(CliContext.Settings(parse).ConfigDirectory)
@@ -174,9 +182,10 @@ internal static class CommandTree
         });
         slideshow.Subcommands.Add(uploadPptx);
 
-        var list = new Command("list", "List slideshows.");
+        var titleFilter = new Option<string?>("--q") { Description = "Title filter, case- and accent-insensitive." };
+        var list = new Command("list", "List slideshows.") { titleFilter };
         list.SetAction((parse, ct) => CliContext.Run(parse,
-            api => api.ListSlideshowsAsync(ct), InfoSlidesJsonContext.Default.ListSlideshow));
+            api => api.ListSlideshowsAsync(parse.GetValue(titleFilter), ct), InfoSlidesJsonContext.Default.ListSlideshow));
         slideshow.Subcommands.Add(list);
 
         var id = new Argument<string>("slideshow-id") { Description = "Slideshow id." };
@@ -312,6 +321,7 @@ internal static class CommandTree
                 : api.CloneSlideshowAsync(parse.GetValue(sourceId)!, ct),
             InfoSlidesJsonContext.Default.Slideshow));
         slideshow.Subcommands.Add(clone);
+        ToolCommands.AddSlideshowVerbs(slideshow);
         return slideshow;
     }
 
@@ -611,6 +621,7 @@ internal static class CommandTree
         list.SetAction((parse, ct) => CliContext.Run(parse,
             api => api.ListTemplatesAsync(ct), InfoSlidesJsonContext.Default.ListTemplate));
         template.Subcommands.Add(list);
+        ToolCommands.AddTemplateVerbs(template);
         return template;
     }
 
@@ -674,6 +685,7 @@ internal static class CommandTree
             InfoSlidesJsonContext.Default.PushKey,
             r => $"{r.Key}\n(shown once; it can only push to this source)"));
         source.Subcommands.Add(key);
+        ToolCommands.AddSourceVerbs(source);
         return source;
     }
 
@@ -691,9 +703,11 @@ internal static class CommandTree
             InfoSlidesJsonContext.Default.Device));
         device.Subcommands.Add(create);
 
-        var list = new Command("list", "List devices.");
+        var nameFilter = new Option<string?>("--q") { Description = "Name filter, case- and accent-insensitive." };
+        var near = new Option<string?>("--near") { Description = "'latitude,longitude': screens with a saved location nearest-first." };
+        var list = new Command("list", "List devices.") { nameFilter, near };
         list.SetAction((parse, ct) => CliContext.Run(parse,
-            api => api.ListDevicesAsync(ct), InfoSlidesJsonContext.Default.ListDevice));
+            api => api.ListDevicesAsync(parse.GetValue(nameFilter), parse.GetValue(near), ct), InfoSlidesJsonContext.Default.ListDevice));
         device.Subcommands.Add(list);
 
         var id = new Argument<string>("device-id") { Description = "Device id." };
@@ -701,6 +715,7 @@ internal static class CommandTree
         status.SetAction((parse, ct) => CliContext.Run(parse,
             api => api.GetDeviceStatusAsync(parse.GetValue(id)!, ct), InfoSlidesJsonContext.Default.DeviceStatus));
         device.Subcommands.Add(status);
+        ToolCommands.AddDeviceVerbs(device);
         return device;
     }
 
@@ -719,6 +734,7 @@ internal static class CommandTree
                 new AssignScheduleRequest(parse.GetValue(slideshowIds)!), ct),
             InfoSlidesJsonContext.Default.Schedule));
         schedule.Subcommands.Add(assign);
+        ToolCommands.AddScheduleVerbs(schedule);
         return schedule;
     }
 
@@ -742,10 +758,11 @@ internal static class CommandTree
     private static Command Billing()
     {
         var billing = new Command("billing", "Subscription and billing.");
-        var upgrade = new Command("upgrade", "Get a Paddle checkout link to upgrade to Premium.");
-        upgrade.SetAction((parse, ct) => CliContext.Run(parse,
-            api => api.CreateCheckoutAsync(ct), InfoSlidesJsonContext.Default.CheckoutLink,
-            data => $"Open this link to upgrade: {data.CheckoutUrl}"));
+        var plan = new Option<string?>("--plan") { Description = "Starter, Professional or Business." };
+        var period = new Option<string?>("--period") { Description = "monthly or annual; without it the link opens the plans page." };
+        var upgrade = new Command("upgrade", "Get a checkout link for a plan, with its price.") { plan, period };
+        upgrade.SetAction((parse, ct) => CliContext.RunTool(parse,
+            api => new Tools.BillingTools(api).UpgradeSubscription(parse.GetValue(plan), parse.GetValue(period), ct)));
         billing.Subcommands.Add(upgrade);
         return billing;
     }

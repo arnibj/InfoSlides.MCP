@@ -198,20 +198,26 @@ public sealed record CreateTemplateRequest(
 /// <param name="ReceivedAt">When the data was stored; null for a dry run.</param>
 public sealed record PushReceived(DateTimeOffset? ReceivedAt = null);
 
-/// <summary>Result of <c>GET /v1/sources/{id}</c>: the state of a Push source.</summary>
+/// <summary>Result of <c>GET /v1/sources/{id}</c>: the state of a source. The push fields are empty for a fetched source.</summary>
 /// <param name="Id">Source id.</param>
 /// <param name="Name">Display name.</param>
-/// <param name="LastReceivedAt">When data last arrived; null before the first push.</param>
-/// <param name="HideAfterMinutes">Data older than this hides the slides; null for never.</param>
-/// <param name="IsShowingData">True when data has arrived and has not gone stale.</param>
-/// <param name="SlideIds">The slides this source feeds.</param>
+/// <param name="LastReceivedAt">Push only: when data last arrived; null before the first push.</param>
+/// <param name="HideAfterMinutes">Push only: data older than this hides the slides; null for never.</param>
+/// <param name="IsShowingData">Push: data has arrived and has not gone stale. Fetched: it has fetched at least once.</param>
+/// <param name="SlideIds">Push only: the slides this source feeds.</param>
+/// <param name="AdapterType">Adapter type, e.g. "Push" or "RssFeed". Null from an older server.</param>
+/// <param name="LastFetchedAt">Fetched only: when it last fetched; null if never.</param>
+/// <param name="IsEnabled">Whether the source is active.</param>
 public sealed record PushSourceStatus(
     string Id,
     string Name,
     DateTimeOffset? LastReceivedAt,
     int? HideAfterMinutes,
     bool IsShowingData,
-    IReadOnlyList<string> SlideIds);
+    IReadOnlyList<string> SlideIds,
+    string? AdapterType = null,
+    DateTimeOffset? LastFetchedAt = null,
+    bool IsEnabled = true);
 
 /// <summary>Request body for <c>POST /v1/sources/{id}/keys</c>.</summary>
 /// <param name="Name">A label, e.g. the system that will use the key.</param>

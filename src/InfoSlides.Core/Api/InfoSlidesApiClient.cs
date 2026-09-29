@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 using InfoSlides.Core.Models;
 using InfoSlides.Core.Serialization;
@@ -15,6 +16,9 @@ namespace InfoSlides.Core.Api;
 public sealed class InfoSlidesApiClient
 {
     private static readonly MediaTypeHeaderValue JsonMediaType = new("application/json") { CharSet = "utf-8" };
+
+    /// <summary>What <see cref="SendJsonAsync"/> returns for a success without a body.</summary>
+    private static readonly JsonElement OkJson = JsonDocument.Parse("""{"ok":true}""").RootElement;
 
     private readonly HttpClient _http;
     private readonly string? _credential;
@@ -50,8 +54,10 @@ public sealed class InfoSlidesApiClient
         SendAsync(HttpMethod.Post, "/v1/slideshows", Json(request, InfoSlidesJsonContext.Default.CreateSlideshowRequest),
             InfoSlidesJsonContext.Default.Slideshow, false, idempotent: true, ct);
 
-    public Task<ApiResult<List<Slideshow>>> ListSlideshowsAsync(CancellationToken ct = default) =>
-        SendAsync(HttpMethod.Get, "/v1/slideshows", null, InfoSlidesJsonContext.Default.ListSlideshow, false, false, ct);
+    /// <summary>Lists slideshows (<c>GET /v1/slideshows</c>).</summary>
+    /// <param name="q">Optional title filter, case- and accent-insensitive.</param>
+    public Task<ApiResult<List<Slideshow>>> ListSlideshowsAsync(string? q = null, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Get, "/v1/slideshows" + Query(("q", q)), null, InfoSlidesJsonContext.Default.ListSlideshow, false, false, ct);
 
     public Task<ApiResult<Slideshow>> GetSlideshowAsync(string slideshowId, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Get, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}", null,
@@ -227,10 +233,28 @@ public sealed class InfoSlidesApiClient
             Json(new CreatePushKeyRequest(name), InfoSlidesJsonContext.Default.CreatePushKeyRequest),
             InfoSlidesJsonContext.Default.PushKey, false, false, ct);
 
-    public async Task<byte[]> GetSlidePreviewPngAsync(string slideId, CancellationToken ct = default)
+    public Task<byte[]> GetSlidePreviewPngAsync(string slideId, CancellationToken ct = default) =>
+        GetPngAsync(HttpMethod.Get, $"/v1/slides/{Uri.EscapeDataString(slideId)}/preview.png", null, ct);
+
+    /// <summary>
+    /// Calls an endpoint that answers with raw <c>image/png</c> bytes (slide preview, a screen's
+    /// <c>now.png</c>, <c>POST /v1/templates/preview</c>).
+    /// </summary>
+    /// <param name="method">HTTP method.</param>
+    /// <param name="path">Path including any query string.</param>
+    /// <param name="body">Optional JSON body.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The PNG bytes.</returns>
+    public async Task<byte[]> GetPngAsync(HttpMethod method, string path, JsonNode? body = null, CancellationToken ct = default)
     {
-        using var request = CreateRequest(HttpMethod.Get,
-            $"/v1/slides/{Uri.EscapeDataString(slideId)}/preview.png", null, anonymousAllowed: false, idempotent: false);
+        StringContent? content = null;
+        if (body is not null)
+        {
+            content = new StringContent(body.ToJsonString(), Encoding.UTF8);
+            content.Headers.ContentType = JsonMediaType;
+        }
+
+        using var request = CreateRequest(method, path, content, anonymousAllowed: false, idempotent: false);
         using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
@@ -238,6 +262,44 @@ public sealed class InfoSlidesApiClient
         }
 
         return await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Shows a photo or video on a screen (<c>POST /v1/devices/{id}/show</c>): sends either the file
+    /// itself or a <c>mediaUrl</c> as multipart form data.
+    /// </summary>
+    /// <param name="deviceId">The screen.</param>
+    /// <param name="file">The file to upload, or null when <paramref name="mediaUrl"/> is given.</param>
+    /// <param name="fileName">Name of the uploaded file.</param>
+    /// <param name="contentType">Best-effort MIME type of the file.</param>
+    /// <param name="mediaUrl">Public address to download instead of uploading a file.</param>
+    /// <param name="until">Optional end time; the server defaults to 30 minutes.</param>
+    /// <param name="caption">Optional name for the one-slide slideshow.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The API's <c>data</c>: the ids and the status link.</returns>
+    public Task<ApiResult<JsonElement>> ShowOnDeviceAsync(
+        string deviceId, Stream? file, string? fileName, string? contentType, string? mediaUrl,
+        string? until, string? caption, CancellationToken ct = default)
+    {
+        var content = new MultipartFormDataContent();
+        if (file is not null)
+        {
+            var filePart = new StreamContent(file);
+            filePart.Headers.ContentType = new MediaTypeHeaderValue(
+                string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType);
+            content.Add(filePart, "file", fileName ?? "media");
+        }
+
+        foreach (var (name, value) in new[] { ("mediaUrl", mediaUrl), ("until", until), ("caption", caption) })
+        {
+            if (!string.IsNullOrEmpty(value))
+            {
+                content.Add(new StringContent(value), name);
+            }
+        }
+
+        return SendAsync(HttpMethod.Post, $"/v1/devices/{Uri.EscapeDataString(deviceId)}/show", content,
+            InfoSlidesJsonContext.Default.JsonElement, false, idempotent: true, ct);
     }
 
     // Gallery
@@ -269,8 +331,12 @@ public sealed class InfoSlidesApiClient
         SendAsync(HttpMethod.Post, "/v1/devices", Json(request, InfoSlidesJsonContext.Default.CreateDeviceRequest),
             InfoSlidesJsonContext.Default.Device, false, idempotent: true, ct);
 
-    public Task<ApiResult<List<Device>>> ListDevicesAsync(CancellationToken ct = default) =>
-        SendAsync(HttpMethod.Get, "/v1/devices", null, InfoSlidesJsonContext.Default.ListDevice, false, false, ct);
+    /// <summary>Lists screens (<c>GET /v1/devices</c>).</summary>
+    /// <param name="q">Optional name filter, case- and accent-insensitive.</param>
+    /// <param name="near">Optional <c>lat,lon</c>: sorts screens with a saved location nearest-first.</param>
+    public Task<ApiResult<List<Device>>> ListDevicesAsync(string? q = null, string? near = null, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Get, "/v1/devices" + Query(("q", q), ("near", near)), null,
+            InfoSlidesJsonContext.Default.ListDevice, false, false, ct);
 
     public Task<ApiResult<DeviceStatus>> GetDeviceStatusAsync(string deviceId, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Get, $"/v1/devices/{Uri.EscapeDataString(deviceId)}/status", null,
@@ -300,6 +366,44 @@ public sealed class InfoSlidesApiClient
 
     public Task<ApiResult<CheckoutLink>> CreateCheckoutAsync(CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, "/v1/billing/checkout", null, InfoSlidesJsonContext.Default.CheckoutLink, false, false, ct);
+
+    // Pass-through JSON
+
+    /// <summary>
+    /// Calls a <c>/v1</c> endpoint and returns its <c>data</c> unchanged. The newer endpoints
+    /// (pairings, play, takeovers, schedule entries, play time, team, sources, tenant settings) go
+    /// through here so a field the API adds reaches the agent without a model change in this repo.
+    /// A success with no body (204) returns <c>{"ok":true}</c>.
+    /// </summary>
+    /// <param name="method">HTTP method.</param>
+    /// <param name="path">Path including any query string; build it with <see cref="Query"/>.</param>
+    /// <param name="body">Optional JSON body.</param>
+    /// <param name="idempotent">True to send an <c>Idempotency-Key</c> (creating calls).</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The response's <c>data</c> and warnings.</returns>
+    public Task<ApiResult<JsonElement>> SendJsonAsync(
+        HttpMethod method, string path, JsonNode? body = null, bool idempotent = false, CancellationToken ct = default)
+    {
+        StringContent? content = null;
+        if (body is not null)
+        {
+            content = new StringContent(body.ToJsonString(), Encoding.UTF8);
+            content.Headers.ContentType = JsonMediaType;
+        }
+
+        return SendAsync(method, path, content, InfoSlidesJsonContext.Default.JsonElement, false, idempotent, ct);
+    }
+
+    /// <summary>Builds a query string from the pairs whose value is not null or empty.</summary>
+    /// <param name="pairs">Name and value pairs; values are URL-escaped.</param>
+    /// <returns><c>?a=1&amp;b=2</c>, or an empty string when nothing is set.</returns>
+    public static string Query(params (string Name, string? Value)[] pairs)
+    {
+        var set = pairs.Where(p => !string.IsNullOrEmpty(p.Value))
+            .Select(p => $"{p.Name}={Uri.EscapeDataString(p.Value!)}")
+            .ToList();
+        return set.Count == 0 ? "" : "?" + string.Join('&', set);
+    }
 
     // Plumbing
 
@@ -368,6 +472,9 @@ public sealed class InfoSlidesApiClient
         {
             var root = doc.RootElement;
             var warnings = ReadWarnings(root);
+            JsonElement? undo = root.ValueKind == JsonValueKind.Object &&
+                root.TryGetProperty("undo", out var u) && u.ValueKind == JsonValueKind.Object
+                ? u.Clone() : null;
 
             if (root.ValueKind == JsonValueKind.Object &&
                 root.TryGetProperty("data", out var data) &&
@@ -375,12 +482,17 @@ public sealed class InfoSlidesApiClient
             {
                 var payload = data.Deserialize(responseType)
                     ?? throw new ApiException("InvalidResponse", "The server returned an empty data payload.", status);
-                return new ApiResult<T>(payload, warnings);
+                return new ApiResult<T>(payload, warnings, undo);
             }
 
             if (OkResult.Instance is T ok)
             {
-                return new ApiResult<T>(ok, warnings);
+                return new ApiResult<T>(ok, warnings, undo);
+            }
+
+            if (typeof(T) == typeof(JsonElement))
+            {
+                return new ApiResult<T>((T)(object)OkJson.Clone(), warnings, undo);
             }
 
             throw new ApiException("InvalidResponse", "The server response is missing the data payload.", status);

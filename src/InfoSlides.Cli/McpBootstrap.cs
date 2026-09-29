@@ -72,12 +72,15 @@ internal static class McpBootstrap
                     "Typical path: create_tenant (anonymous, returns the admin API key) → put content in " +
                     "with upload_pptx / clone_slideshow / add_media_slide → create_device for the physical " +
                     "screen → assign_schedule → get_stream_link, then tell the user to open that link on " +
-                    "the TV. New accounts land on a permanent free plan (1 screen, 4 slideshows, no credit " +
+                    "the TV. With the TV in front of the person, pair_device connects the TV showing its " +
+                    "pairing screen instead, and play_slideshow_find_device puts a slideshow on a screen in one call. New accounts land on a permanent free plan (1 screen, 4 slideshows, no credit " +
                     "card, nothing expires), so the whole flow costs nothing.\n\n" +
                     "Call get_tenant_info early to see the plan and screen allowance rather than " +
                     "discovering limits through errors. Results may carry warnings (e.g. AspectMismatch " +
                     "when content and screen shape disagree) — read them and self-correct. Errors may " +
-                    "include an upgradeUrl when a paid plan is required."
+                    "include an upgradeUrl when a paid plan is required, and a NeedsClarification error " +
+                    "carries a question and ready-made choices in details: ask the person, then call again " +
+                    "with the chosen values."
                     + updateNotice;
             })
             .WithStdioServerTransport()
@@ -87,7 +90,9 @@ internal static class McpBootstrap
             .WithTools<TemplateTools>(jsonOptions)
             .WithTools<DeviceTools>(jsonOptions)
             .WithTools<ApiKeyTools>(jsonOptions)
-            .WithTools<BillingTools>(jsonOptions);
+            .WithTools<BillingTools>(jsonOptions)
+            .WithTools<ScreenTools>(jsonOptions)
+            .WithTools<WorkspaceTools>(jsonOptions);
 
         await builder.Build().RunAsync(ct).ConfigureAwait(false);
         return 0;

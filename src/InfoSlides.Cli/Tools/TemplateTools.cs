@@ -100,12 +100,13 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
             InfoSlidesJsonContext.Default.PushReceived);
 
     [McpServerTool(Name = "get_source_status", ReadOnly = true)]
-    [Description("Check a push source: when data last arrived (lastReceivedAt), whether its slides " +
-                 "are showing data (isShowingData, false before the first push or after the data " +
-                 "went stale), the staleness timeout, and which slides it feeds. Use it to confirm a " +
-                 "system is actually sending.")]
+    [Description("Check a source. For a push source: when data last arrived (lastReceivedAt), whether " +
+                 "its slides are showing data (isShowingData, false before the first push or after the " +
+                 "data went stale), the staleness timeout, and which slides it feeds; use it to confirm a " +
+                 "system is actually sending. For a fetched source (RSS, weather, etc.): lastFetchedAt, " +
+                 "with the push fields empty.")]
     public Task<CallToolResult> GetSourceStatus(
-        [Description("Id of the push source.")] string sourceId,
+        [Description("Id of the source.")] string sourceId,
         CancellationToken ct = default) =>
         ToolResults.Execute(() => api.GetSourceStatusAsync(sourceId, ct),
             InfoSlidesJsonContext.Default.PushSourceStatus);
