@@ -17,7 +17,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
 {
     private static string Id(string id) => Uri.EscapeDataString(id);
 
-    [McpServerTool(Name = "pair_device")]
+    [McpServerTool(Name = "pair_device", Title = "Pair a TV screen", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("Connect a physical TV to this workspace. The TV shows a pairing screen (the InfoSlides " +
                  "TV app, or https://infoslides.app/pair.html in its browser) with a QR code and a short " +
                  "nickname such as swift-oak-42. If the person reads you the QR code or nickname, or you " +
@@ -39,7 +39,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
             Body(("qr", qr), ("nickname", nickname), ("deviceId", deviceId), ("slideshowId", slideshowId), ("deviceName", deviceName)),
             idempotent: true, ct));
 
-    [McpServerTool(Name = "play_slideshow_find_device")]
+    [McpServerTool(Name = "play_slideshow_find_device", Title = "Play slideshow on screen", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("\"Play my Q1 slides on the lobby screen\" in one call. Checks that the slideshow has " +
                  "rendered, whether the screen is online and what it plays now, then does it. Without " +
                  "deviceId it picks the only screen, or the one already playing the slideshow; otherwise the " +
@@ -55,7 +55,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
         Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/play" + InfoSlidesApiClient.Query(("dryRun", dryRun ? "true" : null)),
             Body(("slideshowId", slideshowId), ("deviceId", deviceId), ("until", until)), ct: ct));
 
-    [McpServerTool(Name = "get_schedule", ReadOnly = true)]
+    [McpServerTool(Name = "get_schedule", Title = "Get screen schedule entries", ReadOnly = true, Destructive = false, OpenWorld = false)]
     [Description("See a screen's schedule: its default content and any timed entries (breakfast menu " +
                  "6-11, lunch menu 11-15), in the workspace time zone. Use the entry ids with " +
                  "delete_schedule_entry.")]
@@ -64,7 +64,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Get, $"/v1/devices/{Id(deviceId)}/schedule", ct: ct));
 
-    [McpServerTool(Name = "add_schedule_entry")]
+    [McpServerTool(Name = "add_schedule_entry", Title = "Add schedule entry", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("Play a slideshow on a screen during a time window every day, e.g. the breakfast menu " +
                  "from 06:00 to 11:00, on top of the screen's default content. Times are HH:mm in the " +
                  "workspace time zone. Higher priority wins where windows overlap. Warnings (aspect " +
@@ -80,7 +80,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
             Body(("slideshowId", slideshowId), ("startTime", startTime), ("endTime", endTime), ("priority", priority)),
             idempotent: true, ct));
 
-    [McpServerTool(Name = "delete_schedule_entry", Destructive = true)]
+    [McpServerTool(Name = "delete_schedule_entry", Title = "Delete schedule entry", ReadOnly = false, Destructive = true, OpenWorld = false)]
     [Description("Remove one timed entry from a screen's schedule (ids from get_schedule). The screen " +
                  "falls back to its default content in that window.")]
     public Task<CallToolResult> DeleteScheduleEntry(
@@ -89,7 +89,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Delete, $"/v1/devices/{Id(deviceId)}/schedule/entries/{Id(entryId)}", ct: ct));
 
-    [McpServerTool(Name = "create_takeover")]
+    [McpServerTool(Name = "create_takeover", Title = "Start screen takeover", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("Take over one or more screens for a while, e.g. a fire drill notice for 30 minutes or " +
                  "a launch announcement on every screen until 17:00, then return them to their schedule by " +
                  "themselves. Give deviceIds (one or more screens), the slideshow, and either " +
@@ -106,7 +106,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
                 ("slideshowId", slideshowId), ("durationMinutes", durationMinutes), ("startsAt", startsAt), ("endsAt", endsAt)),
             idempotent: true, ct));
 
-    [McpServerTool(Name = "list_takeovers", ReadOnly = true)]
+    [McpServerTool(Name = "list_takeovers", Title = "List screen takeovers", ReadOnly = true, Destructive = false, OpenWorld = false)]
     [Description("See temporary takeovers: what is interrupting a screen's schedule right now, or " +
                  "planned. Filter by screen, or only the active ones.")]
     public Task<CallToolResult> ListTakeovers(
@@ -116,14 +116,14 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
         Json(() => api.SendJsonAsync(HttpMethod.Get,
             "/v1/takeovers" + InfoSlidesApiClient.Query(("deviceId", deviceId), ("activeOnly", activeOnly ? "true" : null)), ct: ct));
 
-    [McpServerTool(Name = "end_takeover", Destructive = true)]
+    [McpServerTool(Name = "end_takeover", Title = "End screen takeover", ReadOnly = false, Destructive = true, OpenWorld = false)]
     [Description("End a takeover now; the screen goes back to its schedule within about a minute.")]
     public Task<CallToolResult> EndTakeover(
         [Description("Id of the takeover.")] string takeoverId,
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Delete, $"/v1/takeovers/{Id(takeoverId)}", ct: ct));
 
-    [McpServerTool(Name = "get_slideshow_plays", ReadOnly = true)]
+    [McpServerTool(Name = "get_slideshow_plays", Title = "Get slideshow play time", ReadOnly = true, Destructive = false, OpenWorld = false)]
     [Description("\"Where did the Q1 slideshow run last week?\" Estimated minutes per day on each screen " +
                  "that played the slideshow, with a total and an approximate loop count. Estimated from " +
                  "screen heartbeats, not exact, and there are no per-slide counts: say so when you report it.")]
@@ -135,7 +135,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
         Json(() => api.SendJsonAsync(HttpMethod.Get,
             $"/v1/slideshows/{Id(slideshowId)}/plays" + InfoSlidesApiClient.Query(("from", from), ("to", to)), ct: ct));
 
-    [McpServerTool(Name = "get_device_plays", ReadOnly = true)]
+    [McpServerTool(Name = "get_device_plays", Title = "Get screen play time", ReadOnly = true, Destructive = false, OpenWorld = false)]
     [Description("\"How long did the lobby screen play, and what?\" Estimated minutes per day for each " +
                  "slideshow the screen played. Estimated from screen heartbeats, not exact: say so when you report it.")]
     public Task<CallToolResult> GetDevicePlays(
@@ -146,7 +146,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
         Json(() => api.SendJsonAsync(HttpMethod.Get,
             $"/v1/devices/{Id(deviceId)}/plays" + InfoSlidesApiClient.Query(("from", from), ("to", to)), ct: ct));
 
-    [McpServerTool(Name = "identify_devices")]
+    [McpServerTool(Name = "identify_devices", Title = "Identify screens visually", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("\"Which screen is this?\" Shows each online screen's own name in large text (or just the given " +
                  "ones) for about 90 seconds so the person can read out the name they see. The result " +
                  "lists each screen's deviceId and name, and says how many seconds it takes to appear " +
@@ -159,7 +159,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
             Body(("deviceIds", deviceIds is { Count: > 0 } ? new JsonArray(deviceIds.Select(d => (JsonNode?)d).ToArray()) : null)),
             ct: ct));
 
-    [McpServerTool(Name = "get_now_slide_png", ReadOnly = true)]
+    [McpServerTool(Name = "get_now_slide_png", Title = "Get current slide preview", ReadOnly = true, Destructive = false, OpenWorld = false)]
     [Description("\"What's on the lobby screen?\" Returns the slide the screen should be showing right now " +
                  "as an image, worked out from its schedule, takeovers, slide rules and slide durations. " +
                  "It is what should be on the screen, not a camera: an offline TV may show something else, " +
@@ -170,7 +170,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
         ExecutePng(() => api.GetPngAsync(HttpMethod.Get, $"/v1/devices/{Id(deviceId)}/now.png", null, ct),
             $"What screen {deviceId} should show now");
 
-    [McpServerTool(Name = "get_device_diagnosis", ReadOnly = true)]
+    [McpServerTool(Name = "get_device_diagnosis", Title = "Diagnose screen issues", ReadOnly = true, Destructive = false, OpenWorld = false)]
     [Description("\"Why is the lobby screen black?\" Lists every cause that could explain a screen looking " +
                  "wrong, most likely first: offline since a time, an empty or failed slideshow, nothing " +
                  "scheduled, every slide hidden by its rules, expired plan, or paired elsewhere. Each cause " +
@@ -181,7 +181,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Get, $"/v1/devices/{Id(deviceId)}/diagnosis", ct: ct));
 
-    [McpServerTool(Name = "show_media_on_device")]
+    [McpServerTool(Name = "show_media_on_device", Title = "Show photo or clip on screen", ReadOnly = false, Destructive = false, OpenWorld = true)]
     [Description("\"Show this photo on the lobby screen for an hour.\" Puts a photo or video on a screen as " +
                  "a temporary takeover, then the normal schedule returns. Give filePath (a local file) or " +
                  "mediaUrl (a public address), not both. The screen switches once processing finishes " +
@@ -216,7 +216,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
             MediaTools.ResolveContentType(filePath), null, until, caption, ct));
     }
 
-    [McpServerTool(Name = "get_show_status", ReadOnly = true)]
+    [McpServerTool(Name = "get_show_status", Title = "Get show progress", ReadOnly = true, Destructive = false, OpenWorld = false)]
     [Description("Check a photo or video sent with show_media_on_device: one combined percent for the video " +
                  "processing and the slideshow render, and status Processing, Ready or Failed. Poll at " +
                  "most every 5 seconds.")]
@@ -228,7 +228,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
         Json(() => api.SendJsonAsync(HttpMethod.Get,
             $"/v1/devices/{Id(deviceId)}/show/{Id(mediaAssetId)}" + InfoSlidesApiClient.Query(("slideshowId", slideshowId)), ct: ct));
 
-    [McpServerTool(Name = "update_device")]
+    [McpServerTool(Name = "update_device", Title = "Update screen details", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("Rename a screen, change its resolution (use 1080x1920 for a screen turned on its end), or " +
                  "save where it is so \"this screen\" can be found later with list_devices near the person's " +
                  "position (do that once, right after pairing). Send only what should change.")]
@@ -263,7 +263,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
                 ("latitude", latitude), ("longitude", longitude), ("locationName", locationName)), ct: ct));
     }
 
-    [McpServerTool(Name = "set_device_offline_alerts")]
+    [McpServerTool(Name = "set_device_offline_alerts", Title = "Set screen offline alerts", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("Stop or restart the \"screen went offline\" emails for one screen, e.g. a TV that is " +
                  "switched off on purpose, and optionally give it its own quiet hours. This replaces the " +
                  "screen's settings, so send enabled every time; without quiet hours the workspace's apply.")]

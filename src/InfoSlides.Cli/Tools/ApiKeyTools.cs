@@ -10,13 +10,13 @@ namespace InfoSlides.Cli.Tools;
 [McpServerToolType]
 public sealed class ApiKeyTools(InfoSlidesApiClient api)
 {
-    [McpServerTool(Name = "create_api_key")]
+    [McpServerTool(Name = "create_api_key", Title = "Create API key", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("Issue a credential so another system or person can work with this workspace. Type " +
-                 "'admin' grants full access â€” use it sparingly. Type 'dataProvider' creates a " +
+                 "'admin' grants full access — use it sparingly. Type 'dataProvider' creates a " +
                  "locked-down push-only key tied to named slides that can do nothing except feed those " +
                  "slides new values via update_source: the right choice when a till system, CRM, or " +
                  "script needs to keep one number on the screen current, because a leaked key cannot " +
-                 "read or change anything else. The full key is shown once and never again â€” tell the " +
+                 "read or change anything else. The full key is shown once and never again — tell the " +
                  "user to store it somewhere safe.")]
     public Task<CallToolResult> CreateApiKey(
         [Description("Key type: 'admin' for full access, or 'dataProvider' for a push-only key.")] string type,
@@ -41,7 +41,7 @@ public sealed class ApiKeyTools(InfoSlidesApiClient api)
             InfoSlidesJsonContext.Default.CreateApiKeyResult);
     }
 
-    [McpServerTool(Name = "list_api_keys", ReadOnly = true)]
+    [McpServerTool(Name = "list_api_keys", Title = "List API keys", ReadOnly = true, Destructive = false, OpenWorld = false)]
     [Description("Audit who and what can reach this workspace: every key with its scope, when it was " +
                  "created, and when it was last used. Only the opening characters of each key are " +
                  "shown, never the whole thing. Use it to spot unused keys worth revoking, or to find " +
@@ -49,8 +49,8 @@ public sealed class ApiKeyTools(InfoSlidesApiClient api)
     public Task<CallToolResult> ListApiKeys(CancellationToken ct = default) =>
         ToolResults.Execute(() => api.ListApiKeysAsync(ct), InfoSlidesJsonContext.Default.ListApiKeyInfo);
 
-    [McpServerTool(Name = "revoke_api_key", Destructive = true)]
-    [Description("Cut off a credential immediately â€” a leaked key, a system being decommissioned, " +
+    [McpServerTool(Name = "revoke_api_key", Title = "Revoke API key", ReadOnly = false, Destructive = true, OpenWorld = false)]
+    [Description("Cut off a credential immediately — a leaked key, a system being decommissioned, " +
                  "someone who has left. Takes effect at once and cannot be undone; anything still " +
                  "using that key stops working, so confirm with the user before revoking.")]
     public Task<CallToolResult> RevokeApiKey(

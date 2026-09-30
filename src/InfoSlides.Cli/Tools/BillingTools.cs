@@ -9,7 +9,7 @@ namespace InfoSlides.Cli.Tools;
 [McpServerToolType]
 public sealed class BillingTools(InfoSlidesApiClient api)
 {
-    [McpServerTool(Name = "upgrade_subscription", ReadOnly = true)]
+    [McpServerTool(Name = "upgrade_subscription", Title = "Upgrade subscription", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("Get the checkout link when the plan runs out: a second screen is needed, or the user " +
                  "wants self-updating slides fed by live data. Reach for this after a DeviceLimitReached " +
                  "or EntitlementRequired error rather than telling the user the thing cannot be done. Ask " +

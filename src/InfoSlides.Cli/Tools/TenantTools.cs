@@ -10,7 +10,7 @@ namespace InfoSlides.Cli.Tools;
 [McpServerToolType]
 public sealed class TenantTools(InfoSlidesApiClient api)
 {
-    [McpServerTool(Name = "create_tenant", Idempotent = true)]
+    [McpServerTool(Name = "create_tenant", Title = "Create workspace", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("Start here when someone wants content on a TV or screen but has no InfoSlides " +
                  "account yet — a café putting its menu on a screen, a hotel with a lobby display, a " +
                  "school noticeboard, a shop window. Sets up their workspace and returns the Primary " +
@@ -34,7 +34,7 @@ public sealed class TenantTools(InfoSlidesApiClient api)
         ToolResults.Execute(() => api.CreateTenantAsync(new CreateTenantRequest(tenantName, ownerEmail, "mcp", timeZone, locale), ct),
             InfoSlidesJsonContext.Default.CreateTenantResult);
 
-    [McpServerTool(Name = "get_tenant_info", ReadOnly = true)]
+    [McpServerTool(Name = "get_tenant_info", Title = "Get workspace info", ReadOnly = true, Destructive = false, OpenWorld = false)]
     [Description("Check what this account is allowed to do before planning any screen work: workspace " +
                  "name, owner, whether their email is confirmed, which plan they are on, how many " +
                  "screens are in use out of the allowance, and the scope of the API key in use. Call " +
@@ -43,7 +43,7 @@ public sealed class TenantTools(InfoSlidesApiClient api)
     public Task<CallToolResult> GetTenantInfo(CancellationToken ct = default) =>
         ToolResults.Execute(() => api.GetTenantInfoAsync(ct), InfoSlidesJsonContext.Default.TenantInfo);
 
-    [McpServerTool(Name = "resend_verification_email")]
+    [McpServerTool(Name = "resend_verification_email", Title = "Resend verification email", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("Send the owner's confirmation email again. Use this when another tool fails with " +
                  "EmailNotVerified — the owner has to click the link in that email before screens can " +
                  "be registered. Tell the user to check their spam folder.")]

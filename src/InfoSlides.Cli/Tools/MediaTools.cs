@@ -9,8 +9,8 @@ namespace InfoSlides.Cli.Tools;
 [McpServerToolType]
 public sealed class MediaTools(InfoSlidesApiClient api)
 {
-    [McpServerTool(Name = "upload_media")]
-    [Description("Send a picture or video from the user's own computer to their workspace â€” a photo of " +
+    [McpServerTool(Name = "upload_media", Title = "Upload media file", ReadOnly = false, Destructive = false, OpenWorld = false)]
+    [Description("Send a picture or video from the user's own computer to their workspace — a photo of " +
                  "the specials board, a poster, a logo, a promo clip. Use this when the file is local " +
                  "and has no public web address. Returns an asset id; pass it to add_media_slide as " +
                  "mediaAssetId to put it on the screen.")]
@@ -30,7 +30,7 @@ public sealed class MediaTools(InfoSlidesApiClient api)
     }
 
     /// <summary>
-    /// Best-effort MIME type from the file extension â€” advisory only; the server re-derives the
+    /// Best-effort MIME type from the file extension — advisory only; the server re-derives the
     /// real type from the file's extension/signature.
     /// </summary>
     internal static string ResolveContentType(string filePath) => Path.GetExtension(filePath).ToLowerInvariant() switch

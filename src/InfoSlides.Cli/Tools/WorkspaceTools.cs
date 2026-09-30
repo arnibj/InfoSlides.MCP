@@ -17,13 +17,13 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
 {
     private static string Id(string id) => Uri.EscapeDataString(id);
 
-    [McpServerTool(Name = "list_team", ReadOnly = true)]
+    [McpServerTool(Name = "list_team", Title = "List team members", ReadOnly = true, Destructive = false, OpenWorld = false)]
     [Description("See who is in this workspace (members and their roles) and which invitations are " +
                  "still waiting to be accepted.")]
     public Task<CallToolResult> ListTeam(CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Get, "/v1/team", ct: ct));
 
-    [McpServerTool(Name = "invite_team_member")]
+    [McpServerTool(Name = "invite_team_member", Title = "Invite team member", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("Invite a person to this workspace by email. This is how the person gets in after you " +
                  "created the workspace with your own address: invite them as TenantAdmin (the default) so " +
                  "they can manage screens, billing and the team themselves. Other roles: ContentManager " +
@@ -35,21 +35,21 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
         Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/team/invitations",
             Body(("email", email), ("role", role)), idempotent: true, ct));
 
-    [McpServerTool(Name = "revoke_team_invitation", Destructive = true)]
+    [McpServerTool(Name = "revoke_team_invitation", Title = "Revoke team invitation", ReadOnly = false, Destructive = true, OpenWorld = false)]
     [Description("Cancel a pending invitation (ids from list_team) so its link stops working.")]
     public Task<CallToolResult> RevokeInvitation(
         [Description("Id of the invitation.")] string invitationId,
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Delete, $"/v1/team/invitations/{Id(invitationId)}", ct: ct));
 
-    [McpServerTool(Name = "remove_team_member", Destructive = true)]
+    [McpServerTool(Name = "remove_team_member", Title = "Remove team member", ReadOnly = false, Destructive = true, OpenWorld = false)]
     [Description("Remove a person from this workspace (ids from list_team). Confirm with the person first.")]
     public Task<CallToolResult> RemoveTeamMember(
         [Description("Id of the member.")] string memberId,
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Delete, $"/v1/team/members/{Id(memberId)}", ct: ct));
 
-    [McpServerTool(Name = "update_tenant")]
+    [McpServerTool(Name = "update_tenant", Title = "Update workspace settings", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("Set the workspace time zone and/or locale. The time zone decides when schedules switch, " +
                  "what TV clocks show and when time-based slide conditions apply; set it early for a " +
                  "workspace outside Iceland. The locale sets number and date formats in rendered slides " +
@@ -68,13 +68,13 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
             Body(("timeZone", timeZone), ("locale", locale)), ct: ct));
     }
 
-    [McpServerTool(Name = "list_adapters", ReadOnly = true)]
+    [McpServerTool(Name = "list_adapters", Title = "List content adapters", ReadOnly = true, Destructive = false, OpenWorld = false)]
     [Description("See the kinds of live content source this workspace can create (RSS feed, weather, " +
                  "calendar and more), with the config fields each one needs. Use before create_source.")]
     public Task<CallToolResult> ListAdapters(CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Get, "/v1/adapters", ct: ct));
 
-    [McpServerTool(Name = "create_source")]
+    [McpServerTool(Name = "create_source", Title = "Create content source", ReadOnly = false, Destructive = false, OpenWorld = true)]
     [Description("Create a content source InfoSlides fetches by itself, e.g. a news RSS feed for the " +
                  "ticker or a weather forecast for a slide. adapterType and the config fields come from " +
                  "list_adapters. For data your own system sends, use a push template instead " +
@@ -90,7 +90,7 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
             Body(("adapterType", adapterType), ("name", name), ("config", Node(config)), ("fetchIntervalSeconds", fetchIntervalSeconds)),
             idempotent: true, ct));
 
-    [McpServerTool(Name = "update_source_settings")]
+    [McpServerTool(Name = "update_source_settings", Title = "Update source configuration", ReadOnly = false, Destructive = false, OpenWorld = true)]
     [Description("Change a content source's name, config, fetch interval, or pause and resume it (ids " +
                  "from list_sources). To send data to a push source, use push_data instead.")]
     public Task<CallToolResult> EditSource(
@@ -104,7 +104,7 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
             Body(("name", name), ("config", Node(config)), ("fetchIntervalSeconds", fetchIntervalSeconds), ("isEnabled", isEnabled)),
             ct: ct));
 
-    [McpServerTool(Name = "delete_source", Destructive = true)]
+    [McpServerTool(Name = "delete_source", Title = "Delete content source", ReadOnly = false, Destructive = true, OpenWorld = false)]
     [Description("Delete a content source. Slides and tickers fed by it stop updating. Confirm with the " +
                  "person first.")]
     public Task<CallToolResult> DeleteSource(
@@ -112,7 +112,7 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Delete, $"/v1/sources/{Id(sourceId)}", ct: ct));
 
-    [McpServerTool(Name = "get_workspace_health", ReadOnly = true)]
+    [McpServerTool(Name = "get_workspace_health", Title = "Get workspace health", ReadOnly = true, Destructive = false, OpenWorld = false)]
     [Description("\"How are my screens?\" in one call: a sentence to read out (\"11 of 12 screens are online; " +
                  "Lobby has been offline since 09:12.\"), every screen with online and lastSeenAt, usage " +
                  "against the plan, and problems most urgent first (offline screens, failed renders, " +
@@ -121,14 +121,14 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
     public Task<CallToolResult> GetWorkspaceHealth(CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Get, "/v1/workspace/health", ct: ct));
 
-    [McpServerTool(Name = "get_offline_alerts", ReadOnly = true)]
+    [McpServerTool(Name = "get_offline_alerts", Title = "Get offline alert settings", ReadOnly = true, Destructive = false, OpenWorld = false)]
     [Description("\"When do I get emails about screens going offline?\" Shows the workspace's quiet hours " +
                  "and, per screen, whether alerts are on, its own quiet hours and whether it follows its " +
                  "schedule. At most one alert per screen per day is sent.")]
     public Task<CallToolResult> GetOfflineAlerts(CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Get, "/v1/workspace/offline-alerts", ct: ct));
 
-    [McpServerTool(Name = "set_workspace_offline_alerts")]
+    [McpServerTool(Name = "set_workspace_offline_alerts", Title = "Set workspace offline alerts", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("\"Don't email me about screens at night.\" Sets the quiet hours for offline alert emails " +
                  "(alerts wait until they end). Give quietStart and quietEnd; give neither to alert at any " +
                  "hour. Screens with their own quiet hours keep them. Workspace admins only.")]
@@ -146,7 +146,7 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
             new JsonObject { ["quietHours"] = ScreenTools.Quiet(quietStart, quietEnd) }, ct: ct));
     }
 
-    [McpServerTool(Name = "undo_change", Destructive = true)]
+    [McpServerTool(Name = "undo_change", Title = "Undo previous change", ReadOnly = false, Destructive = true, OpenWorld = false)]
     [Description("Undo the last change: puts back what an earlier call changed. Calls that change " +
                  "something return an undo field; pass its body.token here within 24 hours. A deleted " +
                  "slide comes back, an added slide, takeover or paired screen is removed. Not covered: " +
@@ -160,7 +160,7 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
         Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/undo",
             Body(("token", token), ("force", force ? true : null)), ct: ct));
 
-    [McpServerTool(Name = "report_issue")]
+    [McpServerTool(Name = "report_issue", Title = "Report an issue", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("Tell the InfoSlides team you could not do what the person asked because of InfoSlides " +
                  "itself: no tool for it, an error you could not get past, or docs that led you wrong. The " +
                  "team reads every report. Leave out personal data. Then tell the person plainly what you " +
@@ -175,7 +175,7 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
         Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/feedback/issues",
             Body(("problem", problem), ("intent", intent), ("request", request), ("agent", agent)), ct: ct));
 
-    [McpServerTool(Name = "leave_testimonial")]
+    [McpServerTool(Name = "leave_testimonial", Title = "Submit testimonial", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("After a job went well, give your own verdict on working with InfoSlides, once per job. " +
                  "The team may pin it to the InfoSlides landing page, shown as a quote from '<agent>, AI agent' " +
                  "with the context below it as 'Job: <context>'; nothing about the workspace or the person is " +
@@ -188,7 +188,7 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
         Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/feedback/testimonials",
             Body(("quote", quote), ("context", context), ("agent", agent)), ct: ct));
 
-    [McpServerTool(Name = "make_ai_slide")]
+    [McpServerTool(Name = "make_ai_slide", Title = "Generate slide with AI", ReadOnly = false, Destructive = false, OpenWorld = true)]
     [Description("AI Studio: design a slide in the workspace's style from a description (handler prompt: " +
                  "headline, details, prices, times), a photo of a poster, menu or whiteboard (photo: " +
                  "mediaAssetId from upload_media, or mediaUrl), a web page (url) or a PDF/Word file " +
@@ -215,7 +215,7 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
                 ("backgroundDescription", backgroundDescription)),
             idempotent: true, ct));
 
-    [McpServerTool(Name = "get_ai_slide_job", ReadOnly = true)]
+    [McpServerTool(Name = "get_ai_slide_job", Title = "Get AI slide generation job", ReadOnly = true, Destructive = false, OpenWorld = false)]
     [Description("Check an AI-designed slide job: Processing, Ready (previews to show the person), Inserted, " +
                  "NeedsClarification (read its question out, then start a new job with the answer in the " +
                  "prompt) or Failed. Jobs are kept for 24 hours. Poll at most every 5 seconds.")]
@@ -225,7 +225,7 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Get, $"/v1/slideshows/{Id(slideshowId)}/slides/ai/{Id(jobId)}", ct: ct));
 
-    [McpServerTool(Name = "insert_ai_slides")]
+    [McpServerTool(Name = "insert_ai_slides", Title = "Insert generated AI slides", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("Add the previews of a Ready AI slide job to the slideshow, after the person approved " +
                  "them. Safe to repeat: it does not add them twice. Queues a re-render.")]
     public Task<CallToolResult> InsertAiSlides(
@@ -236,14 +236,14 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
         Json(() => api.SendJsonAsync(HttpMethod.Post, $"/v1/slideshows/{Id(slideshowId)}/slides/ai/{Id(jobId)}/insert",
             Body(("position", position)), idempotent: true, ct));
 
-    [McpServerTool(Name = "start_ai_studio_trial")]
+    [McpServerTool(Name = "start_ai_studio_trial", Title = "Start AI Studio trial", ReadOnly = false, Destructive = false, OpenWorld = false)]
     [Description("Start the workspace's free AI Studio trial (7 days or 3 slides, prompt handler only). " +
                  "Once per workspace, so ask the person first. Calling it again while it runs returns the " +
                  "same trial.")]
     public Task<CallToolResult> StartAiStudioTrial(CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/ai-studio/trial", idempotent: true, ct: ct));
 
-    [McpServerTool(Name = "preview_new_template", ReadOnly = true)]
+    [McpServerTool(Name = "preview_new_template", Title = "Preview unsaved template", ReadOnly = true, Destructive = false, OpenWorld = false)]
     [Description("See what a template design looks like as an image before saving it with create_template. " +
                  "Give the layout HTML and CSS and sample data; nothing is saved. Rate limited.")]
     public Task<CallToolResult> PreviewTemplate(
