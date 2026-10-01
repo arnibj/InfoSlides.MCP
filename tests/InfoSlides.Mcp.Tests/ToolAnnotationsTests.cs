@@ -1,6 +1,6 @@
-// â”€â”€ Copyright notice â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Copyright notice ──────────────────────────────────────────────────────────────────
 // (c) 2026 Arni Bjorgvinsson. All rights reserved.
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────────
 
 using System.Reflection;
 using InfoSlides.Cli.Tools;
@@ -11,18 +11,11 @@ namespace InfoSlides.Mcp.Tests;
 
 public sealed class ToolAnnotationsTests
 {
-    private static readonly Type[] ToolClasses =
-    [
-        typeof(ApiKeyTools),
-        typeof(BillingTools),
-        typeof(DeviceTools),
-        typeof(MediaTools),
-        typeof(ScreenTools),
-        typeof(SlideshowTools),
-        typeof(TemplateTools),
-        typeof(TenantTools),
-        typeof(WorkspaceTools)
-    ];
+    /// <summary>Every tool class in the CLI assembly, found by attribute so a new class cannot be missed.</summary>
+    private static readonly Type[] ToolClasses = typeof(TenantTools).Assembly.GetTypes()
+        .Where(t => t.GetCustomAttribute<McpServerToolTypeAttribute>() != null)
+        .OrderBy(t => t.Name, StringComparer.Ordinal)
+        .ToArray();
 
     private sealed record ToolMeta(
         string ToolName,
@@ -31,7 +24,8 @@ public sealed class ToolAnnotationsTests
         string? Title,
         bool? ReadOnly,
         bool? Destructive,
-        bool? OpenWorld);
+        bool? OpenWorld,
+        bool? Idempotent);
 
     private static List<ToolMeta> GetAllTools()
     {
@@ -52,6 +46,7 @@ public sealed class ToolAnnotationsTests
                 bool? readOnly = null;
                 bool? destructive = null;
                 bool? openWorld = null;
+                bool? idempotent = null;
 
                 foreach (var namedArg in cad.NamedArguments)
                 {
@@ -72,6 +67,9 @@ public sealed class ToolAnnotationsTests
                         case "OpenWorld":
                             openWorld = namedArg.TypedValue.Value as bool?;
                             break;
+                        case "Idempotent":
+                            idempotent = namedArg.TypedValue.Value as bool?;
+                            break;
                     }
                 }
 
@@ -82,7 +80,8 @@ public sealed class ToolAnnotationsTests
                     title,
                     readOnly,
                     destructive,
-                    openWorld));
+                    openWorld,
+                    idempotent));
             }
         }
 
@@ -114,16 +113,31 @@ public sealed class ToolAnnotationsTests
             {
                 missing.Add($"{t.ClassName}.{t.MethodName} ({t.ToolName}): missing OpenWorld");
             }
+            if (t.Idempotent == null)
+            {
+                missing.Add($"{t.ClassName}.{t.MethodName} ({t.ToolName}): missing Idempotent");
+            }
         }
 
         Assert.True(missing.Count == 0, "Tools missing explicit annotations:\n" + string.Join("\n", missing));
     }
 
     [Fact]
-    public void AllTools_TotalCountIs72()
+    public void ToolNames_AreUniqueAndAtMost64Characters()
     {
         var tools = GetAllTools();
-        Assert.Equal(72, tools.Count);
+        Assert.NotEmpty(tools);
+        Assert.All(tools, t => Assert.True(t.ToolName.Length <= 64, $"{t.ToolName} is longer than 64 characters"));
+        Assert.Equal(tools.Count, tools.Select(t => t.ToolName).Distinct().Count());
+    }
+
+    [Fact]
+    public void ReadOnlyTools_AreIdempotent()
+    {
+        foreach (var t in GetAllTools().Where(t => t.ReadOnly == true))
+        {
+            Assert.True(t.Idempotent, $"{t.ToolName} is ReadOnly but not Idempotent");
+        }
     }
 
     [Fact]
@@ -162,6 +176,10 @@ public sealed class ToolAnnotationsTests
             "revoke_api_key",
             "delete_schedule_entry",
             "end_takeover",
+            "assign_schedule",
+            "create_takeover",
+            "play_slideshow_find_device",
+            "set_slide_conditions",
             "delete_slideshow",
             "replace_slideshow_file",
             "delete_slide",

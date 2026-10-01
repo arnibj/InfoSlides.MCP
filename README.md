@@ -52,6 +52,16 @@ Hook it into an MCP client:
 infoslides mcp install --client claude-code      # or claude-desktop / cursor
 ```
 
+Or install as a **Gemini CLI extension** or **Antigravity plugin**:
+
+`sh
+# In Gemini CLI
+gemini extensions install https://github.com/arnibj/InfoSlides.MCP
+
+# In Antigravity CLI
+agy plugin import gemini https://github.com/arnibj/InfoSlides.MCP
+`
+
 Or install the `.mcpb` bundle from the [latest release](https://github.com/arnibj/InfoSlides.MCP/releases/latest)
 in any client that supports MCP bundles — it carries binaries for all three platforms and needs no
 runtime and no API key to get started.
@@ -269,6 +279,12 @@ Tool descriptions are trigger text, not documentation: a model matches them agai
 just said, so they lead with the situation ("register the physical screen — the TV in reception,
 the menu board above the counter") rather than the API operation. Tests in
 `McpStdioSmokeTests` pin that vocabulary so it cannot quietly regress.
+
+## Privacy Policy
+
+InfoSlides processes presentation content, media assets, and screen device metadata solely for rendering and delivering digital signage streams to authorized displays. InfoSlides does not sell user data, train foundation AI models on user content, or track users for third-party advertising.
+
+For full details regarding OAuth authentication security, data retention, and data subject rights, read our [Privacy Policy](https://infoslides.app/privacy).
 
 ## Licence
 

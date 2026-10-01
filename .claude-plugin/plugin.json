@@ -1,0 +1,34 @@
+{
+  "name": "infoslides",
+  "version": "1.6.0",
+  "description": "Digital signage assistant for TV screens, menus, announcements, and live dashboards on InfoSlides.",
+  "author": {
+    "name": "Arni Bjorgvinsson",
+    "url": "https://infoslides.app"
+  },
+  "homepage": "https://infoslides.app",
+  "repository": "https://github.com/arnibj/InfoSlides.MCP",
+  "license": "MIT",
+  "keywords": [
+    "digital-signage",
+    "tv",
+    "display",
+    "screen",
+    "slideshow",
+    "presentation",
+    "hls"
+  ],
+  "mcpServers": {
+    "infoslides": {
+      "type": "http",
+      "url": "https://infoslides.app/mcp"
+    }
+  },
+  "skills": [
+    {
+      "name": "infoslides-assistant",
+      "path": "skills/infoslides-assistant/SKILL.md",
+      "description": "Digital Signage Assistant for managing screens, slideshows, slides, schedules, and live content on InfoSlides."
+    }
+  ]
+}

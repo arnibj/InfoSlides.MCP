@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "infoslides": {
+      "command": "infoslides",
+      "args": [
+        "--mcp"
+      ],
+      "env": {
+        "INFOSLIDES_API_KEY": "${INFOSLIDES_API_KEY}"
+      }
+    }
+  }
+}
