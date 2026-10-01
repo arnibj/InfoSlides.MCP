@@ -14,7 +14,7 @@ namespace InfoSlides.McpServer;
 
 /// <summary>
 /// Request filters that tailor the shared tool set to the caller: the hosted profile is an allow-list, location
-/// parameters are hidden from hosted callers, every tool advertises the OAuth scope it needs, the profile tool is
+/// parameters are hidden from hosted callers, local-file paths are hidden from everyone, every tool advertises the OAuth scope it needs, the profile tool is
 /// marked for ChatGPT's multi-account support, and the list carries its caching hints. The SDK's tool objects are
 /// shared between requests, so every tool is copied before it is changed.
 /// </summary>
@@ -26,6 +26,13 @@ public static class ToolProfileFilters
     private const string ReadScope = "infoslides.read";
     private const string WriteScope = "infoslides.write";
     private const string ProfileToolName = "get_user_profile";
+
+    /// <summary>
+    /// The shared tools take a <c>filePath</c> on the caller's own machine. On this host that path would name a file on
+    /// the server, so the parameter is removed for every caller, tools that need it are not offered, and a call that
+    /// sends it is refused before the file is touched.
+    /// </summary>
+    public const string ServerFileParameter = "filePath";
 
     /// <summary>Adds the list-tools and call-tool filters to the MCP server builder.</summary>
     /// <param name="builder">The builder.</param>
@@ -43,6 +50,7 @@ public static class ToolProfileFilters
                 result.Tools = result.Tools
                     .Where(t => profile == ToolProfile.Full || HostedToolProfile.ToolNames.Contains(t.Name))
                     .Where(t => !isApiKey || t.Name != ProfileToolName)
+                    .Where(t => !RequiresServerFile(t))
                     .Select(t => Decorate(t, profile))
                     .ToList();
 
@@ -57,6 +65,11 @@ public static class ToolProfileFilters
                 var user = UserOf(context.Services);
                 var profile = CallerContext.ProfileFor(user);
                 var name = context.Params?.Name ?? string.Empty;
+
+                if (context.Params?.Arguments?.ContainsKey(ServerFileParameter) == true)
+                {
+                    return Refuse($"The parameter '{ServerFileParameter}' is not available here: this server cannot read your files. Use mediaUrl with a public address instead.");
+                }
 
                 if (profile == ToolProfile.Hosted && !HostedToolProfile.ToolNames.Contains(name))
                 {
@@ -94,6 +107,14 @@ public static class ToolProfileFilters
         Content = [new TextContentBlock { Text = message }],
     };
 
+    /// <summary>Whether a tool cannot work without a <see cref="ServerFileParameter"/>.</summary>
+    /// <param name="tool">The tool definition.</param>
+    /// <returns>True when <c>filePath</c> is a required parameter.</returns>
+    private static bool RequiresServerFile(Tool tool) =>
+        tool.InputSchema.TryGetProperty("required", out var required) &&
+        required.ValueKind == JsonValueKind.Array &&
+        required.EnumerateArray().Any(r => r.ValueKind == JsonValueKind.String && r.GetString() == ServerFileParameter);
+
     private static Tool Decorate(Tool shared, ToolProfile profile)
     {
         // Copy first: the SDK hands out the same Tool instances to every request.
@@ -101,27 +122,46 @@ public static class ToolProfileFilters
             JsonSerializer.SerializeToUtf8Bytes(shared, McpJsonUtilities.DefaultOptions),
             McpJsonUtilities.DefaultOptions)!;
 
-        if (profile == ToolProfile.Hosted && HostedToolProfile.HiddenParameters.TryGetValue(tool.Name, out var hidden))
+        if (profile == ToolProfile.Hosted && HostedToolProfile.DescriptionOverrides.TryGetValue(tool.Name, out var description))
         {
-            var schema = JsonNode.Parse(tool.InputSchema.GetRawText())!.AsObject();
-            if (schema["properties"] is JsonObject properties)
-            {
-                foreach (var parameter in hidden)
-                {
-                    properties.Remove(parameter);
-                }
-            }
-
-            if (schema["required"] is JsonArray required)
-            {
-                foreach (var node in required.Where(n => n is not null && hidden.Contains(n.GetValue<string>())).ToList())
-                {
-                    required.Remove(node);
-                }
-            }
-
-            tool.InputSchema = JsonSerializer.SerializeToElement(schema);
+            tool.Description = description;
         }
+
+        var hidden = new HashSet<string>(StringComparer.Ordinal) { ServerFileParameter };
+        if (profile == ToolProfile.Hosted && HostedToolProfile.HiddenParameters.TryGetValue(tool.Name, out var hostedHidden))
+        {
+            hidden.UnionWith(hostedHidden);
+        }
+
+        var schema = JsonNode.Parse(tool.InputSchema.GetRawText())!.AsObject();
+        if (schema["properties"] is JsonObject properties)
+        {
+            foreach (var parameter in hidden)
+            {
+                properties.Remove(parameter);
+            }
+
+            if (profile == ToolProfile.Hosted && HostedToolProfile.ParameterDescriptionOverrides.TryGetValue(tool.Name, out var reworded))
+            {
+                foreach (var (parameter, text) in reworded)
+                {
+                    if (properties[parameter] is JsonObject property)
+                    {
+                        property["description"] = text;
+                    }
+                }
+            }
+        }
+
+        if (schema["required"] is JsonArray required)
+        {
+            foreach (var node in required.Where(n => n is not null && hidden.Contains(n.GetValue<string>())).ToList())
+            {
+                required.Remove(node);
+            }
+        }
+
+        tool.InputSchema = JsonSerializer.SerializeToElement(schema);
 
         var meta = tool.Meta ?? new JsonObject();
         meta["securitySchemes"] = new JsonArray(new JsonObject
