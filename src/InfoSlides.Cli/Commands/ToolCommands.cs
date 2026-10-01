@@ -1,5 +1,5 @@
 using System.CommandLine;
-using InfoSlides.Cli.Tools;
+using InfoSlides.Mcp.Tools;
 
 namespace InfoSlides.Cli.Commands;
 

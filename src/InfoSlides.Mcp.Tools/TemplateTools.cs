@@ -6,7 +6,7 @@ using InfoSlides.Core.Serialization;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
-namespace InfoSlides.Cli.Tools;
+namespace InfoSlides.Mcp.Tools;
 
 [McpServerToolType]
 public sealed class TemplateTools(InfoSlidesApiClient api)

@@ -6,17 +6,12 @@ This extension connects Google Gemini CLI and Antigravity to **InfoSlides**, ena
 
 This extension runs the local `infoslides` executable in MCP mode (`infoslides --mcp`). The extension cannot download or compile binaries on its own, so please ensure `infoslides` is installed on your system PATH first.
 
-### Quick Install:
-- **macOS / Linux**:
-  ```sh
-  curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.6.0/infoslides-v1.6.0-linux-x64.tar.gz | tar xz
-  sudo mv infoslides /usr/local/bin/
-  ```
-- **Windows** (PowerShell):
-  ```powershell
-  # Download from https://github.com/arnibj/InfoSlides.MCP/releases/latest
-  # Extract infoslides.exe and place in a folder on your PATH (e.g. C:\Users\<user>\AppData\Local\Microsoft\WindowsApps)
-  ```
+### Install
+
+Download the archive for your system from <https://github.com/arnibj/InfoSlides.MCP/releases/latest>, extract the
+`infoslides` executable, and put it in a folder on your PATH (for example `/usr/local/bin` on macOS and Linux, or a
+folder you add to PATH on Windows). The README has the exact steps for each platform. Check it with
+`infoslides --version`.
 
 ## Authentication
 
@@ -33,8 +28,8 @@ infoslides auth login
 
 ## Available Capabilities & Skill
 
-This extension bundles the **Digital Signage Assistant** (`infoslides-assistant`) skill and exposes 72 MCP tools covering:
+This extension bundles the **Digital Signage Assistant** (`infoslides-assistant`) skill and exposes the InfoSlides MCP tools, covering:
 - Creating workspaces, uploading slides (.pptx, .pdf, images, video)
 - Registering screens, assigning schedules, temporary takeovers
 - Managing tickers, clocks, and live content data feeds
-- Screen diagnosis, status checks, and 24-hour instant undo (`apply_undo`)
+- Screen diagnosis, status checks, and 24-hour instant undo (`undo_change`)

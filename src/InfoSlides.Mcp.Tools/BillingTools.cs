@@ -2,9 +2,9 @@ using System.ComponentModel;
 using InfoSlides.Core.Api;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
-using static InfoSlides.Cli.Tools.ToolResults;
+using static InfoSlides.Mcp.Tools.ToolResults;
 
-namespace InfoSlides.Cli.Tools;
+namespace InfoSlides.Mcp.Tools;
 
 [McpServerToolType]
 public sealed class BillingTools(InfoSlidesApiClient api)

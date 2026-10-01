@@ -41,6 +41,14 @@ public sealed class SettingsPrecedenceTests : IDisposable
     }
 
     [Fact]
+    public void AnUnexpandedPlaceholderInTheEnvironment_IsNotUsedAsTheKey()
+    {
+        var settings = AppSettings.Resolve(getEnv: Env((AppSettings.ApiKeyEnvVar, "${INFOSLIDES_API_KEY}")), configDirectory: _dir);
+
+        Assert.Null(settings.Credential);
+    }
+
+    [Fact]
     public void EnvVars_BeatStoredFiles()
     {
         var store = new CredentialStore(_dir);

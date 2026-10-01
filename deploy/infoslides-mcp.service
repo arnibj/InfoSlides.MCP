@@ -1,0 +1,26 @@
+# /etc/systemd/system/infoslides-mcp.service
+# The hosted MCP server (streamable HTTP). It stores no credentials: it validates OAuth access tokens against the
+# InfoSlides authorization server's published keys and forwards each caller's own token or API key to the API.
+[Unit]
+Description=InfoSlides MCP server
+After=network.target infoslides.service
+Wants=infoslides.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/infoslides/mcp
+ExecStart=/usr/bin/dotnet /opt/infoslides/mcp/InfoSlides.McpServer.dll
+EnvironmentFile=/etc/infoslides/mcp.env
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://127.0.0.1:5004
+Restart=always
+RestartSec=5
+# Same user as infoslides.service (check with: systemctl cat infoslides | grep ^User).
+# User=infoslides
+# Stop promptly on deploy (a host that ignores its stop token otherwise costs the 30 s default).
+KillSignal=SIGINT
+TimeoutStopSec=15
+SyslogIdentifier=infoslides-mcp
+
+[Install]
+WantedBy=multi-user.target

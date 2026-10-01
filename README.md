@@ -54,13 +54,20 @@ infoslides mcp install --client claude-code      # or claude-desktop / cursor
 
 Or install as a **Gemini CLI extension** or **Antigravity plugin**:
 
-`sh
+```sh
 # In Gemini CLI
 gemini extensions install https://github.com/arnibj/InfoSlides.MCP
 
 # In Antigravity CLI
 agy plugin import gemini https://github.com/arnibj/InfoSlides.MCP
-`
+```
+
+Or add the **Claude plugin** (it uses the hosted server, nothing to install first):
+
+```sh
+claude plugin marketplace add arnibj/InfoSlides.MCP
+claude plugin install infoslides@infoslides
+```
 
 Or install the `.mcpb` bundle from the [latest release](https://github.com/arnibj/InfoSlides.MCP/releases/latest)
 in any client that supports MCP bundles — it carries binaries for all three platforms and needs no

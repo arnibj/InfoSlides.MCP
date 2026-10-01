@@ -1,7 +1,7 @@
 {
   "name": "infoslides",
-  "version": "1.6.0",
-  "description": "Digital signage assistant for TV screens, menus, announcements, and live dashboards on InfoSlides.",
+  "version": "1.7.0",
+  "description": "Digital signage assistant for TV screens, menus, announcements and live dashboards on InfoSlides. Connects to the hosted InfoSlides server; no install needed.",
   "author": {
     "name": "Arni Bjorgvinsson",
     "url": "https://infoslides.app"
@@ -23,12 +23,5 @@
       "type": "http",
       "url": "https://infoslides.app/mcp"
     }
-  },
-  "skills": [
-    {
-      "name": "infoslides-assistant",
-      "path": "skills/infoslides-assistant/SKILL.md",
-      "description": "Digital Signage Assistant for managing screens, slideshows, slides, schedules, and live content on InfoSlides."
-    }
-  ]
+  }
 }

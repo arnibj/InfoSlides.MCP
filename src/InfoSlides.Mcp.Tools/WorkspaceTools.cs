@@ -4,9 +4,9 @@ using System.Text.Json.Nodes;
 using InfoSlides.Core.Api;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
-using static InfoSlides.Cli.Tools.ToolResults;
+using static InfoSlides.Mcp.Tools.ToolResults;
 
-namespace InfoSlides.Cli.Tools;
+namespace InfoSlides.Mcp.Tools;
 
 /// <summary>
 /// Workspace tools on the pass-through client: the team, workspace settings, and fetching content

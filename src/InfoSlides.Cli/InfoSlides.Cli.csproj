@@ -15,5 +15,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\InfoSlides.Core\InfoSlides.Core.csproj" />
+    <ProjectReference Include="..\InfoSlides.Mcp.Tools\InfoSlides.Mcp.Tools.csproj" />
   </ItemGroup>
 </Project>

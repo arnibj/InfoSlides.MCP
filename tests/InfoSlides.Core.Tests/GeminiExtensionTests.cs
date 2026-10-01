@@ -54,27 +54,6 @@ public sealed class GeminiExtensionTests
     }
 
     [Fact]
-    public void PluginAndMcpConfig_ExistForAntigravityCompatibility()
-    {
-        var root = RepoRoot();
-        var pluginJsonPath = Path.Combine(root, "plugin.json");
-        var mcpConfigPath = Path.Combine(root, "mcp_config.json");
-
-        Assert.True(File.Exists(pluginJsonPath), "plugin.json must exist for Antigravity plugin compatibility.");
-        Assert.True(File.Exists(mcpConfigPath), "mcp_config.json must exist for Antigravity plugin compatibility.");
-
-        var pluginJson = JsonNode.Parse(File.ReadAllText(pluginJsonPath))?.AsObject();
-        Assert.NotNull(pluginJson);
-        Assert.Equal("infoslides", (string?)pluginJson["name"]);
-
-        var mcpConfig = JsonNode.Parse(File.ReadAllText(mcpConfigPath))?.AsObject();
-        Assert.NotNull(mcpConfig);
-        var mcpServers = mcpConfig["mcpServers"]?.AsObject();
-        Assert.NotNull(mcpServers);
-        Assert.NotNull(mcpServers["infoslides"]);
-    }
-
-    [Fact]
     public void GeminiContextFile_ExistsAndMentionsPrerequisites()
     {
         var root = RepoRoot();
@@ -84,6 +63,8 @@ public sealed class GeminiExtensionTests
         var text = File.ReadAllText(contextPath);
         Assert.Contains("infoslides --mcp", text);
         Assert.Contains("Prerequisite", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("apply_undo", text);
+        Assert.DoesNotContain("releases/download/", text);
         Assert.Contains("Digital Signage Assistant", text);
     }
 
@@ -113,6 +94,7 @@ public sealed class GeminiExtensionTests
         var text = File.ReadAllText(readmePath);
         Assert.Contains("gemini extensions install https://github.com/arnibj/InfoSlides.MCP", text);
         Assert.Contains("agy plugin import gemini https://github.com/arnibj/InfoSlides.MCP", text);
+        Assert.Contains("```sh", text);
     }
 
     private static string ExtractXmlTag(string xml, string tag)

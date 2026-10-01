@@ -20,8 +20,8 @@ public sealed class ClaudePluginTests
     public void ClaudePluginManifest_ExistsAndIsValid()
     {
         var root = RepoRoot();
-        var manifestPath = Path.Combine(root, ".claude-plugin", "plugin.json");
-        Assert.True(File.Exists(manifestPath), ".claude-plugin/plugin.json must exist at repository root.");
+        var manifestPath = Path.Combine(root, "plugins", "claude", ".claude-plugin", "plugin.json");
+        Assert.True(File.Exists(manifestPath), "plugins/claude/.claude-plugin/plugin.json must exist.");
 
         var content = File.ReadAllText(manifestPath);
         var json = JsonNode.Parse(content)?.AsObject();
@@ -50,18 +50,51 @@ public sealed class ClaudePluginTests
         Assert.Equal("http", (string?)infoslidesMcp["type"]);
         Assert.Equal("https://infoslides.app/mcp", (string?)infoslidesMcp["url"]);
 
-        // Verify skills
-        var skills = json["skills"]?.AsArray();
-        Assert.NotNull(skills);
-        Assert.Contains(skills, s => (string?)s?["name"] == "infoslides-assistant"
-            && (string?)s?["path"] == "skills/infoslides-assistant/SKILL.md");
+        // Skills are discovered from the plugin's own skills/ folder, so the manifest names none.
+        Assert.Null(json["skills"]);
+    }
+
+    [Fact]
+    public void ClaudePluginSkill_IsTheHostedVariant()
+    {
+        var skillDir = Path.Combine(RepoRoot(), "plugins", "claude", "skills", "infoslides-assistant");
+        Assert.True(File.Exists(Path.Combine(skillDir, "SKILL.md")), "run scripts/sync-skills.py");
+
+        // The plugin talks to the hosted server, so its skill must be built from the hosted rules.
+        var rulesPath = Path.Combine(RepoRoot(), "src", "InfoSlides.Mcp.Tools", "Instructions", "hosted-rules.json");
+        var rules = JsonNode.Parse(File.ReadAllText(rulesPath))!.AsObject();
+        var tools = rules["tools"]!.AsArray().Select(t => (string)t!).ToHashSet();
+        var allowed = tools.Concat(rules["allowedNonToolWords"]!.AsArray().Select(t => (string)t!)).ToHashSet();
+        foreach (var file in Directory.GetFiles(skillDir, "*.md", SearchOption.AllDirectories))
+        {
+            var text = File.ReadAllText(file);
+            Assert.DoesNotContain("surface:", text);
+            foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(text, "`([a-z]+(?:_[a-z]+)+)`"))
+            {
+                Assert.True(allowed.Contains(m.Groups[1].Value), $"{Path.GetFileName(file)} names `{m.Groups[1].Value}`, which the hosted server does not offer.");
+            }
+
+            foreach (var term in rules["forbiddenTerms"]!.AsArray().Select(t => (string)t!))
+            {
+                Assert.DoesNotMatch($"(?i)(?<![A-Za-z]){System.Text.RegularExpressions.Regex.Escape(term)}(?![A-Za-z])", text);
+            }
+        }
+    }
+
+    [Fact]
+    public void Marketplace_PointsAtThePluginFolder()
+    {
+        var market = JsonNode.Parse(File.ReadAllText(Path.Combine(RepoRoot(), ".claude-plugin", "marketplace.json")))!.AsObject();
+        var plugin = market["plugins"]!.AsArray().Single()!;
+        Assert.Equal("infoslides", (string?)plugin["name"]);
+        Assert.True(File.Exists(Path.Combine(RepoRoot(), "plugins", "claude", ((string)plugin["source"]!)["./plugins/claude".Length..].TrimStart('/'), ".claude-plugin", "plugin.json")));
     }
 
     [Fact]
     public void PluginFolder_ContainsOnlySmallTextAndJsonFiles_NoBinaries()
     {
         var root = RepoRoot();
-        var claudePluginDir = Path.Combine(root, ".claude-plugin");
+        var claudePluginDir = Path.Combine(root, "plugins", "claude");
         Assert.True(Directory.Exists(claudePluginDir));
 
         var files = Directory.GetFiles(claudePluginDir, "*", SearchOption.AllDirectories);
@@ -71,8 +104,8 @@ public sealed class ClaudePluginTests
             Assert.True(info.Length < 256 * 1024, $"File {file} exceeds 256 KiB limit: {info.Length} bytes.");
 
             var ext = info.Extension.ToLowerInvariant();
-            Assert.True(ext is ".json" or ".md" or ".txt" or ".png" or ".svg" or ".jpg",
-                $"Unexpected file type in .claude-plugin: {file}");
+            Assert.True(ext is ".json" or ".md" or ".txt" or ".png" or ".svg" or ".jpg" || Path.GetFileName(file) == "LICENSE",
+                $"Unexpected file type in the plugin folder: {file}");
         }
     }
 
@@ -80,8 +113,8 @@ public sealed class ClaudePluginTests
     public void LicenseFile_ExistsAtRoot()
     {
         var root = RepoRoot();
-        var licensePath = Path.Combine(root, "LICENSE");
-        Assert.True(File.Exists(licensePath), "LICENSE file must exist at repository root.");
+        var licensePath = Path.Combine(root, "plugins", "claude", "LICENSE");
+        Assert.True(File.Exists(licensePath), "LICENSE file must exist in the plugin folder.");
 
         var text = File.ReadAllText(licensePath);
         Assert.Contains("MIT License", text);
@@ -92,8 +125,8 @@ public sealed class ClaudePluginTests
     public void Readme_ContainsPrivacyPolicySectionAndLink()
     {
         var root = RepoRoot();
-        var readmePath = Path.Combine(root, "README.md");
-        Assert.True(File.Exists(readmePath), "README.md must exist.");
+        var readmePath = Path.Combine(root, "plugins", "claude", "README.md");
+        Assert.True(File.Exists(readmePath), "README.md must exist in the plugin folder.");
 
         var text = File.ReadAllText(readmePath);
         Assert.Contains("## Privacy Policy", text);

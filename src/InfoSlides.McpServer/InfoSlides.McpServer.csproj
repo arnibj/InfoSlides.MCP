@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <AssemblyName>InfoSlides.McpServer</AssemblyName>
+    <RootNamespace>InfoSlides.McpServer</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol.AspNetCore" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\InfoSlides.Mcp.Tools\InfoSlides.Mcp.Tools.csproj" />
+  </ItemGroup>
+</Project>

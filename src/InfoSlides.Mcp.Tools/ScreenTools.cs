@@ -3,9 +3,9 @@ using System.ComponentModel;
 using InfoSlides.Core.Api;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
-using static InfoSlides.Cli.Tools.ToolResults;
+using static InfoSlides.Mcp.Tools.ToolResults;
 
-namespace InfoSlides.Cli.Tools;
+namespace InfoSlides.Mcp.Tools;
 
 /// <summary>
 /// Screen-side tools on the pass-through client: pairing a TV, playing something now, timed

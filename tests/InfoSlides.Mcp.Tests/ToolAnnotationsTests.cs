@@ -3,7 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────────
 
 using System.Reflection;
-using InfoSlides.Cli.Tools;
+using InfoSlides.Mcp.Tools;
 using ModelContextProtocol.Server;
 using Xunit;
 

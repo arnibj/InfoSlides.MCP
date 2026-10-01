@@ -9,5 +9,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\InfoSlides.Cli\InfoSlides.Cli.csproj" />
+    <ProjectReference Include="..\..\src\InfoSlides.Mcp.Tools\InfoSlides.Mcp.Tools.csproj" />
   </ItemGroup>
 </Project>

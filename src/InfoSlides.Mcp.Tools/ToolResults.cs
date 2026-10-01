@@ -5,7 +5,7 @@ using InfoSlides.Core.Api;
 using InfoSlides.Core.Serialization;
 using ModelContextProtocol.Protocol;
 
-namespace InfoSlides.Cli.Tools;
+namespace InfoSlides.Mcp.Tools;
 
 /// <summary>
 /// Shared plumbing for MCP tools: serializes API results (including warnings such as
