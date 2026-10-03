@@ -1,4 +1,4 @@
-# InfoSlides — put content on a TV from your terminal or your agent
+# InfoSlides: put content on a TV from your terminal or your agent
 
 **Turn a PowerPoint, a PDF, a photo, or a live data feed into a video stream playing on any smart TV.**
 The lunch menu on the screen in reception. Opening hours in a shop window. A noticeboard in a
@@ -6,11 +6,13 @@ school corridor. Room information in a hotel lobby. A live numbers board in an o
 
 This repo is the `infoslides` binary: one dependency-free executable that is both a **developer
 CLI** and an **[MCP](https://modelcontextprotocol.io) server** for AI agents like Claude Code,
-Claude Desktop, and Cursor.
+Claude Desktop, and Cursor. The same tools also run as a **hosted server** at
+`https://infoslides.app/mcp`, for assistants like ChatGPT and Claude on the web (see
+[Hosted server](#hosted-server)).
 
 The interesting part is that `create_tenant` is anonymous. An agent with this server installed can
-take someone from *no account at all* to content playing on a physical screen — provision the
-workspace, upload the deck, register the display, assign the schedule, hand back the stream link —
+take someone from *no account at all* to content playing on a physical screen: provision the
+workspace, upload the deck, register the display, assign the schedule, hand back the stream link,
 without anyone opening a dashboard. As far as we know, no other digital signage platform can be
 driven that way.
 
@@ -21,10 +23,10 @@ credit card, no trial clock, nothing expires. The whole flow below costs nothing
 
 ```sh
 # 1. Install (macOS/Linux; see Install for Windows and MCP clients)
-#    Version-pinned — check /releases/latest for the current one.
+#    Version-pinned. Check /releases/latest for the current one.
 curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.7.0/infoslides-v1.7.0-linux-x64.tar.gz | tar xz
 
-# 2. Create a workspace — anonymous, prints an admin API key, saves it to ~/.infoslides
+# 2. Create a workspace (anonymous; prints an admin API key and saves it to ~/.infoslides)
 ./infoslides tenant create "Acme Cafe" owner@acme.test --save
 
 # 3. Grab a ready-made deck from the starter gallery
@@ -39,7 +41,7 @@ curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.7.0/infosl
 ./infoslides stream link <device-id>
 ```
 
-Open that URL in the TV's browser or the InfoSlides TV app — it plays the content whichever way
+Open that URL in the TV's browser or the InfoSlides TV app. It plays the content whichever way
 this screen is set up to play it.
 
 https://github.com/user-attachments/assets/8da62e05-59f4-4a70-9351-dfa3fd47ce4e
@@ -70,7 +72,7 @@ claude plugin install infoslides@infoslides
 ```
 
 Or install the `.mcpb` bundle from the [latest release](https://github.com/arnibj/InfoSlides.MCP/releases/latest)
-in any client that supports MCP bundles — it carries binaries for all three platforms and needs no
+in any client that supports MCP bundles. It carries binaries for all three platforms and needs no
 runtime and no API key to get started.
 
 Or configure it by hand (stdio transport):
@@ -87,7 +89,31 @@ Or configure it by hand (stdio transport):
 }
 ```
 
-`INFOSLIDES_API_KEY` is optional — leave it out and the agent can create a workspace from scratch.
+`INFOSLIDES_API_KEY` is optional. Leave it out and the agent can create a workspace from scratch.
+
+### Hosted server
+
+Assistants that run in the browser or the cloud connect to the hosted server instead of a local binary:
+
+```
+https://infoslides.app/mcp
+```
+
+- **Transport:** streamable HTTP.
+- **Sign-in:** OAuth with your InfoSlides account. The assistant opens an InfoSlides consent page,
+  you approve it, and it acts as you in that workspace. A bearer `isk_` API key also works.
+- **Where to add it:** as a custom connector in ChatGPT, Claude or Gemini, or through the Claude
+  plugin above.
+- **Disconnecting:** revoke any connection at
+  [infoslides.app/settings/connected-apps](https://infoslides.app/settings/connected-apps).
+
+For ChatGPT, Claude and other hosted assistants the server offers a curated set of tools for
+everyday screen work (a Gemini connection gets a wider set): what is playing, slides,
+schedules, tickers, live data, devices and AI Studio slides. It leaves out billing and checkout,
+workspace creation, API key management and file uploads from a local path, which only make sense on
+your own machine or in the dashboard. Every call goes to the InfoSlides API with your own
+credential, and the server stores none. It loads the hosted variant of the assistant skill
+([zip](https://infoslides.app/skills/hosted/infoslides-assistant.zip)).
 
 ### What the agent gets
 
@@ -118,7 +144,7 @@ InfoSlides team (`report_issue` when it gets stuck, `leave_testimonial` after a 
 team may pin a testimonial to the landing page, credited to the agent), PNG slide previews for
 self-verification, API keys including push-only keys scoped to a single slide, and Paddle checkout
 links for a chosen plan and billing period. The backend enforces every plan
-limit — the tool layer cannot bypass them.
+limit, and the tool layer cannot bypass them.
 
 **Designing your own live data slide:** the [agent's guide to templates and pushed data](https://infoslides.app/blog/agents-guide-to-the-infoslides-galaxy)
 covers how to write a template that reads well on a screen and how to connect a system that pushes
@@ -228,8 +254,8 @@ most once a day, in the background, cached to `~/.infoslides/update-check.json`.
 **stderr** in CLI mode (so `--json` output stays clean and pipeable) and into the server
 instructions in `--mcp` mode, where an agent can pass it on.
 
-The check never sits on the critical path — the notice you see comes from the cache and the refresh
-is for next time — so no command is slower for it and being offline costs nothing. Set
+The check never sits on the critical path: the notice you see comes from the cache and the refresh
+is for next time, so no command is slower for it and being offline costs nothing. Set
 `INFOSLIDES_NO_UPDATE_CHECK=1` to switch it off; it also disables itself when `CI` is set.
 
 ## Install
@@ -243,7 +269,7 @@ Download from the [latest release](https://github.com/arnibj/InfoSlides.MCP/rele
 | macOS (Apple Silicon) | `infoslides-v<version>-osx-arm64.tar.gz` |
 | MCP clients           | `infoslides-mcp-v<version>.mcpb`         |
 
-Every release ships `sha256sums.txt`. Nothing is needed at runtime — the binary is Native AOT
+Every release ships `sha256sums.txt`. Nothing is needed at runtime: the binary is Native AOT
 compiled. Or build from source:
 
 ```sh
@@ -252,11 +278,12 @@ dotnet publish src/InfoSlides.Cli -c Release -r linux-x64   # or win-x64 / osx-a
 
 ## Links
 
-- **InfoSlides** — <https://infoslides.app>
-- **REST API reference** — <https://infoslides.app/docs/api> (the `/v1` surface these tools wrap)
-- **Guide for AI agents** — <https://infoslides.app/agents.md>
-- **Blog** — <https://infoslides.app/blog> (guides on templates, live data, screen design and agents)
-- **Digital Signage Assistant skill** — <https://infoslides.app/skills/infoslides-assistant/SKILL.md> ([zip](https://infoslides.app/skills/infoslides-assistant.zip))
+- **InfoSlides**: <https://infoslides.app>
+- **Hosted MCP server**: `https://infoslides.app/mcp` (OAuth; see [Hosted server](#hosted-server))
+- **REST API reference**: <https://infoslides.app/docs/api> (the `/v1` surface these tools wrap)
+- **Guide for AI agents**: <https://infoslides.app/agents.md>
+- **Blog**: <https://infoslides.app/blog> (guides on templates, live data, screen design and agents)
+- **Digital Signage Assistant skill**: <https://infoslides.app/skills/infoslides-assistant/SKILL.md> ([zip](https://infoslides.app/skills/infoslides-assistant.zip))
 
 ## Repository layout
 
@@ -268,22 +295,28 @@ dotnet publish src/InfoSlides.Cli -c Release -r linux-x64   # or win-x64 / osx-a
 | `docs/PUBLISHING.md`  | Release, MCPB bundling, and MCP registry publishing runbook.             |
 | `mcpb/`               | MCPB bundle manifest template.                                           |
 | `src/InfoSlides.Core` | Shared API client, models, AOT JSON context, config, auth.               |
-| `src/InfoSlides.Cli`  | The `infoslides` executable: CLI verbs + MCP server.                     |
-| `tests/`              | Unit tests and end-to-end MCP stdio smoke tests.                         |
+| `src/InfoSlides.Mcp.Tools` | The MCP tools, shared by the local and the hosted server.           |
+| `src/InfoSlides.Cli`  | The `infoslides` executable: CLI verbs + local (stdio) MCP server.       |
+| `src/InfoSlides.McpServer` | The hosted MCP server (streamable HTTP, OAuth) at `infoslides.app/mcp`. |
+| `skills/`             | The Digital Signage Assistant skill, local variant.                      |
+| `plugins/claude/`     | The Claude plugin (hosted server + hosted skill variant).                |
+| `gemini-extension.json`, `GEMINI.md` | The Gemini CLI extension / Antigravity plugin.            |
+| `deploy/`             | Hosted server deployment: systemd unit, nginx, deploy script.            |
+| `tests/`              | Unit tests, end-to-end MCP stdio smoke tests and hosted server tests.    |
 
 ## Development
 
 ```sh
-dotnet build          # AOT analyzers run as errors — keep it warning-free
+dotnet build          # AOT analyzers run as errors; keep it warning-free
 dotnet test           # unit + MCP end-to-end tests (no network needed)
 ```
 
 The MCP SDK tools are registered via the AOT-safe `WithTools<T>()` path; every wire type must be
 listed in `InfoSlidesJsonContext` (a test fails if one is missing). In `--mcp` mode stdout is the
-protocol — log only to stderr.
+protocol, so log only to stderr.
 
 Tool descriptions are trigger text, not documentation: a model matches them against what the user
-just said, so they lead with the situation ("register the physical screen — the TV in reception,
+just said, so they lead with the situation ("register the physical screen: the TV in reception,
 the menu board above the counter") rather than the API operation. Tests in
 `McpStdioSmokeTests` pin that vocabulary so it cannot quietly regress.
 
