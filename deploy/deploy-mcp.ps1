@@ -16,8 +16,12 @@ dotnet publish (Join-Path $root "src\InfoSlides.McpServer\InfoSlides.McpServer.c
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed" }
 
 # rsync --delete keeps the server folder identical to the build (no stale files).
-$source = ($publish -replace '\\', '/') -replace '^([A-Za-z]):', '/cygdrive/$1'
-rsync -az --delete "$source/" "${Server}:/opt/infoslides/mcp/"
+# The rsync on Windows is MSYS2 (Git for Windows or Tizen Studio): it wants /c/... paths, and its own ssh does not
+# find the Windows ~/.ssh key, so the key is passed explicitly. --no-o --no-g: Windows uid/gid do not map to Linux.
+$toMsys = { param($p) '/' + (($p -replace '\\', '/') -replace '^([A-Za-z]):', '$1') }
+$key = @("id_ed25519", "id_rsa") | ForEach-Object { Join-Path $HOME ".ssh\$_" } | Where-Object { Test-Path $_ } | Select-Object -First 1
+if (-not $key) { throw "No SSH key found in ~/.ssh (id_ed25519 or id_rsa)." }
+rsync -a --delete --no-o --no-g -e "ssh -i $(& $toMsys $key)" "$(& $toMsys $publish)/" "${Server}:/opt/infoslides/mcp/"
 if ($LASTEXITCODE -ne 0) { throw "rsync failed" }
 
 ssh $Server "systemctl restart infoslides-mcp && sleep 2 && systemctl is-active infoslides-mcp"
