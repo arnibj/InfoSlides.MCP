@@ -1,0 +1,32 @@
+{
+  "name": "infoslides",
+  "version": "1.7.0",
+  "description": "Digital signage for TV screens, menus, announcements, and live dashboards on InfoSlides.",
+  "author": {
+    "name": "Arni Bjorgvinsson",
+    "url": "https://infoslides.app"
+  },
+  "homepage": "https://infoslides.app",
+  "documentation": "https://infoslides.app/docs/api",
+  "repository": "https://github.com/arnibj/InfoSlides.MCP",
+  "license": "MIT",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "infoslides": {
+      "command": "infoslides",
+      "args": [
+        "--mcp"
+      ],
+      "env": {
+        "INFOSLIDES_API_KEY": "${INFOSLIDES_API_KEY}"
+      }
+    }
+  },
+  "skills": [
+    {
+      "name": "infoslides-assistant",
+      "path": "skills/infoslides-assistant/SKILL.md",
+      "description": "Digital Signage Assistant for managing screens, slideshows, slides, schedules, and live content on InfoSlides."
+    }
+  ]
+}

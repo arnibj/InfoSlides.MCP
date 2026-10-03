@@ -27,7 +27,7 @@ public sealed record AppSettings(Uri ApiUrl, string? Credential, string ConfigDi
         var apiUrl = FirstNonEmpty(flagApiUrl, getEnv(ApiUrlEnvVar), config?.ApiUrl) ?? DefaultApiUrl;
         var credential = FirstNonEmpty(
             flagApiKey,
-            getEnv(ApiKeyEnvVar),
+            UnexpandedPlaceholderToNull(getEnv(ApiKeyEnvVar)),
             credentials?.ApiKey,
             SessionTokenIfValid(credentials));
 
@@ -39,6 +39,15 @@ public sealed record AppSettings(Uri ApiUrl, string? Credential, string ConfigDi
         (credentials.ExpiresAt is null || credentials.ExpiresAt > DateTimeOffset.UtcNow)
             ? token
             : null;
+
+    /// <summary>
+    /// Extension hosts such as Gemini CLI pass <c>${INFOSLIDES_API_KEY}</c> through when the variable is not set.
+    /// That text is not a key, so it is treated as no key and stored credentials still apply.
+    /// </summary>
+    /// <param name="value">The raw environment value.</param>
+    /// <returns>The value, or null when it is an unexpanded <c>${NAME}</c> placeholder.</returns>
+    private static string? UnexpandedPlaceholderToNull(string? value) =>
+        value is not null && value.Trim().StartsWith("${", StringComparison.Ordinal) && value.Trim().EndsWith('}') ? null : value;
 
     private static string? FirstNonEmpty(params string?[] values) =>
         values.FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));

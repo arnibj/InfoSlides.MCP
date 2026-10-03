@@ -1,0 +1,14 @@
+{
+  "name": "infoslides",
+  "owner": {
+    "name": "Arni Bjorgvinsson",
+    "url": "https://infoslides.app"
+  },
+  "plugins": [
+    {
+      "name": "infoslides",
+      "source": "./plugins/claude",
+      "description": "Digital signage for TV screens, menus, announcements and live dashboards on InfoSlides."
+    }
+  ]
+}

@@ -4,12 +4,12 @@ using InfoSlides.Core.Serialization;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
-namespace InfoSlides.Cli.Tools;
+namespace InfoSlides.Mcp.Tools;
 
 [McpServerToolType]
 public sealed class MediaTools(InfoSlidesApiClient api)
 {
-    [McpServerTool(Name = "upload_media")]
+    [McpServerTool(Name = "upload_media", Title = "Upload media file", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
     [Description("Send a picture or video from the user's own computer to their workspace — a photo of " +
                  "the specials board, a poster, a logo, a promo clip. Use this when the file is local " +
                  "and has no public web address. Returns an asset id; pass it to add_media_slide as " +

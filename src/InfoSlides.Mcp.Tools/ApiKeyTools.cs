@@ -5,12 +5,12 @@ using InfoSlides.Core.Serialization;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
-namespace InfoSlides.Cli.Tools;
+namespace InfoSlides.Mcp.Tools;
 
 [McpServerToolType]
 public sealed class ApiKeyTools(InfoSlidesApiClient api)
 {
-    [McpServerTool(Name = "create_api_key")]
+    [McpServerTool(Name = "create_api_key", Title = "Create API key", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
     [Description("Issue a credential so another system or person can work with this workspace. Type " +
                  "'admin' grants full access — use it sparingly. Type 'dataProvider' creates a " +
                  "locked-down push-only key tied to named slides that can do nothing except feed those " +
@@ -41,7 +41,7 @@ public sealed class ApiKeyTools(InfoSlidesApiClient api)
             InfoSlidesJsonContext.Default.CreateApiKeyResult);
     }
 
-    [McpServerTool(Name = "list_api_keys", ReadOnly = true)]
+    [McpServerTool(Name = "list_api_keys", Title = "List API keys", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("Audit who and what can reach this workspace: every key with its scope, when it was " +
                  "created, and when it was last used. Only the opening characters of each key are " +
                  "shown, never the whole thing. Use it to spot unused keys worth revoking, or to find " +
@@ -49,7 +49,7 @@ public sealed class ApiKeyTools(InfoSlidesApiClient api)
     public Task<CallToolResult> ListApiKeys(CancellationToken ct = default) =>
         ToolResults.Execute(() => api.ListApiKeysAsync(ct), InfoSlidesJsonContext.Default.ListApiKeyInfo);
 
-    [McpServerTool(Name = "revoke_api_key", Destructive = true)]
+    [McpServerTool(Name = "revoke_api_key", Title = "Revoke API key", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
     [Description("Cut off a credential immediately — a leaked key, a system being decommissioned, " +
                  "someone who has left. Takes effect at once and cannot be undone; anything still " +
                  "using that key stops working, so confirm with the user before revoking.")]

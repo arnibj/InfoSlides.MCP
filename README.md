@@ -22,7 +22,7 @@ credit card, no trial clock, nothing expires. The whole flow below costs nothing
 ```sh
 # 1. Install (macOS/Linux; see Install for Windows and MCP clients)
 #    Version-pinned — check /releases/latest for the current one.
-curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.6.0/infoslides-v1.6.0-linux-x64.tar.gz | tar xz
+curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.7.0/infoslides-v1.7.0-linux-x64.tar.gz | tar xz
 
 # 2. Create a workspace — anonymous, prints an admin API key, saves it to ~/.infoslides
 ./infoslides tenant create "Acme Cafe" owner@acme.test --save
@@ -50,6 +50,23 @@ Hook it into an MCP client:
 
 ```sh
 infoslides mcp install --client claude-code      # or claude-desktop / cursor
+```
+
+Or install as a **Gemini CLI extension** or **Antigravity plugin**:
+
+```sh
+# In Gemini CLI
+gemini extensions install https://github.com/arnibj/InfoSlides.MCP
+
+# In Antigravity CLI
+agy plugin import gemini https://github.com/arnibj/InfoSlides.MCP
+```
+
+Or add the **Claude plugin** (it uses the hosted server, nothing to install first):
+
+```sh
+claude plugin marketplace add arnibj/InfoSlides.MCP
+claude plugin install infoslides@infoslides
 ```
 
 Or install the `.mcpb` bundle from the [latest release](https://github.com/arnibj/InfoSlides.MCP/releases/latest)
@@ -269,6 +286,12 @@ Tool descriptions are trigger text, not documentation: a model matches them agai
 just said, so they lead with the situation ("register the physical screen — the TV in reception,
 the menu board above the counter") rather than the API operation. Tests in
 `McpStdioSmokeTests` pin that vocabulary so it cannot quietly regress.
+
+## Privacy Policy
+
+InfoSlides processes presentation content, media assets, and screen device metadata solely for rendering and delivering digital signage streams to authorized displays. InfoSlides does not sell user data, train foundation AI models on user content, or track users for third-party advertising.
+
+For full details regarding OAuth authentication security, data retention, and data subject rights, read our [Privacy Policy](https://infoslides.app/privacy).
 
 ## Licence
 

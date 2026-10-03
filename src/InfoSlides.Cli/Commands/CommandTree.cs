@@ -762,7 +762,7 @@ internal static class CommandTree
         var period = new Option<string?>("--period") { Description = "monthly or annual; without it the link opens the plans page." };
         var upgrade = new Command("upgrade", "Get a checkout link for a plan, with its price.") { plan, period };
         upgrade.SetAction((parse, ct) => CliContext.RunTool(parse,
-            api => new Tools.BillingTools(api).UpgradeSubscription(parse.GetValue(plan), parse.GetValue(period), ct)));
+            api => new InfoSlides.Mcp.Tools.BillingTools(api).UpgradeSubscription(parse.GetValue(plan), parse.GetValue(period), ct)));
         billing.Subcommands.Add(upgrade);
         return billing;
     }

@@ -1,0 +1,27 @@
+{
+  "name": "infoslides",
+  "version": "1.7.0",
+  "description": "Digital signage assistant for TV screens, menus, announcements and live dashboards on InfoSlides. Connects to the hosted InfoSlides server; no install needed.",
+  "author": {
+    "name": "Arni Bjorgvinsson",
+    "url": "https://infoslides.app"
+  },
+  "homepage": "https://infoslides.app",
+  "repository": "https://github.com/arnibj/InfoSlides.MCP",
+  "license": "MIT",
+  "keywords": [
+    "digital-signage",
+    "tv",
+    "display",
+    "screen",
+    "slideshow",
+    "presentation",
+    "hls"
+  ],
+  "mcpServers": {
+    "infoslides": {
+      "type": "http",
+      "url": "https://infoslides.app/mcp"
+    }
+  }
+}

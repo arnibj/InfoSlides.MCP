@@ -6,12 +6,12 @@ using InfoSlides.Core.Serialization;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
-namespace InfoSlides.Cli.Tools;
+namespace InfoSlides.Mcp.Tools;
 
 [McpServerToolType]
 public sealed class TemplateTools(InfoSlidesApiClient api)
 {
-    [McpServerTool(Name = "create_template")]
+    [McpServerTool(Name = "create_template", Title = "Create slide template", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
     [Description("Design a screen layout that fills itself in from live data, so the display stays " +
                  "current without anyone editing it — today's soup and price, the current exchange " +
                  "rate, a live sales counter, the next departure time. Requires a paid plan. Two ways " +
@@ -62,14 +62,14 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
             InfoSlidesJsonContext.Default.Template);
     }
 
-    [McpServerTool(Name = "list_templates", ReadOnly = true)]
+    [McpServerTool(Name = "list_templates", Title = "List slide templates", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("See the self-updating screen layouts available to this workspace, each with an " +
                  "example of the data it expects. Check that example before pushing values with " +
                  "update_source, and use this to find a ready-made layout instead of building one.")]
     public Task<CallToolResult> ListTemplates(CancellationToken ct = default) =>
         ToolResults.Execute(() => api.ListTemplatesAsync(ct), InfoSlidesJsonContext.Default.ListTemplate);
 
-    [McpServerTool(Name = "update_source")]
+    [McpServerTool(Name = "update_source", Title = "Update live slide data", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("Put fresh information on the screen: send today's menu, the new price, the current " +
                  "total, the updated opening hours. The display re-renders itself server-side — nobody " +
                  "has to touch the TV. The data must match the shape the template's example defines " +
@@ -85,7 +85,7 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
         ToolResults.Execute(() => api.UpdateSourceAsync(slideId, data, dryRun, ct),
             InfoSlidesJsonContext.Default.OkResult);
 
-    [McpServerTool(Name = "push_data")]
+    [McpServerTool(Name = "push_data", Title = "Push live data", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
     [Description("Send new data to a push source: the whole set of values the slide shows, as one " +
                  "JSON object with the template's field names. Every slide on the source updates, and a " +
                  "slide that was hidden waiting for data appears. Returns receivedAt. A push-only " +
@@ -99,7 +99,7 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
         ToolResults.Execute(() => api.PushSourceDataAsync(sourceId, data, dryRun, ct),
             InfoSlidesJsonContext.Default.PushReceived);
 
-    [McpServerTool(Name = "get_source_status", ReadOnly = true)]
+    [McpServerTool(Name = "get_source_status", Title = "Get content source status", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("Check a source. For a push source: when data last arrived (lastReceivedAt), whether " +
                  "its slides are showing data (isShowingData, false before the first push or after the " +
                  "data went stale), the staleness timeout, and which slides it feeds; use it to confirm a " +
@@ -111,7 +111,7 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
         ToolResults.Execute(() => api.GetSourceStatusAsync(sourceId, ct),
             InfoSlidesJsonContext.Default.PushSourceStatus);
 
-    [McpServerTool(Name = "create_source_key")]
+    [McpServerTool(Name = "create_source_key", Title = "Create source API key", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
     [Description("Create a push-only key for a push source, to give to the system that sends its " +
                  "data. The key can push to this one source and do nothing else. It is returned once: " +
                  "show it to the user or store it where the system can read it, because it cannot be " +

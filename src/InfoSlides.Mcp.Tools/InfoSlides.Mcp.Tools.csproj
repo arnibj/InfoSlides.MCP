@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+    <RootNamespace>InfoSlides.Mcp.Tools</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Copied from the website build by scripts/sync-skills.py; hosted-rules.json is read by tests only. -->
+    <EmbeddedResource Include="Instructions/full.txt" LogicalName="Instructions.full.txt" />
+    <EmbeddedResource Include="Instructions/hosted.txt" LogicalName="Instructions.hosted.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\InfoSlides.Core\InfoSlides.Core.csproj" />
+  </ItemGroup>
+</Project>

@@ -6,12 +6,12 @@ using InfoSlides.Core.Serialization;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
-namespace InfoSlides.Cli.Tools;
+namespace InfoSlides.Mcp.Tools;
 
 [McpServerToolType]
 public sealed class SlideshowTools(InfoSlidesApiClient api)
 {
-    [McpServerTool(Name = "upload_slideshow")]
+    [McpServerTool(Name = "upload_slideshow", Title = "Upload presentation file", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
     [Description("Create the content that will play on a screen — the lunch menu, this week's offers, " +
                  "opening hours, staff notices, a welcome message for a hotel lobby. A slideshow is a " +
                  "deck of slides that loops on the display. Resolution defaults to 1920x1080 for a " +
@@ -29,7 +29,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
             () => api.CreateSlideshowAsync(new CreateSlideshowRequest(title, new Resolution(width, height), slides), ct),
             InfoSlidesJsonContext.Default.Slideshow);
 
-    [McpServerTool(Name = "update_slideshow")]
+    [McpServerTool(Name = "update_slideshow", Title = "Update slideshow settings", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("Change what is already playing on a screen: rename it, switch it between landscape " +
                  "and portrait, reorder the slides, turn the news ticker or the on-screen clock on or " +
                  "off, make every slide show for the same number of seconds, or force how it plays. " +
@@ -84,7 +84,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
             InfoSlidesJsonContext.Default.Slideshow);
     }
 
-    [McpServerTool(Name = "delete_slideshow", Destructive = true)]
+    [McpServerTool(Name = "delete_slideshow", Title = "Delete slideshow", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
     [Description("Delete a slideshow for good: the old lunch menu, a campaign that has ended, a test " +
                  "deck. Its schedules are removed and any screen playing it stops " +
                  "showing it at its next check-in. The API has no undelete, so confirm with the person " +
@@ -95,7 +95,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
         CancellationToken ct = default) =>
         ToolResults.Execute(() => api.DeleteSlideshowAsync(slideshowId, ct), InfoSlidesJsonContext.Default.OkResult);
 
-    [McpServerTool(Name = "replace_slideshow_file", Destructive = true)]
+    [McpServerTool(Name = "replace_slideshow_file", Title = "Replace slideshow file", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
     [Description("Swap the PowerPoint or PDF behind an existing slideshow for a new version, so " +
                  "\"replace the lobby presentation with this new PowerPoint\" keeps the same slideshow, " +
                  "the same screens and the same schedule. Photos, videos and live-data slides the " +
@@ -123,7 +123,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
             InfoSlidesJsonContext.Default.Slideshow);
     }
 
-    [McpServerTool(Name = "list_slideshows", ReadOnly = true)]
+    [McpServerTool(Name = "list_slideshows", Title = "List slideshows", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("See everything this workspace can put on a screen, with the shape (landscape or " +
                  "portrait) each one is built for, whether its latest render has finished " +
                  "(renderStatus) and how many screens are playing it (screenCount). Use it to find the " +
@@ -135,7 +135,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
         CancellationToken ct = default) =>
         ToolResults.Execute(() => api.ListSlideshowsAsync(q, ct), InfoSlidesJsonContext.Default.ListSlideshow);
 
-    [McpServerTool(Name = "get_slideshow", ReadOnly = true)]
+    [McpServerTool(Name = "get_slideshow", Title = "Get slideshow details", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("Look inside one piece of screen content: every slide (its type, whether it is " +
                  "hidden, how long it is shown, a thumbnailUrl, and every rule about when it appears), " +
                  "the order they play in, the ticker, clock and default duration, which screens are " +
@@ -148,7 +148,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
         CancellationToken ct = default) =>
         ToolResults.Execute(() => api.GetSlideshowAsync(slideshowId, ct), InfoSlidesJsonContext.Default.Slideshow);
 
-    [McpServerTool(Name = "clone_slideshow")]
+    [McpServerTool(Name = "clone_slideshow", Title = "Clone slideshow", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
     [Description("Copy an existing deck so it can be customised without touching the original — or, " +
                  "with fromGallery=true, start from a ready-made professional design instead of a " +
                  "blank screen. Cloning from the gallery is the fastest way to get something " +
@@ -161,14 +161,14 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
             () => fromGallery ? api.CloneGalleryItemAsync(sourceId, ct) : api.CloneSlideshowAsync(sourceId, ct),
             InfoSlidesJsonContext.Default.Slideshow);
 
-    [McpServerTool(Name = "list_gallery", ReadOnly = true)]
+    [McpServerTool(Name = "list_gallery", Title = "List gallery templates", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("Browse ready-made screen designs — menu boards, welcome screens, notice layouts — " +
                  "that can be copied into the workspace with clone_slideshow(fromGallery=true). Start " +
                  "here when the user wants something on a screen quickly and has no content prepared.")]
     public Task<CallToolResult> ListGallery(CancellationToken ct = default) =>
         ToolResults.Execute(() => api.ListGalleryAsync(ct), InfoSlidesJsonContext.Default.ListGalleryItem);
 
-    [McpServerTool(Name = "add_media_slide")]
+    [McpServerTool(Name = "add_media_slide", Title = "Add photo or video slide", ReadOnly = false, Destructive = false, OpenWorld = true, Idempotent = false)]
     [Description("Put a picture or a video on the screen — a photo of the specials board, a poster, a " +
                  "promo clip, a logo. Takes either a publicly reachable URL (downloaded server-side) or " +
                  "the id of a file already in the media library (see upload_media); provide exactly " +
@@ -194,7 +194,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
             InfoSlidesJsonContext.Default.Slide);
     }
 
-    [McpServerTool(Name = "add_dynamic_slide")]
+    [McpServerTool(Name = "add_dynamic_slide", Title = "Add live data slide", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
     [Description("Add a slide that keeps itself up to date instead of showing a fixed picture — " +
                  "today's soup, the current queue number, live sales figures, tomorrow's weather. " +
                  "Needs a template first (see create_template or list_templates). With a push template " +
@@ -213,7 +213,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
                 slideshowId, new AddDynamicSlideRequest(templateId, durationSeconds, position, createPushKey ? true : null), ct),
             InfoSlidesJsonContext.Default.Slide);
 
-    [McpServerTool(Name = "upload_pptx")]
+    [McpServerTool(Name = "upload_pptx", Title = "Upload PowerPoint or PDF", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
     [Description("Put an existing PowerPoint or PDF on a screen. Uploads a .pptx or .pdf from the " +
                  "local disk and turns it into screen content — the server reads the slide/page count " +
                  "and the file's own resolution and starts rendering it into a video stream. This is " +
@@ -241,7 +241,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
             InfoSlidesJsonContext.Default.Slideshow);
     }
 
-    [McpServerTool(Name = "set_slide_conditions")]
+    [McpServerTool(Name = "set_slide_conditions", Title = "Set slide display conditions", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
     [Description("Make a slide appear only at the right moment, or vanish at one, like the breakfast menu " +
                  "before 11, the weekend offer on Saturday and Sunday, the Christmas slide only in " +
                  "December, a 'target hit' message only when the number is actually hit. Types: " +
@@ -264,7 +264,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
         ToolResults.Execute(() => api.SetSlideConditionsAsync(slideId, conditions, mode, match, ct),
             InfoSlidesJsonContext.Default.Slide);
 
-    [McpServerTool(Name = "update_slide")]
+    [McpServerTool(Name = "update_slide", Title = "Update slide properties", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("Change one slide that is already in a slideshow: make it stay on screen longer or " +
                  "shorter (durationSeconds, 1 to 300), or hide it and bring it back (hidden), like \"hide " +
                  "the Christmas slide\", \"show the offer for 20 seconds\". For a live-data slide it " +
@@ -304,7 +304,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
             InfoSlidesJsonContext.Default.Slide);
     }
 
-    [McpServerTool(Name = "delete_slide", Destructive = true)]
+    [McpServerTool(Name = "delete_slide", Title = "Delete slide", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
     [Description("Remove one slide from a slideshow for good: the Christmas slide once it is over, a " +
                  "wrong photo, a page nobody wants. The slides after it close up and any rule on it " +
                  "goes too. If the slide may come back later, hide it with update_slide instead. " +
@@ -314,7 +314,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
         CancellationToken ct = default) =>
         ToolResults.Execute(() => api.DeleteSlideAsync(slideId, ct), InfoSlidesJsonContext.Default.OkResult);
 
-    [McpServerTool(Name = "list_sources", ReadOnly = true)]
+    [McpServerTool(Name = "list_sources", Title = "List content sources", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("See the data sources this workspace can show on a screen: RSS news feeds, " +
                  "calendars, weather, live data pushed by another system. Use it to find the id of a " +
                  "source before scrolling its headlines in a slideshow's news ticker " +
@@ -323,7 +323,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
     public Task<CallToolResult> ListSources(CancellationToken ct = default) =>
         ToolResults.Execute(() => api.ListSourcesAsync(ct), InfoSlidesJsonContext.Default.ListSource);
 
-    [McpServerTool(Name = "preview_slide", ReadOnly = true)]
+    [McpServerTool(Name = "preview_slide", Title = "Preview slide image", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("See exactly what a slide will look like on the screen, as a PNG image, before the " +
                  "public does. Worth doing whenever text might overflow, a logo might sit badly, or " +
                  "live data has just been pushed — a mistake on a lobby display is visible to every " +

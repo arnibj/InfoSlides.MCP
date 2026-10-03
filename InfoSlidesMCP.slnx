@@ -2,9 +2,12 @@
   <Folder Name="/src/">
     <Project Path="src/InfoSlides.Cli/InfoSlides.Cli.csproj" />
     <Project Path="src/InfoSlides.Core/InfoSlides.Core.csproj" />
+    <Project Path="src/InfoSlides.Mcp.Tools/InfoSlides.Mcp.Tools.csproj" />
+    <Project Path="src/InfoSlides.McpServer/InfoSlides.McpServer.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/InfoSlides.Core.Tests/InfoSlides.Core.Tests.csproj" />
     <Project Path="tests/InfoSlides.Mcp.Tests/InfoSlides.Mcp.Tests.csproj" />
+    <Project Path="tests/InfoSlides.McpServer.Tests/InfoSlides.McpServer.Tests.csproj" />
   </Folder>
 </Solution>
