@@ -9,14 +9,15 @@ Wants=infoslides.service
 [Service]
 Type=simple
 WorkingDirectory=/opt/infoslides/mcp
-ExecStart=/usr/bin/dotnet /opt/infoslides/mcp/InfoSlides.McpServer.dll
+# Same dotnet as infoslides.service (check with: systemctl cat infoslides | grep ^ExecStart).
+ExecStart=/usr/local/bin/dotnet /opt/infoslides/mcp/InfoSlides.McpServer.dll
 EnvironmentFile=/etc/infoslides/mcp.env
 Environment=ASPNETCORE_ENVIRONMENT=Production
 Environment=ASPNETCORE_URLS=http://127.0.0.1:5004
 Restart=always
 RestartSec=5
 # Same user as infoslides.service (check with: systemctl cat infoslides | grep ^User).
-# User=infoslides
+User=infoslides
 # Stop promptly on deploy (a host that ignores its stop token otherwise costs the 30 s default).
 KillSignal=SIGINT
 TimeoutStopSec=15

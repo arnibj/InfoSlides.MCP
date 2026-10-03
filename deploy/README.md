@@ -11,8 +11,9 @@ the API (`/v1`), not here.
 ## One-time setup (on the server)
 
 1. `mkdir -p /opt/infoslides/mcp`
-2. Copy `deploy/infoslides-mcp.service` to `/etc/systemd/system/infoslides-mcp.service`; set `User=` to the user that runs
-   `infoslides.service`.
+2. Copy `deploy/infoslides-mcp.service` to `/etc/systemd/system/infoslides-mcp.service`. It assumes the same user
+   (`infoslides`) and dotnet path (`/usr/local/bin/dotnet`) as `infoslides.service`; check both with
+   `systemctl cat infoslides | grep '^User\|^ExecStart'` and adjust if they differ.
 3. Copy `deploy/mcp.env.example` to `/etc/infoslides/mcp.env` (nothing in it is secret).
 4. Add the two `location` blocks from `deploy/nginx-mcp.conf` to the `infoslides.app` server block in
    `/etc/nginx/sites-available/infoslides`, then `nginx -t && systemctl reload nginx`.
