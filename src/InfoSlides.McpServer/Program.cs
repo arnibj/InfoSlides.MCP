@@ -119,10 +119,21 @@ builder.Services.AddRateLimiter(limiter =>
         }));
 });
 
+// Browser-based clients (MCP Inspector) fetch the resource metadata and call /mcp from their own origin. Any
+// origin, never credentials: the host authenticates by bearer header only, so an open policy grants a page nothing it
+// could not do without CORS. The client must read WWW-Authenticate (the 401 challenge) and Mcp-Session-Id.
+builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
+    .AllowAnyOrigin()
+    .WithMethods("GET", "POST", "DELETE")
+    .WithHeaders("Authorization", "Content-Type", "Accept", "Mcp-Protocol-Version", "Mcp-Session-Id", "Last-Event-ID")
+    .WithExposedHeaders("WWW-Authenticate", "Mcp-Session-Id")));
+
 var app = builder.Build();
 
 // Behind nginx on the same machine: trust its forwarded address and scheme (loopback only by default).
 app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto });
+// Before authentication: the resource metadata document and the 401 challenge come from the authentication handler.
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();

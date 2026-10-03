@@ -6,3 +6,6 @@ artifacts/
 .idea/
 *.DotSettings.user
 TestResults/
+
+# deploy-mcp.ps1 output
+publish/
