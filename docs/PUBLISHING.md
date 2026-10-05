@@ -141,3 +141,7 @@ indexed and separately crawled, so each is worth a direct submission in the same
 
 Digital signage has no MCP server in any of them today, so the category is unclaimed. Lead each
 submission with the outcome — an agent can put content on a real TV — rather than the tool list.
+
+## Directory review rules for the hosted server
+
+Claude, ChatGPT and Microsoft review the hosted server's tool text. What the hosted descriptions may say, why every JSON parameter needs a schema type, and the tests that enforce both are in [hosted-directory-rules.md](hosted-directory-rules.md). Read it before adding or changing a hosted tool.

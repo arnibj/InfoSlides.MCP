@@ -83,11 +83,11 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
     public Task<CallToolResult> CreateSource(
         [Description("Adapter type from list_adapters, e.g. 'RssFeed'.")] string adapterType,
         [Description("Display name, e.g. 'RÚV news'.")] string name,
-        [Description("Config object as JSON, e.g. {\"feedUrl\":\"https://...\"}.")] JsonElement? config = null,
+        [Description("Config object as JSON, e.g. {\"feedUrl\":\"https://...\"}.")] JsonObject? config = null,
         [Description("Fetch interval in seconds (default 3600).")] int? fetchIntervalSeconds = null,
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/sources",
-            Body(("adapterType", adapterType), ("name", name), ("config", Node(config)), ("fetchIntervalSeconds", fetchIntervalSeconds)),
+            Body(("adapterType", adapterType), ("name", name), ("config", config), ("fetchIntervalSeconds", fetchIntervalSeconds)),
             idempotent: true, ct));
 
     [McpServerTool(Name = "update_source_settings", Title = "Update source configuration", ReadOnly = false, Destructive = false, OpenWorld = true, Idempotent = true)]
@@ -96,12 +96,12 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
     public Task<CallToolResult> EditSource(
         [Description("Id of the source.")] string sourceId,
         [Description("New display name.")] string? name = null,
-        [Description("New config object as JSON.")] JsonElement? config = null,
+        [Description("New config object as JSON.")] JsonObject? config = null,
         [Description("New fetch interval in seconds.")] int? fetchIntervalSeconds = null,
         [Description("False pauses fetching, true resumes it.")] bool? isEnabled = null,
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Patch, $"/v1/sources/{Id(sourceId)}",
-            Body(("name", name), ("config", Node(config)), ("fetchIntervalSeconds", fetchIntervalSeconds), ("isEnabled", isEnabled)),
+            Body(("name", name), ("config", config), ("fetchIntervalSeconds", fetchIntervalSeconds), ("isEnabled", isEnabled)),
             ct: ct));
 
     [McpServerTool(Name = "delete_source", Title = "Delete content source", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
@@ -249,11 +249,11 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
     public Task<CallToolResult> PreviewTemplate(
         [Description("Template HTML; every {{field}} is a data field.")] string layoutHtml,
         [Description("Template CSS.")] string? layoutCss = null,
-        [Description("Example data as a JSON object.")] JsonElement? sampleData = null,
+        [Description("Example data as a JSON object.")] JsonObject? sampleData = null,
         [Description("16:9 (default), 9:16 or 1:1.")] string? aspectRatio = null,
         CancellationToken ct = default) =>
         ExecutePng(() => api.GetPngAsync(HttpMethod.Post, "/v1/templates/preview",
-                Body(("layoutHtml", layoutHtml), ("layoutCss", layoutCss), ("sampleData", Node(sampleData)), ("aspectRatio", aspectRatio)), ct),
+                Body(("layoutHtml", layoutHtml), ("layoutCss", layoutCss), ("sampleData", sampleData), ("aspectRatio", aspectRatio)), ct),
             "Template preview");
 
     private static JsonNode? Node(JsonElement? value) =>

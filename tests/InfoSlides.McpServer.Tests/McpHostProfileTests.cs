@@ -60,6 +60,43 @@ public sealed class McpHostProfileTests(McpHostFactory factory) : IClassFixture<
         Assert.DoesNotContain("upgrade_subscription", names);
     }
 
+    /// <summary>
+    /// The directory attestation says tool descriptions hold no instructions about model behaviour or other tools, so a
+    /// hosted description may not name another tool or address the model.
+    /// </summary>
+    [Fact]
+    public async Task HostedDescriptions_NameNoOtherToolAndGiveNoInstructions()
+    {
+        var tools = await ListToolsAsync(factory.MintToken(surface: "claude"));
+        var names = tools.Select(t => t.GetProperty("name").GetString()!).ToList();
+        var directive = new Regex(@"\b(you|your|ask|tell|confirm|poll|prefer|should|must|please|say so|read out|pass them on)\b", RegexOptions.IgnoreCase);
+        var problems = new List<string>();
+
+        foreach (var tool in tools)
+        {
+            var name = tool.GetProperty("name").GetString()!;
+            var texts = new List<string> { tool.GetProperty("description").GetString()! };
+            foreach (var p in tool.GetProperty("inputSchema").GetProperty("properties").EnumerateObject())
+            {
+                if (p.Value.TryGetProperty("description", out var d))
+                {
+                    texts.Add(d.GetString()!);
+                }
+            }
+
+            foreach (var text in texts)
+            {
+                problems.AddRange(names.Where(n => n != name && text.Contains(n, StringComparison.Ordinal)).Select(n => $"{name} names {n}"));
+                if (directive.Match(text) is { Success: true } m)
+                {
+                    problems.Add($"{name}: '{m.Value}'");
+                }
+            }
+        }
+
+        Assert.True(problems.Count == 0, string.Join("; ", problems));
+    }
+
     [Fact]
     public async Task Gemini_AndApiKeys_GetTheFullSet()
     {

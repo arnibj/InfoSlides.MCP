@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using InfoSlides.Core.Api;
 using InfoSlides.Core.Models;
 using InfoSlides.Core.Serialization;
@@ -27,7 +28,7 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
     public Task<CallToolResult> CreateTemplate(
         [Description("What this layout is for, e.g. 'Soup of the day' or 'Live sales board'.")] string title,
         [Description("Description of how the slide should look (AI mode). Requires sampleJson.")] string? prompt = null,
-        [Description("Example of the data this slide will show, as JSON — defines the shape update_source must send.")] JsonElement? sampleJson = null,
+        [Description("Example of the data this slide will show, as JSON — defines the shape update_source must send.")] JsonObject? sampleJson = null,
         [Description("Finished HTML with {{field}} placeholders (code mode).")] string? html = null,
         [Description("Optional stylesheet for the custom HTML (code mode).")] string? css = null,
         [Description("'push' when an outside system will send the data (gives the slide a push source); omit otherwise.")] string? dataMode = null,
@@ -58,7 +59,7 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
         }
 
         return ToolResults.Execute(
-            () => api.CreateTemplateAsync(new CreateTemplateRequest(title, prompt, sampleJson, html, css, dataMode?.ToLowerInvariant()), dryRun, ct),
+            () => api.CreateTemplateAsync(new CreateTemplateRequest(title, prompt, ToolResults.ToElement(sampleJson), html, css, dataMode?.ToLowerInvariant()), dryRun, ct),
             InfoSlidesJsonContext.Default.Template);
     }
 
@@ -79,10 +80,10 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
                  "dryRun=true to check the data without changing what is on screen.")]
     public Task<CallToolResult> UpdateSource(
         [Description("Id of the slide to update.")] string slideId,
-        [Description("The new values, as a JSON object matching the template's example data.")] JsonElement data,
+        [Description("The new values, as a JSON object matching the template's example data.")] JsonObject data,
         [Description("Check the data without changing what is on screen.")] bool dryRun = false,
         CancellationToken ct = default) =>
-        ToolResults.Execute(() => api.UpdateSourceAsync(slideId, data, dryRun, ct),
+        ToolResults.Execute(() => api.UpdateSourceAsync(slideId, ToolResults.ToElement(data)!.Value, dryRun, ct),
             InfoSlidesJsonContext.Default.OkResult);
 
     [McpServerTool(Name = "push_data", Title = "Push live data", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
@@ -93,10 +94,10 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
                  "sends the data. Set dryRun=true to check the data without storing it.")]
     public Task<CallToolResult> PushData(
         [Description("Id of the push source (the sourceId returned by add_dynamic_slide).")] string sourceId,
-        [Description("The values, as a JSON object with the template's field names.")] JsonElement data,
+        [Description("The values, as a JSON object with the template's field names.")] JsonObject data,
         [Description("Check the data without storing it.")] bool dryRun = false,
         CancellationToken ct = default) =>
-        ToolResults.Execute(() => api.PushSourceDataAsync(sourceId, data, dryRun, ct),
+        ToolResults.Execute(() => api.PushSourceDataAsync(sourceId, ToolResults.ToElement(data)!.Value, dryRun, ct),
             InfoSlidesJsonContext.Default.PushReceived);
 
     [McpServerTool(Name = "get_source_status", Title = "Get content source status", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]

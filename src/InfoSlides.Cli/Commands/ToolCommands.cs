@@ -185,7 +185,7 @@ internal static class ToolCommands
         var interval = Opt<int?>("--interval", "Fetch interval in seconds (default 3600).");
         source.Subcommands.Add(Verb("create", "Create a source InfoSlides fetches itself (RSS, weather, calendar...).",
             (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).CreateSource(p.GetValue(adapter)!, p.GetValue(name)!,
-                p.GetValue(config) is { } c ? CliContext.ParseJson(c) : null, p.GetValue(interval), ct)),
+                p.GetValue(config) is { } c ? CliContext.ParseJsonObject(c) : null, p.GetValue(interval), ct)),
             adapter, name, config, interval));
 
         var editId = Arg("source-id", "Source id.");
@@ -195,7 +195,7 @@ internal static class ToolCommands
         var enabled = Opt<bool?>("--enabled", "false pauses fetching, true resumes it.");
         source.Subcommands.Add(Verb("edit", "Change a source's name, config or interval, or pause and resume it.",
             (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).EditSource(p.GetValue(editId)!, p.GetValue(editName),
-                p.GetValue(editConfig) is { } c ? CliContext.ParseJson(c) : null, p.GetValue(editInterval), p.GetValue(enabled), ct)),
+                p.GetValue(editConfig) is { } c ? CliContext.ParseJsonObject(c) : null, p.GetValue(editInterval), p.GetValue(enabled), ct)),
             editId, editName, editConfig, editInterval, enabled));
 
         var deleteId = Arg("source-id", "Source id.");
@@ -216,7 +216,7 @@ internal static class ToolCommands
         template.Subcommands.Add(Verb("preview", "Render a template design to a PNG without saving it.",
             (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).PreviewTemplate(
                     CliContext.ValueOrFile(p.GetValue(html)!), p.GetValue(css) is { } c ? CliContext.ValueOrFile(c) : null,
-                    p.GetValue(sample) is { } s ? CliContext.ParseJson(s) : null, p.GetValue(aspect), ct),
+                    p.GetValue(sample) is { } s ? CliContext.ParseJsonObject(s) : null, p.GetValue(aspect), ct),
                 p.GetValue(output) ?? "template-preview.png"),
             html, css, sample, aspect, output));
     }

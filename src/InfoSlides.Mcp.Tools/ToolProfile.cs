@@ -59,77 +59,91 @@ public static class HostedToolProfile
         };
 
     /// <summary>
-    /// Hosted wording for tools whose shared description mentions upgrades, trials or tools the hosted profile does
-    /// not offer. The local stdio server keeps the original text; hosted-rules.json decides what the hosted text may say.
+    /// Hosted wording for every hosted tool: it says what the tool does, takes and returns, with no instructions to the
+    /// model and no mention of other tools (the directory attestation requires that). The local stdio server keeps the
+    /// original text; hosted-rules.json decides what the hosted text may say.
     /// </summary>
     public static readonly IReadOnlyDictionary<string, string> DescriptionOverrides =
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["create_device"] =
-                "Register the physical screen the content will play on — the TV in reception, the " +
-                "menu board above the counter, the noticeboard in the corridor, the display in the " +
-                "waiting room, the monitor in the shop window (Icelandic: upplýsingaskjár, skjár). " +
-                "Do this once per screen. The workspace's plan sets how many screens can be active; " +
-                "DeviceLimitReached means they are all in use, and a workspace admin can change the plan in " +
-                "InfoSlides account settings. Resolution defaults to 1920x1080 for a normal wall-mounted TV — " +
-                "use 1080x1920 for a screen turned on its end, which is common for menu boards and window displays.",
-            ["make_ai_slide"] =
-                "AI Studio: design a slide in the workspace's style from a description (handler prompt: " +
-                "headline, details, prices, times), a photo of a poster, menu or whiteboard (photo: " +
-                "mediaUrl, or mediaAssetId of a file already in the media library), a web page (url) or a " +
-                "PDF/Word file (document: mediaAssetId). Returns a job at once: poll get_ai_slide_job every 5 " +
-                "seconds (10 to 60 seconds). By default it stops at Ready with preview images: show them to the " +
-                "person, then insert_ai_slides. To show a photo as it is, use add_media_slide instead. " +
-                "EntitlementRequired means AI Studio is not on the workspace's plan; a workspace admin can change " +
-                "the plan in InfoSlides account settings.",
-            // Template ids come from slides already in the workspace: list_templates and create_template are not hosted.
+            ["preview_slide"] =
+                "Returns a PNG image of how one slide will look on the screen.",
+            ["get_device_diagnosis"] =
+                "Lists the causes that could explain a screen looking wrong, most likely first: offline since a time, an empty or failed slideshow, nothing scheduled, every slide hidden by its rules, expired plan, or paired elsewhere. Each cause has a plain sentence and, where one exists, a ready-made fix request. An empty list means the screen looks healthy.",
+            ["list_devices"] =
+                "Lists every screen registered to the workspace with the shape each is set up for, what it is playing now (nowPlayingTitle and nowPlayingSlideshowId) and how many of the allowed screens are used. q filters by name, case and accent insensitive ('lobby' finds 'Lobby Screen'). supportsHtml says whether the screen's app plays HTML playback.",
             ["add_dynamic_slide"] =
-                "Add a slide that keeps itself up to date instead of showing a fixed picture — " +
-                "today's soup, the current queue number, live sales figures, tomorrow's weather. " +
-                "Needs a template id: use the templateId of a live-data slide already in a slideshow " +
-                "(get_slideshow lists it), for example one in a gallery design copied with clone_slideshow. " +
-                "New templates are designed in InfoSlides itself. With a push template the result includes " +
-                "sourceId, the push source to send data to with push_data; the slide stays hidden until the " +
-                "first data arrives. Otherwise push values with update_source.",
-            ["add_media_slide"] =
-                "Put a picture or a video on the screen — a photo of the specials board, a poster, a " +
-                "promo clip, a logo. Takes either a publicly reachable URL (downloaded server-side) or " +
-                "the id of a file already in the workspace's media library; provide exactly " +
-                "one. If the picture's shape does not match the screen's, the call still succeeds but " +
-                "returns an AspectMismatch warning — fix it rather than letting content be stretched " +
-                "or cropped on a display the public can see.",
-            // get_stream_link is not hosted; get_slideshow hands out each screen's playerUrl.
-            ["assign_schedule"] =
-                "Tell a screen what to play. Connects slideshows to a registered display, in the " +
-                "order given, as a continuous loop. The call succeeds even when the content's shape " +
-                "does not match the screen's, but returns an AspectMismatch warning — act on it, " +
-                "because it means the content will be stretched or cropped on a display people can " +
-                "see. To get the TV showing it, use the playerUrl that get_slideshow lists for the " +
-                "screen, or connect a TV that shows its pairing screen with pair_device.",
-            ["update_slide"] =
-                "Change one slide that is already in a slideshow: make it stay on screen longer or " +
-                "shorter (durationSeconds, 1 to 300), or hide it and bring it back (hidden), like \"hide " +
-                "the Christmas slide\", \"show the offer for 20 seconds\". For a live-data slide it " +
-                "can also change what it shows: switch to another template (templateId) or content " +
-                "source (sourceId), change the value on it (overrideData, e.g. {\"price\":\"1.990 kr\"}; " +
-                "only the fields you send change, and null removes one), or set its countdown. Text " +
-                "inside an uploaded PowerPoint page cannot be edited this way: say so, and suggest " +
-                "replacing the file in InfoSlides. Only what you pass changes. To take " +
-                "the slide out for good use delete_slide.",
-            ["update_source"] =
-                "Put fresh information on the screen: send today's menu, the new price, the current " +
-                "total, the updated opening hours. The display re-renders itself server-side — nobody " +
-                "has to touch the TV. The data must use the fields the slide's template expects: send " +
-                "the same field names the slide already shows (preview_slide shows it). For a slide on a " +
-                "push source the data goes to that source, exactly as push_data would send it. Set " +
-                "dryRun=true to check the data without changing what is on screen.",
-            // The hosted server cannot read the person's files, so only mediaUrl is offered.
+                "Adds a slide that keeps itself up to date instead of showing a fixed picture, such as today's soup, a queue number, sales figures or the weather. Takes the templateId of a live-data slide already in a slideshow. With a push template the result includes sourceId, the push source the data is sent to. The slide stays hidden until the first data arrives.",
+            ["get_ai_slide_job"] =
+                "Returns the state of an AI slide job: Processing, Ready (with preview images), Inserted, NeedsClarification (with a question) or Failed. Jobs are kept for 24 hours.",
+            ["identify_devices"] =
+                "Shows each online screen's own name in large text (or only the given ones) for about 90 seconds, so a person in the room can see which screen is which. The result lists each screen's deviceId and name, and how many seconds, up to 60, the name takes to appear.",
+            ["get_now_slide_png"] =
+                "Returns the slide a screen is scheduled to show right now as an image, worked out from its schedule, takeovers, slide rules and slide durations. It shows what is scheduled, not a camera view, so an offline TV may show something else.",
+            ["delete_slide"] =
+                "Removes one slide from a slideshow permanently. The slides after it close up and any display rule on it is removed.",
+            ["list_slideshows"] =
+                "Lists everything the workspace can put on a screen, with the shape (landscape or portrait) each is built for, whether its latest render has finished (renderStatus) and how many screens play it (screenCount). q filters by title, case and accent insensitive ('q1' finds 'Q1 Results 2026').",
             ["show_media_on_device"] =
-                "\"Show this photo on the lobby screen for an hour.\" Puts a photo or video on a screen as " +
-                "a temporary takeover, then the normal schedule returns. Give mediaUrl (a public address of the " +
-                "photo or video). The screen switches once processing finishes (seconds for a photo, longer for " +
-                "video): poll get_show_status with the returned ids and report the percent. A photo whose shape " +
-                "does not match the screen gets a blurred fill, not black bars.",
+                "Puts a photo or video on a screen as a temporary takeover, then the normal schedule returns. Takes mediaUrl, the public address of the photo or video. The screen switches once processing finishes (seconds for a photo, longer for video). The result carries the ids that identify the upload. A photo whose shape does not match the screen gets a blurred fill, not black bars.",
+            ["add_media_slide"] =
+                "Adds a picture or video slide to a slideshow, from a publicly reachable URL (downloaded server-side) or the id of a file already in the media library; exactly one is given. If the picture's shape does not match the screen's, the call succeeds and returns an AspectMismatch warning.",
+            ["get_schedule"] =
+                "Returns a screen's schedule: its default content and any timed entries (such as a breakfast menu 6 to 11), in the workspace time zone, each with an entry id.",
+            ["set_slide_conditions"] =
+                "Makes a slide appear or vanish by rule, such as the breakfast menu before 11, a weekend offer on Saturday and Sunday, or a message only when a number is hit. Condition types: 'time' (e.g. '08:00-11:00'), 'weekday' (e.g. 'sat,sun'), 'date' (e.g. '2026-12-01..2026-12-26'; either end may be left out), 'data_trigger' (e.g. 'sales_today > 1000000'). By default the slide shows only while all conditions hold; match='any' shows it while at least one holds, and mode='hide' hides it while they hold. Conditions are checked server-side as the stream renders. An empty list clears the slide's rule. Rules marked readOnly were set on the web page and are not replaced by this call.",
+            ["pair_device"] =
+                "Connects a physical TV to the workspace. The TV shows a pairing screen (the InfoSlides TV app, or https://infoslides.app/pair.html in its browser) with a QR code and a short nickname such as swift-oak-42. Send qr or nickname plus slideshowId (a new screen playing it) or deviceId (replaces the TV on an existing screen). With neither, the result is NeedsClarification listing the workspace's slideshows and screens as choices. With deviceId alone, it returns a 6-character code to type on the TV before it expires. HTML playback is supported only in the browser and the Android app 1.2.0 and later for now.",
+            ["update_slideshow"] =
+                "Changes a slideshow: rename it, switch between landscape and portrait, reorder the slides (slideOrder is the complete list of slide ids in the wanted order), turn the news ticker or the on-screen clock on or off, set one duration for every slide, or force how it plays. playbackMode overrides the usual rendered-video stream with a smooth HTML/CSS loop, or back again; 'inherit' drops the override. Only what is passed changes. A screen picks up the change after a re-render, when renderStatus is Completed.",
+            ["delete_slideshow"] =
+                "Deletes a slideshow permanently. Its schedules are removed and any screen playing it stops showing it at its next check-in. There is no undelete.",
+            ["undo_change"] =
+                "Reverts an earlier change. Calls that change something return an undo field; its body.token is what this takes, within 24 hours. A deleted slide comes back; an added slide, takeover or paired screen is removed. Not covered: deleting a slideshow, and screen settings. If the same thing was changed again since, the result is NeedsClarification, and force=true overwrites that later change.",
+            ["create_takeover"] =
+                "Takes over one or more screens for a while, such as a fire drill notice for 30 minutes or a launch announcement until 17:00, then returns them to their schedule by themselves. Takes deviceIds, the slideshow, and either durationMinutes or endsAt. Without an end it runs until it is ended.",
+            ["list_sources"] =
+                "Lists the data sources the workspace can show on a screen: RSS news feeds, calendars, weather and live data pushed by another system. Each entry has its name, type and when it last received data.",
+            ["end_takeover"] =
+                "Ends a takeover now; the screen goes back to its schedule within about a minute.",
+            ["play_slideshow_find_device"] =
+                "Plays a slideshow on a screen in one call. Checks that the slideshow has rendered, whether the screen is online and what it plays now, then does it. Without deviceId it picks the only screen, or the one already playing the slideshow; otherwise the result is NeedsClarification listing the screens. With until, it plays as a temporary takeover and the normal schedule returns afterwards; without it, it replaces the screen's default content. dryRun reports what would happen without changing anything.",
+            ["add_schedule_entry"] =
+                "Plays a slideshow on a screen during a daily time window, such as a breakfast menu from 06:00 to 11:00, on top of the screen's default content. Times are HH:mm in the workspace time zone. Higher priority wins where windows overlap. Warnings (aspect mismatch, HTML unsupported on this screen) come back with the result.",
+            ["assign_schedule"] =
+                "Sets what a screen plays: connects slideshows to a registered screen, in the order given, as a continuous loop. The call succeeds even when the content's shape does not match the screen's, and returns an AspectMismatch warning in that case.",
+            ["get_tenant_info"] =
+                "Returns the workspace name, owner, whether their email is confirmed, which plan it is on, how many screens are in use out of the allowance, and the scope of the credential in use.",
+            ["update_device"] =
+                "Renames a screen or changes its resolution (1080x1920 for a screen turned on its end). Only what is sent changes.",
+            ["push_data"] =
+                "Sends new data to a push source: the whole set of values the slide shows, as one JSON object with the template's field names. Every slide on the source updates, and a slide that was hidden waiting for data appears. Returns receivedAt. dryRun=true checks the data without storing it.",
+            ["insert_ai_slides"] =
+                "Adds the previews of a Ready AI slide job to the slideshow. Repeating the call does not add them twice. Queues a re-render.",
+            ["get_source_status"] =
+                "Returns the status of a source. For a push source: when data last arrived (lastReceivedAt), whether its slides are showing data (isShowingData, false before the first push or after the data went stale), the staleness timeout, and which slides it feeds. For a fetched source (RSS, weather and so on): lastFetchedAt, with the push fields empty.",
+            ["get_device_status"] =
+                "Returns whether a screen is on and what it is showing right now: whether the TV is live, when it last checked in and which content is playing.",
+            ["get_show_status"] =
+                "Returns the progress of a photo or video sent to a screen: one combined percent for video processing and the slideshow render, and a status of Processing, Ready or Failed.",
+            ["get_slideshow"] =
+                "Returns one slideshow in full: every slide (its type, whether it is hidden, how long it is shown, a thumbnailUrl and every rule about when it appears), the order they play in, the ticker, clock and default duration, which screens play it (each with a playerUrl) and renderStatus. A change is on the screen once renderStatus is Completed.",
+            ["delete_schedule_entry"] =
+                "Removes one timed entry from a screen's schedule. The screen falls back to its default content in that window.",
+            ["update_source"] =
+                "Sends fresh values for a live-data slide, such as today's menu, a price, a total or opening hours. The display re-renders itself server-side. The data uses the fields the slide's template expects. For a slide on a push source the data goes to that source. dryRun=true checks the data without changing what is on screen.",
+            ["clone_slideshow"] =
+                "Copies an existing slideshow so it can be changed without touching the original, or, with fromGallery=true, copies a ready-made design from the gallery.",
+            ["update_slide"] =
+                "Changes one slide already in a slideshow: how long it stays on screen (durationSeconds, 1 to 300) and whether it is hidden (hidden). For a live-data slide it can also switch to another template (templateId) or content source (sourceId), change values on it (overrideData, e.g. {\"price\":\"1.990 kr\"}; only the fields sent change, and null removes one), or set its countdown. Text inside an uploaded PowerPoint page cannot be edited this way. Only what is passed changes.",
+            ["list_gallery"] =
+                "Lists ready-made screen designs, such as menu boards, welcome screens and notice layouts, that can be copied into the workspace.",
+            ["get_workspace_health"] =
+                "Returns a summary of the workspace in one call: a sentence such as '11 of 12 screens are online; Lobby has been offline since 09:12', every screen with online and lastSeenAt, usage against the plan, and problems most urgent first (offline screens, failed renders, slideshows no screen plays, expired plan, limits near full), each with a code, a message and a ready-made fix. Empty problems means all is well.",
+            ["create_device"] =
+                "Registers the physical screen the content will play on, such as the TV in reception or a menu board (Icelandic: upplýsingaskjár, skjár). Once per screen. The workspace's plan sets how many screens can be active; DeviceLimitReached means they are all in use, and a workspace admin can change the plan in InfoSlides account settings. Resolution defaults to 1920x1080; 1080x1920 is for a screen turned on its end.",
+            ["make_ai_slide"] =
+                "AI Studio: designs a slide in the workspace's style from a description (handler prompt: headline, details, prices, times), a photo of a poster, menu or whiteboard (photo: mediaUrl, or mediaAssetId of a file in the media library), a web page (url) or a PDF/Word file (document: mediaAssetId). Returns a job at once; the job moves from Processing to Ready with preview images, taking 10 to 60 seconds. EntitlementRequired means AI Studio is not on the workspace's plan; a workspace admin can change the plan in InfoSlides account settings.",
         };
 
     /// <summary>
@@ -141,7 +155,7 @@ public static class HostedToolProfile
         {
             ["add_dynamic_slide"] = new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                ["templateId"] = "Id of a template (the templateId of an existing live-data slide, from get_slideshow).",
+                ["templateId"] = "Id of a template (the templateId of an existing live-data slide).",
             },
             ["add_media_slide"] = new Dictionary<string, string>(StringComparer.Ordinal)
             {
@@ -149,7 +163,38 @@ public static class HostedToolProfile
             },
             ["update_slide"] = new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                ["templateId"] = "Dynamic slides only: id of the template to switch to (the templateId of another live-data slide, from get_slideshow).",
+                ["templateId"] = "Dynamic slides only: id of the template to switch to.",
+                ["sourceId"] = "Dynamic slides only: id of the content source to take data from.",
+            },
+            ["update_slideshow"] = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["tickerSourceIds"] = "Content sources whose headlines scroll in the ticker.",
+            },
+            ["get_ai_slide_job"] = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["jobId"] = "Id of the AI slide job.",
+            },
+            ["get_show_status"] = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["mediaAssetId"] = "The mediaAssetId of the uploaded photo or video.",
+                ["slideshowId"] = "The slideshowId of the slideshow created for it.",
+            },
+            ["set_slide_conditions"] = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["match"] = "\"all\" (default): every condition holds. \"any\": one is enough.",
+            },
+            ["make_ai_slide"] = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["prompt"] = "The text of the slide (handler prompt).",
+                ["backgroundDescription"] = "With background photo: the subject of the photo.",
+            },
+            ["undo_change"] = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["force"] = "True to overwrite a later change.",
+            },
+            ["push_data"] = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["sourceId"] = "Id of the push source.",
             },
         };
 

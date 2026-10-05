@@ -24,7 +24,7 @@ credit card, no trial clock, nothing expires. The whole flow below costs nothing
 ```sh
 # 1. Install (macOS/Linux; see Install for Windows and MCP clients)
 #    Version-pinned. Check /releases/latest for the current one.
-curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.7.0/infoslides-v1.7.0-linux-x64.tar.gz | tar xz
+curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.7.1/infoslides-v1.7.1-linux-x64.tar.gz | tar xz
 
 # 2. Create a workspace (anonymous; prints an admin API key and saves it to ~/.infoslides)
 ./infoslides tenant create "Acme Cafe" owner@acme.test --save
@@ -287,22 +287,22 @@ dotnet publish src/InfoSlides.Cli -c Release -r linux-x64   # or win-x64 / osx-a
 
 ## Repository layout
 
-| Path                  | Purpose                                                                  |
-| --------------------- | ------------------------------------------------------------------------ |
-| `SKILL.md`            | The Skill: signage judgement to pair with the tools.                     |
-| `API-CONTRACT.md`     | The agent-facing REST contract the InfoSlides backend implements.        |
-| `BACKEND-CHANGES.md`  | Checklist of InfoSlides-side work (TenantApiKeys table, gatekeeping, …). |
-| `docs/PUBLISHING.md`  | Release, MCPB bundling, and MCP registry publishing runbook.             |
-| `mcpb/`               | MCPB bundle manifest template.                                           |
-| `src/InfoSlides.Core` | Shared API client, models, AOT JSON context, config, auth.               |
-| `src/InfoSlides.Mcp.Tools` | The MCP tools, shared by the local and the hosted server.           |
-| `src/InfoSlides.Cli`  | The `infoslides` executable: CLI verbs + local (stdio) MCP server.       |
-| `src/InfoSlides.McpServer` | The hosted MCP server (streamable HTTP, OAuth) at `infoslides.app/mcp`. |
-| `skills/`             | The Digital Signage Assistant skill, local variant.                      |
-| `plugins/claude/`     | The Claude plugin (hosted server + hosted skill variant).                |
-| `gemini-extension.json`, `GEMINI.md` | The Gemini CLI extension / Antigravity plugin.            |
-| `deploy/`             | Hosted server deployment: systemd unit, nginx, deploy script.            |
-| `tests/`              | Unit tests, end-to-end MCP stdio smoke tests and hosted server tests.    |
+| Path                                 | Purpose                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------ |
+| `SKILL.md`                           | The Skill: signage judgement to pair with the tools.                     |
+| `API-CONTRACT.md`                    | The agent-facing REST contract the InfoSlides backend implements.        |
+| `BACKEND-CHANGES.md`                 | Checklist of InfoSlides-side work (TenantApiKeys table, gatekeeping, …). |
+| `docs/PUBLISHING.md`                 | Release, MCPB bundling, and MCP registry publishing runbook.             |
+| `mcpb/`                              | MCPB bundle manifest template.                                           |
+| `src/InfoSlides.Core`                | Shared API client, models, AOT JSON context, config, auth.               |
+| `src/InfoSlides.Mcp.Tools`           | The MCP tools, shared by the local and the hosted server.                |
+| `src/InfoSlides.Cli`                 | The `infoslides` executable: CLI verbs + local (stdio) MCP server.       |
+| `src/InfoSlides.McpServer`           | The hosted MCP server (streamable HTTP, OAuth) at `infoslides.app/mcp`.  |
+| `skills/`                            | The Digital Signage Assistant skill, local variant.                      |
+| `plugins/claude/`                    | The Claude plugin (hosted server + hosted skill variant).                |
+| `gemini-extension.json`, `GEMINI.md` | The Gemini CLI extension / Antigravity plugin.                           |
+| `deploy/`                            | Hosted server deployment: systemd unit, nginx, deploy script.            |
+| `tests/`                             | Unit tests, end-to-end MCP stdio smoke tests and hosted server tests.    |
 
 ## Development
 
