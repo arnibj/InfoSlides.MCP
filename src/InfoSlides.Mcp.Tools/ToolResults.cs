@@ -88,6 +88,12 @@ internal static class ToolResults
         return body;
     }
 
+    /// <summary>Converts a typed tool argument to the <see cref="JsonElement"/> the API client sends.</summary>
+    /// <param name="node">The argument as received from the MCP client; null stays null.</param>
+    /// <returns>The same JSON as a detached element, or null.</returns>
+    public static JsonElement? ToElement(JsonNode? node) =>
+        node is null ? null : JsonDocument.Parse(node.ToJsonString()).RootElement.Clone();
+
     /// <summary>Runs a pass-through call (<see cref="InfoSlidesApiClient.SendJsonAsync"/>) as a tool result.</summary>
     public static Task<CallToolResult> Json(Func<Task<ApiResult<JsonElement>>> call) =>
         Execute(call, InfoSlidesJsonContext.Default.JsonElement);

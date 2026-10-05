@@ -207,4 +207,12 @@ internal static class CliContext
         using var document = JsonDocument.Parse(ValueOrFile(jsonOrFile));
         return document.RootElement.Clone();
     }
+
+    /// <summary>Parses a JSON object given inline or as <c>@file</c>, for the typed tool parameters.</summary>
+    /// <param name="jsonOrFile">Inline JSON, or <c>@path</c> to a file holding it.</param>
+    /// <returns>The parsed object.</returns>
+    /// <exception cref="InvalidOperationException">The text is not a JSON object.</exception>
+    public static System.Text.Json.Nodes.JsonObject ParseJsonObject(string jsonOrFile) =>
+        System.Text.Json.Nodes.JsonNode.Parse(ValueOrFile(jsonOrFile)) as System.Text.Json.Nodes.JsonObject
+        ?? throw new InvalidOperationException("Expected a JSON object.");
 }

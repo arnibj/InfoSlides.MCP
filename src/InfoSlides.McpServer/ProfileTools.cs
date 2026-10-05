@@ -22,7 +22,7 @@ public sealed class ProfileTools(IHttpContextAccessor accessor)
     /// <summary>Returns an opaque id and the display name of the connected person.</summary>
     /// <returns>A JSON text result.</returns>
     [McpServerTool(Name = "get_user_profile", Title = "Get connected account", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
-    [Description("Returns a stable identifier and the display name of the person this connection acts for, so the assistant can tell connected accounts apart. Takes no arguments.")]
+    [Description("Returns a stable identifier and the display name of the person this connection acts for, to distinguish connected accounts. Takes no arguments.")]
     public CallToolResult GetUserProfile()
     {
         var user = accessor.HttpContext?.User;

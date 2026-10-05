@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using InfoSlides.Core.Api;
 using InfoSlides.Core.Models;
 using InfoSlides.Core.Serialization;
@@ -282,12 +283,12 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
         [Description("Dynamic slides only: id of the content source to take data from (from list_sources).")] string? sourceId = null,
         [Description("Dynamic slides only: template field to source path mapping, replacing the current one. " +
                      "Generated automatically when the template or source changes and this is left out.")]
-        JsonElement? fieldMapping = null,
+        JsonObject? fieldMapping = null,
         [Description("Dynamic slides only: values to change on the slide, as a JSON object with the template's " +
                      "field names. Merged into the current values; a null value removes a field.")]
-        JsonElement? overrideData = null,
-        [Description("Dynamic slides only: a countdown object (or array of them); [] clears the countdowns.")]
-        JsonElement? countdown = null,
+        JsonObject? overrideData = null,
+        [Description("Dynamic slides only: an array of countdown objects; [] clears the countdowns.")]
+        JsonArray? countdown = null,
         CancellationToken ct = default)
     {
         if (durationSeconds is null && hidden is null && templateId is null && sourceId is null
@@ -299,7 +300,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
         return ToolResults.Execute(
             () => api.UpdateSlideAsync(
                 slideId,
-                new UpdateSlideRequest(durationSeconds, hidden, templateId, sourceId, fieldMapping, overrideData, countdown),
+                new UpdateSlideRequest(durationSeconds, hidden, templateId, sourceId, ToolResults.ToElement(fieldMapping), ToolResults.ToElement(overrideData), ToolResults.ToElement(countdown)),
                 ct),
             InfoSlidesJsonContext.Default.Slide);
     }
