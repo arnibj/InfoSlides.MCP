@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "infoslides": {
+      "command": "infoslides",
+      "args": ["--mcp"]
+    }
+  }
+}

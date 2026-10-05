@@ -1,6 +1,6 @@
 {
   "name": "infoslides",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "Digital signage assistant for TV screens, menus, announcements and live dashboards on InfoSlides. Connects to the hosted InfoSlides server; no install needed.",
   "author": {
     "name": "Arni Bjorgvinsson",

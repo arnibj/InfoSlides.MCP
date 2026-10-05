@@ -93,7 +93,9 @@ public sealed class GeminiExtensionTests
 
         var text = File.ReadAllText(readmePath);
         Assert.Contains("gemini extensions install https://github.com/arnibj/InfoSlides.MCP", text);
-        Assert.Contains("agy plugin import gemini https://github.com/arnibj/InfoSlides.MCP", text);
+        // Antigravity installs plugins from a folder; `agy plugin import gemini` only imports extensions already in Gemini CLI and takes no URL.
+        Assert.Contains("agy plugin install ./InfoSlides.MCP", text);
+        Assert.DoesNotContain("agy plugin import gemini https://", text);
         Assert.Contains("```sh", text);
     }
 

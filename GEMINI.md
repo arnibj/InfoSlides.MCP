@@ -13,6 +13,10 @@ Download the archive for your system from <https://github.com/arnibj/InfoSlides.
 folder you add to PATH on Windows). The README has the exact steps for each platform. Check it with
 `infoslides --version`.
 
+## Antigravity
+
+Antigravity installs this repository as a plugin from a folder: `git clone https://github.com/arnibj/InfoSlides.MCP`, then `agy plugin install ./InfoSlides.MCP`. Install the `agy` program first (see the README). The plugin reads `plugin.json`, `mcp_config.json` and `skills/` from the repository root and runs `infoslides --mcp`, so the prerequisite above applies there too.
+
 ## Authentication
 
 InfoSlides supports anonymous workspace creation via the `create_tenant` tool, which creates a permanent free workspace without requiring a credit card or upfront credentials.

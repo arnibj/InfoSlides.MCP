@@ -24,7 +24,7 @@ credit card, no trial clock, nothing expires. The whole flow below costs nothing
 ```sh
 # 1. Install (macOS/Linux; see Install for Windows and MCP clients)
 #    Version-pinned. Check /releases/latest for the current one.
-curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.7.1/infoslides-v1.7.1-linux-x64.tar.gz | tar xz
+curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.7.2/infoslides-v1.7.2-linux-x64.tar.gz | tar xz
 
 # 2. Create a workspace (anonymous; prints an admin API key and saves it to ~/.infoslides)
 ./infoslides tenant create "Acme Cafe" owner@acme.test --save
@@ -60,9 +60,17 @@ Or install as a **Gemini CLI extension** or **Antigravity plugin**:
 # In Gemini CLI
 gemini extensions install https://github.com/arnibj/InfoSlides.MCP
 
-# In Antigravity CLI
-agy plugin import gemini https://github.com/arnibj/InfoSlides.MCP
+# In Antigravity CLI (install agy first, see below), from a clone of this repository
+git clone https://github.com/arnibj/InfoSlides.MCP
+agy plugin install ./InfoSlides.MCP
 ```
+
+Antigravity installs plugins from a folder, so it needs a copy of this repository; the repository
+root is the plugin (`plugin.json`, `mcp_config.json` and `skills/`). Install `agy` itself first:
+`irm https://antigravity.google/cli/install.ps1 | iex` on Windows, or
+`curl -fsSL https://antigravity.google/cli/install.sh | bash` on macOS and Linux. Both routes run
+the local `infoslides` program, so install that first and put it on your PATH. (`agy plugin import
+gemini` only imports extensions already installed in Gemini CLI and takes no URL.)
 
 Or add the **Claude plugin** (it uses the hosted server, nothing to install first):
 
@@ -300,7 +308,8 @@ dotnet publish src/InfoSlides.Cli -c Release -r linux-x64   # or win-x64 / osx-a
 | `src/InfoSlides.McpServer`           | The hosted MCP server (streamable HTTP, OAuth) at `infoslides.app/mcp`.  |
 | `skills/`                            | The Digital Signage Assistant skill, local variant.                      |
 | `plugins/claude/`                    | The Claude plugin (hosted server + hosted skill variant).                |
-| `gemini-extension.json`, `GEMINI.md` | The Gemini CLI extension / Antigravity plugin.                           |
+| `gemini-extension.json`, `GEMINI.md` | The Gemini CLI extension.                                                |
+| `plugin.json`, `mcp_config.json`     | The Antigravity plugin (the repository root is the plugin).              |
 | `deploy/`                            | Hosted server deployment: systemd unit, nginx, deploy script.            |
 | `tests/`                             | Unit tests, end-to-end MCP stdio smoke tests and hosted server tests.    |
 

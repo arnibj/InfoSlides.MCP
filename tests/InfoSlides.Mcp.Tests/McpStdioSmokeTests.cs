@@ -67,10 +67,9 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
             ["HOME"] = _isolatedHome,
             ["USERPROFILE"] = _isolatedHome,
         };
-        if (apiKey is not null)
-        {
-            environment["INFOSLIDES_API_KEY"] = apiKey;
-        }
+        // Always set, null included: a null value removes the variable from the child, so a key exported on the
+        // machine running the tests cannot leak in and turn "no credential" into an authenticated call.
+        environment["INFOSLIDES_API_KEY"] = apiKey;
 
         var transport = new StdioClientTransport(new StdioClientTransportOptions
         {
