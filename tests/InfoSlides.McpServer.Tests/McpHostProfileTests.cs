@@ -52,6 +52,39 @@ public sealed class McpHostProfileTests(McpHostFactory factory) : IClassFixture<
         Assert.InRange(names.Count, 30, 45);
     }
 
+    private static readonly string[] AiSlideTools = ["make_ai_slide", "get_ai_slide_job", "insert_ai_slides"];
+
+    /// <summary>
+    /// Muse's data processing answer says no connector data reaches an AI model, so its callers are not offered the
+    /// AI slide tools. Every other hosted caller keeps them.
+    /// </summary>
+    [Fact]
+    public async Task MuseCallers_AreNotOfferedTheAiSlideTools_ButEveryOtherHostedToolStays()
+    {
+        var muse = (await ListToolsAsync(factory.MintToken(surface: "muse"))).Select(t => t.GetProperty("name").GetString()!).ToHashSet();
+        var claude = (await ListToolsAsync(factory.MintToken(surface: "claude"))).Select(t => t.GetProperty("name").GetString()!).ToHashSet();
+
+        Assert.Empty(muse.Intersect(AiSlideTools));
+        Assert.Subset(claude, AiSlideTools.ToHashSet());
+        Assert.Equal(claude.Except(AiSlideTools).OrderBy(n => n), muse.OrderBy(n => n));
+    }
+
+    /// <summary>A hidden tool must also be refused when called by name, before the API is reached.</summary>
+    [Theory]
+    [InlineData("make_ai_slide")]
+    [InlineData("get_ai_slide_job")]
+    [InlineData("insert_ai_slides")]
+    public async Task MuseCallers_CannotCallTheAiSlideTools(string tool)
+    {
+        factory.ApiRequests.Clear();
+
+        var result = await CallAsync(factory.MintToken(surface: "muse"), tool, new { slideshowId = "s1", handler = "prompt", prompt = "x", jobId = "j1" });
+
+        Assert.True(result.GetProperty("isError").GetBoolean());
+        Assert.Contains("not available", result.GetProperty("content")[0].GetProperty("text").GetString());
+        Assert.Empty(factory.ApiRequests);
+    }
+
     [Fact]
     public async Task ACallerWithNoSurface_IsTreatedAsHosted()
     {
@@ -300,6 +333,18 @@ public sealed class McpHostProfileTests(McpHostFactory factory) : IClassFixture<
         var instructions = (await ReadRpcAsync(response)).GetProperty("result").GetProperty("instructions").GetString();
 
         Assert.Equal(full ? InfoSlidesServerInstructions.Full : InfoSlidesServerInstructions.Hosted, instructions);
+    }
+
+    /// <summary>Muse callers are not offered the AI slide tools, so the instructions they get must not point at them.</summary>
+    [Fact]
+    public async Task Initialize_ForMuse_NamesNoAiSlideTool()
+    {
+        var response = await factory.CreateClient().SendAsync(Rpc(Initialize(), factory.MintToken(surface: "muse")));
+        var instructions = (await ReadRpcAsync(response)).GetProperty("result").GetProperty("instructions").GetString()!;
+
+        Assert.Equal(InfoSlidesServerInstructions.HostedForMuse, instructions);
+        Assert.All(AiSlideTools, tool => Assert.DoesNotContain(tool, instructions));
+        Assert.Contains("get_tenant_info", instructions);
     }
 
     [Fact]

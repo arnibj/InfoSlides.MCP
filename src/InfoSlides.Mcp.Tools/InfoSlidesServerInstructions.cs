@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────────
 
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace InfoSlides.Mcp.Tools;
 
@@ -25,10 +26,21 @@ public static class InfoSlidesServerInstructions
     /// </summary>
     public static readonly string Hosted = Load("hosted");
 
+    /// <summary>
+    /// The hosted text for Muse callers, who are not offered the AI slide tools (see
+    /// <see cref="HostedToolProfile.MuseExcluded"/>): the clause that prefers <c>make_ai_slide</c> is cut so the model
+    /// is not pointed at a tool it cannot call. A test fails if a tool name from the exclusion list is still in it.
+    /// </summary>
+    public static readonly string HostedForMuse = Regex.Replace(Hosted, @"prefer make_ai_slide[^;]*;\s*", string.Empty);
+
     /// <summary>Returns the instructions for a profile.</summary>
     /// <param name="profile">The caller's profile.</param>
+    /// <param name="surface">The token's <c>surface</c> claim, if any.</param>
     /// <returns>The instruction text.</returns>
-    public static string For(ToolProfile profile) => profile == ToolProfile.Hosted ? Hosted : Full;
+    public static string For(ToolProfile profile, string? surface = null) =>
+        profile != ToolProfile.Hosted ? Full
+        : string.Equals(surface, HostedToolProfile.MuseSurface, StringComparison.OrdinalIgnoreCase) ? HostedForMuse
+        : Hosted;
 
     private static string Load(string kind)
     {

@@ -45,6 +45,26 @@ public static class HostedToolProfile
         "get_user_profile",
     };
 
+    /// <summary>The <c>surface</c> claim of Muse clients.</summary>
+    public const string MuseSurface = "muse";
+
+    /// <summary>
+    /// Hosted tools Muse callers are not offered: Muse's data processing answer says no connector data reaches an AI
+    /// model, and these tools send the person's text or files to AI model providers.
+    /// </summary>
+    public static readonly IReadOnlySet<string> MuseExcluded = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "make_ai_slide", "get_ai_slide_job", "insert_ai_slides",
+    };
+
+    /// <summary>Whether a hosted caller on this surface may list and call the tool.</summary>
+    /// <param name="tool">The tool name.</param>
+    /// <param name="surface">The token's <c>surface</c> claim, if any.</param>
+    /// <returns>True when the tool is in the hosted profile and not excluded for the surface.</returns>
+    public static bool IsOffered(string tool, string? surface) =>
+        ToolNames.Contains(tool) &&
+        !(string.Equals(surface, MuseSurface, StringComparison.OrdinalIgnoreCase) && MuseExcluded.Contains(tool));
+
     /// <summary>
     /// Parameters removed from a hosted tool's schema and refused when sent: precise location and credential creation
     /// (a push key). The API refuses them for hosted surfaces too; hiding them stops the model offering what it cannot use.
