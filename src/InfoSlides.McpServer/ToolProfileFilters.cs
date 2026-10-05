@@ -46,9 +46,10 @@ public static class ToolProfileFilters
                 var user = UserOf(context.Services);
                 var profile = CallerContext.ProfileFor(user);
                 var isApiKey = CallerContext.IsApiKey(user);
+                var surface = CallerContext.Surface(user);
 
                 result.Tools = result.Tools
-                    .Where(t => profile == ToolProfile.Full || HostedToolProfile.ToolNames.Contains(t.Name))
+                    .Where(t => profile == ToolProfile.Full || HostedToolProfile.IsOffered(t.Name, surface))
                     .Where(t => !isApiKey || t.Name != ProfileToolName)
                     .Where(t => !RequiresServerFile(t))
                     .Select(t => Decorate(t, profile))
@@ -71,7 +72,7 @@ public static class ToolProfileFilters
                     return Refuse($"The parameter '{ServerFileParameter}' is not available here: this server cannot read your files. Use mediaUrl with a public address instead.");
                 }
 
-                if (profile == ToolProfile.Hosted && !HostedToolProfile.ToolNames.Contains(name))
+                if (profile == ToolProfile.Hosted && !HostedToolProfile.IsOffered(name, CallerContext.Surface(user)))
                 {
                     return Refuse($"The tool '{name}' is not available here.");
                 }
@@ -96,7 +97,7 @@ public static class ToolProfileFilters
     /// <summary>The server instructions for a caller, so a host that cannot load the skill still gets its guidance.</summary>
     /// <param name="user">The authenticated caller.</param>
     /// <returns>The instruction text for the caller's profile.</returns>
-    public static string InstructionsFor(ClaimsPrincipal? user) => InfoSlidesServerInstructions.For(CallerContext.ProfileFor(user));
+    public static string InstructionsFor(ClaimsPrincipal? user) => InfoSlidesServerInstructions.For(CallerContext.ProfileFor(user), CallerContext.Surface(user));
 
     private static ClaimsPrincipal? UserOf(IServiceProvider? services) =>
         services?.GetService<IHttpContextAccessor>()?.HttpContext?.User;
