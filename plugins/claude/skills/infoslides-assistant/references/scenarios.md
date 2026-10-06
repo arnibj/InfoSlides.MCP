@@ -138,7 +138,9 @@ which, describing them.
 
 ### 7. "Take the Christmas slide down on 6 January"
 
-**You do** `set_slide_conditions` with `{"conditions": [{"type": "date", "value": "..2027-01-06"}]}`.
+**You do** ask once if it matters: "Should it still show on the 6th, or be gone from the 6th?"
+"Down on the 6th" can mean either. For "through the 6th" send `set_slide_conditions` with
+`{"conditions": [{"type": "date", "value": "..2027-01-06"}]}`; for "gone from the 6th" use `..2027-01-05`.
 
 **You say** "Done. It shows through 6 January and hides by itself from the 7th."
 

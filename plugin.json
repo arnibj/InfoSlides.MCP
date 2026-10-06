@@ -1,6 +1,6 @@
 {
   "name": "infoslides",
-  "version": "1.7.3",
+  "version": "1.7.4",
   "description": "Digital signage assistant for TV screens, menus, announcements and live dashboards on InfoSlides. Runs the local infoslides program in MCP mode; install the program first.",
   "author": {
     "name": "Arni Bjorgvinsson",

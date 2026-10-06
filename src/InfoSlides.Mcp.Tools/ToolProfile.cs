@@ -35,7 +35,7 @@ public static class HostedToolProfile
         "get_schedule", "add_schedule_entry", "assign_schedule", "delete_schedule_entry", "create_takeover", "end_takeover",
         // Slideshows and slides
         "list_slideshows", "get_slideshow", "update_slideshow", "delete_slideshow", "clone_slideshow", "list_gallery",
-        "add_media_slide", "add_dynamic_slide", "update_slide", "delete_slide", "set_slide_conditions", "preview_slide",
+        "add_media_slide", "add_designed_slide", "add_dynamic_slide", "update_slide", "delete_slide", "set_slide_conditions", "preview_slide",
         "make_ai_slide", "get_ai_slide_job", "insert_ai_slides",
         // Live data
         "list_sources", "get_source_status", "push_data", "update_source",
@@ -108,6 +108,8 @@ public static class HostedToolProfile
                 "Puts a photo or video on a screen as a temporary takeover, then the normal schedule returns. Takes mediaUrl, the public address of the photo or video. The screen switches once processing finishes (seconds for a photo, longer for video). The result carries the ids that identify the upload. A photo whose shape does not match the screen gets a blurred fill, not black bars.",
             ["add_media_slide"] =
                 "Adds a picture or video slide to a slideshow, from a publicly reachable URL (downloaded server-side) or the id of a file already in the media library; exactly one is given. If the picture's shape does not match the screen's, the call succeeds and returns an AspectMismatch warning.",
+            ["add_designed_slide"] =
+                "Adds a text slide to a slideshow, drawn at the screen's size from a heading, optional text and call to action, and a background (a hex colour, an image already in the media library, or an image URL; the workspace accent colour when none is given), optionally with a separate picture beside the text and the workspace logo. The words appear exactly as given. Text over a limit is refused with the field named. Returns the slide id, a previewUrl image of it and the layout used.",
             ["get_schedule"] =
                 "Returns a screen's schedule: its default content and any timed entries (such as a breakfast menu 6 to 11), in the workspace time zone, each with an entry id.",
             ["set_slide_conditions"] =

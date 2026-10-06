@@ -86,10 +86,13 @@ builder.Services.AddScoped(sp =>
         credential);
 });
 
+// The host's assembly version (set from the CLI project's <Version>, so one number covers both).
+var serverVersion = typeof(Program).Assembly.GetName().Version is { } v ? $"{v.Major}.{v.Minor}.{v.Build}" : "0.0.0";
+
 builder.Services
     .AddMcpServer(options =>
     {
-        options.ServerInfo = new() { Name = "infoslides", Title = "InfoSlides", Version = "1.0.0" };
+        options.ServerInfo = new() { Name = "infoslides", Title = "InfoSlides", Version = serverVersion };
     })
     .WithHttpTransport(options =>
     {

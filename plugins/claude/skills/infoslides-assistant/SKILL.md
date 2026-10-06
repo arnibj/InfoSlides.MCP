@@ -16,8 +16,26 @@ Keep answers short enough to be read out, ask one question at a time, and never 
 
 ## How calls are named here
 
+
 Call the tools the server lists. Each is written here as its name followed by its REST route for reference, for
 example `update_slide` (`PATCH /v1/slides/{id}`); use the tool, never the route.
+
+## MCP arguments are flat
+
+Where the REST body nests an object, the MCP tool takes flat arguments. Sending the nested form to
+the tool is accepted and changes nothing, so use these names:
+
+| Tool | REST body | MCP arguments |
+| --- | --- | --- |
+| `update_slideshow` | `ticker: {enabled, sourceIds}` | `tickerEnabled`, `tickerSourceIds` |
+| `update_slideshow` | `clock: {enabled, position, showDate, backgroundColor, textColor}` | `clockEnabled`, `clockPosition`, `clockShowDate`, `clockBackgroundColor`, `clockTextColor` |
+| `update_slideshow` | `resolution: {width, height}` | `width` and `height`, always together |
+| `update_device` | `resolution: {width, height}` | `width` and `height`, always together |
+
+Every other argument keeps its REST name (`title`, `slideOrder`, `playbackMode`,
+`defaultDurationSeconds`, `shared`; `name`, `latitude`, `longitude`, `locationName`). The reference
+files show REST bodies. After a settings change read the slideshow back: if the field did not
+change, the argument names were wrong.
 
 ## Reference files: read the one you need
 
@@ -50,12 +68,14 @@ steps.
    finds the screen and checks for problems itself.
 4. **Confirm.** A change that alters the video (slides, order, durations, hiding, resolution)
    renders first: wait for `renderStatus` `Completed` on `get_slideshow` (poll at most every 5
-   seconds, and pass on `renderProgress.percent` if the person is waiting). Ticker, clock and
+   seconds, and pass on `renderProgress.percent`, 0 to 100, if the person is waiting). Ticker, clock and
    title changes reach screens within about a minute without a render. Then hand the person the
    screen's `playerUrl` so they can see it for themselves.
 5. **Offer undo** when you chose something the person did not say word for word (which slide,
-   which screen, which hours). Every changing call returns `undo`; keep it and send it to
-   `undo_change` (`POST /v1/undo`) if they say "put it back". It works for 24 hours.
+   which screen, which hours). Most changing calls return `undo`; keep it and send it to
+   `undo_change` (`POST /v1/undo`) if they say "put it back". It works for 24 hours. When a call
+   returns no `undo` (creating a slideshow, uploading or replacing a file, showing a photo on a
+   screen), say so and offer to delete the new slideshow or upload the old file again.
 
 ## Understand: the questions worth asking
 
@@ -81,15 +101,16 @@ The first call for the requests people actually make. The reference files have t
 | "Put my PowerPoint / PDF on the TV" | Files are uploaded in the InfoSlides web app, which you cannot do from here. Once it is there, `list_slideshows` finds it and `play_slideshow_find_device` plays it |
 | "Make me something to start with" | `list_gallery` (`GET /v1/gallery`), show the previews, `clone_slideshow` with the one they pick |
 | "Show these photos in turn" | `clone_slideshow` from the gallery if there is no slideshow yet, then `add_media_slide` with a `mediaUrl` for each photo |
+| "Make a slide with a photo of an ambulance" | `make_ai_slide` with `backgroundDescription`, which adds the photographer credit. Use an image address or library the person names. If you pick an image from the web yourself, say where it came from. The workspace owner is responsible for having the right to use the images on their screens |
 | "Put the lunch menu on this TV" (TV showing its pairing screen) | `pair_device` (`POST /v1/pairings`) with the QR code or nickname |
 | "Turn off the news ticker" / "hide the clock" | `update_slideshow` (`PATCH /v1/slideshows/{id}`) |
 | "Hide the Christmas slide" / "show it 15 seconds" | `update_slide` (`PATCH /v1/slides/{id}`) |
-| "Only before 11 on weekdays" / "take it down on 6 January" | `set_slide_conditions` (`PUT /v1/slides/{id}/conditions`) |
+| "Only before 11 on weekdays" / "take it down on 6 January" (ask: through the 6th, or gone from it?) | `set_slide_conditions` (`PUT /v1/slides/{id}/conditions`) |
 | "Replace the lobby presentation with this file" | Replacing a file is done in the InfoSlides web app; say so |
 | "Play the Q1 slides on the lobby screen" | `play_slideshow_find_device` (`POST /v1/play`) |
 | "Lunch specials from 11 to 2 every day" | `add_schedule_entry` (`POST /v1/devices/{id}/schedule/entries`) |
 | "On the boardroom TV for the next two hours" / "evacuation map everywhere now" | `create_takeover` (`POST /v1/takeovers`) |
-| "Make a slide saying ..." / "a welcome slide for our visitors" | `make_ai_slide` (`POST /v1/slideshows/{id}/slides/ai`), show the previews, then `insert_ai_slides` |
+| "Make a slide saying ..." / "a welcome slide for our visitors" | A heading, some text and a colour or picture behind it: `add_designed_slide` (`POST /v1/slideshows/{id}/slides/design`), the words exactly as given. For a slide designed for them, `make_ai_slide` (`POST /v1/slideshows/{id}/slides/ai`), show the previews, then `insert_ai_slides` |
 | "Make this 20-page report into slides" / "use AI Studio" | `make_ai_slide` (`POST /v1/slideshows/{id}/slides/ai`) |
 | "Change the price on the specials slide" | `update_source` or `update_slide` with `overrideData` (live slides only) |
 | "Show our queue / sales / scores live" | A live data slide that already exists: `push_data` or `update_source`. New live data templates are built in the InfoSlides web app |
@@ -139,7 +160,9 @@ The first call for the requests people actually make. The reference files have t
 - **Keys.** Keep the admin key to yourself. A system that sends live data gets a push-only key
   (`isk_dp_...`), which can do nothing else.
 - **Check the plan before a big setup.** `get_tenant_info` (`GET /v1/tenant`) first, so the
-  free plan's single screen does not surprise anyone at step six. If a limit is hit, explain
+  free plan's single screen does not surprise anyone at step six, then `get_workspace_health`
+  (`GET /v1/workspace/health`) for what is already used against each limit (slideshows, storage);
+  the tenant call has no usage. If a limit is hit, explain
   that a workspace admin can change the plan in InfoSlides account settings.
 - **Roles.** A person signed in with their own account can only do what their role allows:
   content needs a content manager, screens a device manager. `Forbidden` means tell them which
@@ -150,7 +173,7 @@ The first call for the requests people actually make. The reference files have t
 | Error code | What it means | What to do |
 | --- | --- | --- |
 | `NeedsClarification` (409) | Ambiguous or colliding request | Read `details.question`; send a `choices[].apply` |
-| `ValidationFailed` (400) | A field is wrong or unknown | Fix the field named in `details.fields` and resend; nothing changed |
+| `ValidationFailed` (400) | A field is wrong or unknown | Fix the field named in `details.fields` and resend. Nothing should have changed, but after a failed create (a `mediaUrl` that could not be fetched) list the slideshows once before retrying, in case an empty one was left behind |
 | `EntitlementRequired` (403) | Not on this plan | Tell the person the feature is not included on the workspace's plan; an admin can change the plan in account settings |
 | `DeviceLimitReached` (403) | Screen allowance used up | Tell the person the screen limit is reached; an admin can change the plan in account settings |
 | `EmailNotVerified` (403) | Workspace owner not verified | Ask the person to open the verification email, or ask the workspace admin |

@@ -195,6 +195,36 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
             InfoSlidesJsonContext.Default.Slide);
     }
 
+    [McpServerTool(Name = "add_designed_slide", Title = "Add text slide", ReadOnly = false, Destructive = false, OpenWorld = true, Idempotent = false)]
+    [Description("Add a slide made of words: an announcement, a notice, a welcome, \"lunch moved to 1pm\". " +
+                 "Give a heading, optionally some text and a call to action, and a background, either a " +
+                 "colour, a picture already in the media library or a picture URL. A separate picture can " +
+                 "sit beside the text, and the workspace's logo and accent colour can be added. The slide is drawn at " +
+                 "the screen's size from fixed layouts, so the words appear exactly as written and nothing " +
+                 "is invented. Text that is too long for the layout is refused with the field named " +
+                 "rather than cut off. Use add_media_slide to show a picture as it is.")]
+    public Task<CallToolResult> AddDesignedSlide(
+        [Description("Id of the slideshow to add the slide to.")] string slideshowId,
+        [Description("The headline, up to 120 characters.")] string heading,
+        [Description("Supporting text under the headline, up to 500 characters.")] string? text = null,
+        [Description("A short call to action such as \"Book now\", up to 60 characters.")] string? cta = null,
+        [Description("Background colour as hex, e.g. #0F172A. The workspace accent colour (a dark blue when it has none) is used when no background is given.")] string? backgroundColor = null,
+        [Description("Id of an image already in the media library to use as the background.")] string? mediaAssetId = null,
+        [Description("Publicly reachable URL of an image to use as the background.")] string? mediaUrl = null,
+        [Description("Id of an image in the media library to show beside the text; omit when using imageUrl.")] string? imageMediaAssetId = null,
+        [Description("Publicly reachable URL of an image to show beside the text; omit when using imageMediaAssetId.")] string? imageUrl = null,
+        [Description("true adds the workspace logo and accent colour.")] bool? branding = null,
+        [Description("heading, heading-text, heading-text-cta, heading-image-right or heading-image-left. Chosen from the fields given when omitted.")] string? layout = null,
+        [Description("Zero-based position in the loop; appended when omitted.")] int? position = null,
+        [Description("How long the slide stays on screen, in seconds; sized to the text when omitted.")] double? durationSeconds = null,
+        CancellationToken ct = default) =>
+        ToolResults.Execute(
+            () => api.AddDesignedSlideAsync(
+                slideshowId,
+                new AddDesignedSlideRequest(heading, text, cta, backgroundColor, mediaAssetId, mediaUrl, imageMediaAssetId, imageUrl, branding, layout, position, durationSeconds),
+                ct),
+            InfoSlidesJsonContext.Default.DesignedSlide);
+
     [McpServerTool(Name = "add_dynamic_slide", Title = "Add live data slide", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
     [Description("Add a slide that keeps itself up to date instead of showing a fixed picture — " +
                  "today's soup, the current queue number, live sales figures, tomorrow's weather. " +

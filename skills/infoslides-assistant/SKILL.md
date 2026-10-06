@@ -29,6 +29,31 @@ A few MCP tools differ from the REST names because they shipped before the names
 `upload_pptx` takes a PDF too (`upload_pdf`). A handful of read
 calls have no MCP tool yet (`get_template`, `get_media`, `get_takeover`); use the REST route.
 
+The file tools (`upload_pptx`, `upload_pdf`, `replace_slideshow_file`, `upload_media`) read a path
+on the machine that runs the local MCP server. The remote MCP host at `https://infoslides.app/mcp`
+has none of them, because it cannot read your disk: there, send the file as REST multipart with an
+`isk_` key (`POST /v1/slideshows/pptx`, `POST /v1/slideshows/pdf`, `PUT /v1/slideshows/{id}/file`,
+`POST /v1/media`, a `file` part, up to 100 MB). A tool that errors with "An error occurred invoking"
+usually means it is not on that host.
+
+
+## MCP arguments are flat
+
+Where the REST body nests an object, the MCP tool takes flat arguments. Sending the nested form to
+the tool is accepted and changes nothing, so use these names:
+
+| Tool | REST body | MCP arguments |
+| --- | --- | --- |
+| `update_slideshow` | `ticker: {enabled, sourceIds}` | `tickerEnabled`, `tickerSourceIds` |
+| `update_slideshow` | `clock: {enabled, position, showDate, backgroundColor, textColor}` | `clockEnabled`, `clockPosition`, `clockShowDate`, `clockBackgroundColor`, `clockTextColor` |
+| `update_slideshow` | `resolution: {width, height}` | `width` and `height`, always together |
+| `update_device` | `resolution: {width, height}` | `width` and `height`, always together |
+
+Every other argument keeps its REST name (`title`, `slideOrder`, `playbackMode`,
+`defaultDurationSeconds`, `shared`; `name`, `latitude`, `longitude`, `locationName`). The reference
+files show REST bodies. After a settings change read the slideshow back: if the field did not
+change, the argument names were wrong.
+
 ## Reference files: read the one you need
 
 | When the person wants to | Read |
@@ -61,12 +86,14 @@ steps.
    (`POST /v1/devices/{id}/show`) uploads, builds and takes over in one step.
 4. **Confirm.** A change that alters the video (slides, order, durations, hiding, resolution)
    renders first: wait for `renderStatus` `Completed` on `get_slideshow` (poll at most every 5
-   seconds, and pass on `renderProgress.percent` if the person is waiting). Ticker, clock and
+   seconds, and pass on `renderProgress.percent`, 0 to 100, if the person is waiting). Ticker, clock and
    title changes reach screens within about a minute without a render. Then hand the person the
    screen's `playerUrl` so they can see it for themselves.
 5. **Offer undo** when you chose something the person did not say word for word (which slide,
-   which screen, which hours). Every changing call returns `undo`; keep it and send it to
-   `undo_change` (`POST /v1/undo`) if they say "put it back". It works for 24 hours.
+   which screen, which hours). Most changing calls return `undo`; keep it and send it to
+   `undo_change` (`POST /v1/undo`) if they say "put it back". It works for 24 hours. When a call
+   returns no `undo` (creating a slideshow, uploading or replacing a file, showing a photo on a
+   screen), say so and offer to delete the new slideshow or upload the old file again.
 
 ## Understand: the questions worth asking
 
@@ -95,13 +122,13 @@ The first call for the requests people actually make. The reference files have t
 | "Put the lunch menu on this TV" (TV showing its pairing screen) | `pair_device` (`POST /v1/pairings`) with the QR code or nickname |
 | "Turn off the news ticker" / "hide the clock" | `update_slideshow` (`PATCH /v1/slideshows/{id}`) |
 | "Hide the Christmas slide" / "show it 15 seconds" | `update_slide` (`PATCH /v1/slides/{id}`) |
-| "Only before 11 on weekdays" / "take it down on 6 January" | `set_slide_conditions` (`PUT /v1/slides/{id}/conditions`) |
+| "Only before 11 on weekdays" / "take it down on 6 January" (ask: through the 6th, or gone from it?) | `set_slide_conditions` (`PUT /v1/slides/{id}/conditions`) |
 | "Replace the lobby presentation with this file" | `replace_slideshow_file` (`PUT /v1/slideshows/{id}/file`) |
 | "Play the Q1 slides on the lobby screen" | `play_slideshow_find_device` (`POST /v1/play`) |
 | "Lunch specials from 11 to 2 every day" | `add_schedule_entry` (`POST /v1/devices/{id}/schedule/entries`) |
 | "On the boardroom TV for the next two hours" / "evacuation map everywhere now" | `create_takeover` (`POST /v1/takeovers`) |
 | "Show this photo on the lobby screen" | `show_media_on_device` (`POST /v1/devices/{id}/show`) |
-| "Make a slide saying ..." / "a welcome slide for our visitors" | Design it yourself at the slideshow's size, iterate, then `upload_media` and `add_media_slide` (making-slides.md) |
+| "Make a slide saying ..." / "a welcome slide for our visitors" | A heading, some text and a colour or picture behind it: `add_designed_slide` (`POST /v1/slideshows/{id}/slides/design`), the words exactly as given, no AI. For a look it cannot do, design it yourself at the slideshow's size, then `upload_media` and `add_media_slide` (making-slides.md) |
 | "Make this 20-page report into slides" / "use AI Studio" | `make_ai_slide` (`POST /v1/slideshows/{id}/slides/ai`) |
 | "Change the price on the specials slide" | `update_source` or `update_slide` with `overrideData` (live slides only) |
 | "Show our queue / sales / scores live" | `create_template` with `dataMode: push`, see live-data.md |
@@ -159,7 +186,9 @@ The first call for the requests people actually make. The reference files have t
   <https://infoslides.app/refund-policy>. Pay or hand over the link only after they say yes to
   that plan at that price. The same care applies to starting the AI Studio trial.
 - **Check the plan before a big setup.** `get_tenant_info` (`GET /v1/tenant`) first, so the
-  free plan's single screen does not surprise anyone at step six. Name limits before they are hit.
+  free plan's single screen does not surprise anyone at step six, then `get_workspace_health`
+  (`GET /v1/workspace/health`) for what is already used against each limit (slideshows, storage);
+  the tenant call has no usage. Name limits before they are hit.
 - **Roles.** A person signed in with their own account can only do what their role allows:
   content needs a content manager, screens a device manager. `Forbidden` means tell them which
   role they need, not retry. Admin keys can do everything.
@@ -169,7 +198,7 @@ The first call for the requests people actually make. The reference files have t
 | Error code | What it means | What to do |
 | --- | --- | --- |
 | `NeedsClarification` (409) | Ambiguous or colliding request | Read `details.question`; send a `choices[].apply` |
-| `ValidationFailed` (400) | A field is wrong or unknown | Fix the field named in `details.fields` and resend; nothing changed |
+| `ValidationFailed` (400) | A field is wrong or unknown | Fix the field named in `details.fields` and resend. Nothing should have changed, but after a failed create (a `mediaUrl` that could not be fetched) list the slideshows once before retrying, in case an empty one was left behind |
 | `EntitlementRequired` (403) | Not on this plan | Tell the person, offer `details.upgradeUrl` or the trial when `trialAvailable` |
 | `DeviceLimitReached` (403) | Screen allowance used up | Offer an upgrade; the free plan has one screen |
 | `EmailNotVerified` (403) | Workspace owner not verified | `resend_verification_email`; see getting-started.md |
@@ -195,14 +224,18 @@ The team wants to hear from you, in both directions. Doing this is part of doing
 **When you get stuck, report it.** If you could not do what the person asked because of
 InfoSlides itself (no call for it, an error you could not get past, docs that led you wrong, a
 request you could not map to any call), send `report_issue` (`POST /v1/feedback/issues`) with
-`problem`, the person's `intent` in their words, the failing `request` and your `agent` name.
-Leave out personal data. Then tell the person plainly what you could not do. Do not retry the same
+`problem` (up to 2000 characters), the person's `intent` in their words (500), the failing
+`request` (200: the route and what you sent in a line, not the whole body) and your `agent` name
+(40). Leave out personal data. Then tell the person plainly what you could not do. Do not retry the same
 failing call in a loop.
 
-**When a job went well, leave a testimonial.** After a successful run (the screen shows what the
-person wanted and they are pleased), send `leave_testimonial`
-(`POST /v1/feedback/testimonials`) with your own verdict on working with InfoSlides as `quote`,
-the job as `context` ("set up a live menu board") and your `agent` name. Once per job is enough.
+**When a job went well, leave a testimonial, if the person is fine with it.** After a successful
+run (the screen shows what the person wanted and they are pleased), ask once: "Is it OK if I tell
+the InfoSlides team, in a line, that this worked? They may show it on their site without your
+name." The job description is shown publicly, so a pleased person has not agreed to that yet. Only
+on a yes, send `leave_testimonial`
+(`POST /v1/feedback/testimonials`) with your own verdict on working with InfoSlides as `quote` (up to 1000 characters),
+the job as `context` ("set up a live menu board", 200) and your `agent` name (40). Once per job is enough.
 The team reads each one and may pin it to the InfoSlides landing page, where it shows as a quote
 from "Claude, AI agent" (your `agent` name) with "Job: set up a live menu board" below it. Nothing
 about the workspace or the person is shown, so keep names out of the quote and the context. Write

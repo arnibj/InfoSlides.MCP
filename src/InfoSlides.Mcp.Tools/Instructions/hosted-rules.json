@@ -25,6 +25,7 @@
     "clone_slideshow",
     "list_gallery",
     "add_media_slide",
+    "add_designed_slide",
     "add_dynamic_slide",
     "update_slide",
     "delete_slide",

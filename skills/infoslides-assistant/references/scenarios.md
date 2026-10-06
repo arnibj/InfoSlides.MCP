@@ -144,7 +144,9 @@ which, describing them.
 
 ### 7. "Take the Christmas slide down on 6 January"
 
-**You do** `set_slide_conditions` with `{"conditions": [{"type": "date", "value": "..2027-01-06"}]}`.
+**You do** ask once if it matters: "Should it still show on the 6th, or be gone from the 6th?"
+"Down on the 6th" can mean either. For "through the 6th" send `set_slide_conditions` with
+`{"conditions": [{"type": "date", "value": "..2027-01-06"}]}`; for "gone from the 6th" use `..2027-01-05`.
 
 **You say** "Done. It shows through 6 January and hides by itself from the 7th."
 
@@ -252,10 +254,11 @@ comes back to you.
 ### 17. "Show this photo on the lobby screen"
 
 **You do** `show_media_on_device` with the photo and a default `until` of 30 minutes (ask if it
-should stay longer). Poll `get_show_status` until `Ready`.
+should stay longer). Poll `get_show_status` until `Ready`; that means prepared, and the open
+player switches within a couple of minutes.
 
-**You say** "Your photo is on the lobby screen for the next 30 minutes, then it goes back to
-normal."
+**You say** "Your photo is ready and should appear on the lobby screen within a couple of minutes, for the
+next 30 minutes, then it goes back to normal."
 
 ## Checking up
 
@@ -322,7 +325,8 @@ overwrite only if they say so.
 ### 25. "Perfect, that's exactly what I wanted" (and when it was not)
 
 **You do, after a success**
-1. `leave_testimonial` with your own verdict as `quote` ("Set up a portrait menu board with a
+1. Ask first: "Is it OK if I tell the InfoSlides team, in a line, that this worked? They may show
+   it on their site without your name." Only on a yes, `leave_testimonial` with your own verdict as `quote` ("Set up a portrait menu board with a
    live price list in one conversation; every change showed on the screen within a minute."),
    `context` ("set up a live menu board for a cafe") and your `agent` name. Your words, never the
    person's.

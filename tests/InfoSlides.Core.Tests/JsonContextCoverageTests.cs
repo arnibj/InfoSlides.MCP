@@ -80,6 +80,8 @@ public sealed class JsonContextCoverageTests
         RoundTrip(new AddMediaSlideRequest("https://cdn/x.png", null, 10, 1), c.AddMediaSlideRequest);
         RoundTrip(new AddMediaSlideRequest(null, "asset1", 10, 1), c.AddMediaSlideRequest);
         RoundTrip(new UploadedMedia("asset1", "image", 800, 600), c.UploadedMedia);
+        RoundTrip(new AddDesignedSlideRequest("Lunch", "1pm", null, "#0F172A", null, null, "img1", null, true, "heading-image-right", 1, 8), c.AddDesignedSlideRequest);
+        RoundTrip(new DesignedSlide("slide1", "design1", "heading", "https://x/p.png", 8, 0), c.DesignedSlide);
         RoundTrip(new AddDynamicSlideRequest("tmpl1", 10, 1), c.AddDynamicSlideRequest);
         RoundTrip(new AddDynamicSlideRequest("tmpl1", CreatePushKey: true), c.AddDynamicSlideRequest);
         RoundTrip(new Slide("sl2", TemplateId: "tmpl1", SourceId: "src1", PushKey: "isk_dp_x"), c.Slide);

@@ -6,6 +6,14 @@ change it until they are happy, and only then put it on the screen they meant. Y
 asked for, you can iterate in the conversation, and nothing reaches the screen before they have
 seen it.
 
+**Quickest path for a slide that is only words.** `add_designed_slide` (`POST
+/v1/slideshows/{id}/slides/design`) with `heading`, optional `text` and `cta`, and a background:
+`backgroundColor` (hex; the workspace accent colour when omitted), `mediaAssetId` (an image from `upload_media`) or `mediaUrl`. A picture beside the text (a dish, a product, a person) is `imageMediaAssetId` or `imageUrl`, which picks the picture-right layout (`layout: "heading-image-left"` flips it), and `branding: true` adds the workspace logo. It draws the
+slide at the slideshow's size with the words exactly as given, so there is nothing to render or
+upload yourself, and it answers `ValidationFailed` naming the field when text is too long rather
+than clipping it. The answer has a `previewUrl` to show the person, and `undo`. Design the image
+yourself (below) only when they want a look it cannot produce.
+
 Use AI Studio ([ai-studio.md](ai-studio.md)) instead when the person asks for it, when they want
 many slides made from a document, or when you cannot produce an image at all.
 

@@ -65,6 +65,22 @@ public sealed class McpHostTransportTests(McpHostFactory factory, ITestOutputHel
         Assert.Equal(requested, negotiated);
     }
 
+    /// <summary>The host reports the CLI project's version, not a hard-coded 1.0.0.</summary>
+    [Fact]
+    public async Task Initialize_ReportsTheCliProjectVersion()
+    {
+        var client = factory.CreateClient();
+        var cliProject = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "InfoSlides.Cli", "InfoSlides.Cli.csproj"));
+        var expected = System.Text.RegularExpressions.Regex.Match(cliProject, "<Version>([^<]+)</Version>").Groups[1].Value;
+
+        var response = await client.SendAsync(Rpc(Initialize(), factory.MintToken()));
+        var body = await ReadRpcAsync(response);
+
+        var reported = body.GetProperty("result").GetProperty("serverInfo").GetProperty("version").GetString();
+        Assert.Equal(expected, reported);
+        Assert.NotEqual("1.0.0", reported);
+    }
+
     [Fact]
     public async Task InitializedNotification_Is202WithoutBody()
     {
@@ -87,7 +103,7 @@ public sealed class McpHostTransportTests(McpHostFactory factory, ITestOutputHel
         var tools = result.GetProperty("tools").EnumerateArray().ToList();
         output.WriteLine("tools/list result keys: " + string.Join(", ", result.EnumerateObject().Select(p => p.Name)));
         output.WriteLine("first tool: " + tools[0].GetRawText());
-        Assert.Equal(70, tools.Count); // 72 shared tools - 3 that need a local file + the host's profile tool
+        Assert.Equal(71, tools.Count); // 73 shared tools - 3 that need a local file + the host's profile tool
         Assert.All(tools, t =>
         {
             var annotations = t.GetProperty("annotations");
@@ -152,7 +168,7 @@ public sealed class McpHostTransportTests(McpHostFactory factory, ITestOutputHel
         var list = await ReadRpcAsync(await client.SendAsync(Rpc(new { jsonrpc = "2.0", id = 2, method = "tools/list" }, key)));
         var call = await ReadRpcAsync(await client.SendAsync(Rpc(new { jsonrpc = "2.0", id = 3, method = "tools/call", @params = new { name = "list_slideshows", arguments = new { } } }, key)));
 
-        Assert.Equal(69, list.GetProperty("result").GetProperty("tools").GetArrayLength()); // 72 shared - 3 local-file tools
+        Assert.Equal(70, list.GetProperty("result").GetProperty("tools").GetArrayLength()); // 73 shared - 3 local-file tools
         output.WriteLine(call.GetRawText());
         Assert.Equal("Bearer " + key, Assert.Single(factory.ApiRequests).Authorization);
     }
