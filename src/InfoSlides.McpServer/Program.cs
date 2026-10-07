@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using ModelContextProtocol.AspNetCore.Authentication;
 using ModelContextProtocol.Authentication;
 using ModelContextProtocol.Protocol;
+using ModelContextProtocol.Server;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
@@ -70,6 +71,7 @@ builder.Services
         };
     });
 builder.Services.AddAuthorization();
+builder.Services.AddOutputCache();
 
 // The tools call the InfoSlides API with the caller's own credential (OAuth token or API key), forwarded per
 // request; the host stores nothing.
@@ -140,8 +142,23 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
+app.UseOutputCache();
 
 app.MapMcp("/mcp").RequireAuthorization();
+// Static server card for directories that cannot sign in to scan (Smithery). Built from the tools the host registers,
+// in the hosted profile, so it cannot drift from tools/list. Short cache: Cloudflare must not hold a stale card long.
+app.MapGet("/.well-known/mcp/server-card.json", (IEnumerable<McpServerTool> tools) =>
+{
+    var listed = ToolProfileFilters.ProfileTools(tools.Select(t => t.ProtocolTool), ToolProfile.Hosted, surface: null, isApiKey: false);
+    return Results.Json(new
+    {
+        serverInfo = new { name = "infoslides", version = serverVersion },
+        authentication = new { required = true, schemes = new[] { "oauth2" } },
+        tools = listed.Select(t => new { name = t.Name, description = t.Description, inputSchema = t.InputSchema }),
+        resources = Array.Empty<object>(),
+        prompts = Array.Empty<object>(),
+    }, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+}).AllowAnonymous().CacheOutput(p => p.Expire(TimeSpan.FromMinutes(5)));
 app.MapGet("/healthz", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
 
 app.Run();

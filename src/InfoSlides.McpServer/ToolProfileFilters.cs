@@ -48,12 +48,7 @@ public static class ToolProfileFilters
                 var isApiKey = CallerContext.IsApiKey(user);
                 var surface = CallerContext.Surface(user);
 
-                result.Tools = result.Tools
-                    .Where(t => profile == ToolProfile.Full || HostedToolProfile.IsOffered(t.Name, surface))
-                    .Where(t => !isApiKey || t.Name != ProfileToolName)
-                    .Where(t => !RequiresServerFile(t))
-                    .Select(t => Decorate(t, profile))
-                    .ToList();
+                result.Tools = ProfileTools(result.Tools, profile, surface, isApiKey);
 
                 // The list depends on who is asking, so it is private to that caller.
                 result.TimeToLive = ToolListTimeToLive;
@@ -93,6 +88,23 @@ public static class ToolProfileFilters
                 return await next(context, ct);
             });
         });
+
+    /// <summary>
+    /// Narrows and rewrites the shared tool list for a caller profile. Used by <c>tools/list</c> and by the public
+    /// server card, so the two cannot drift.
+    /// </summary>
+    /// <param name="tools">The shared tool definitions.</param>
+    /// <param name="profile">The caller's profile.</param>
+    /// <param name="surface">The caller's surface claim, if any.</param>
+    /// <param name="isApiKey">True when the caller authenticated with an API key.</param>
+    /// <returns>The tools the caller is offered, decorated for the profile.</returns>
+    public static IList<Tool> ProfileTools(IEnumerable<Tool> tools, ToolProfile profile, string? surface, bool isApiKey) =>
+        tools
+            .Where(t => profile == ToolProfile.Full || HostedToolProfile.IsOffered(t.Name, surface))
+            .Where(t => !isApiKey || t.Name != ProfileToolName)
+            .Where(t => !RequiresServerFile(t))
+            .Select(t => Decorate(t, profile))
+            .ToList();
 
     /// <summary>The server instructions for a caller, so a host that cannot load the skill still gets its guidance.</summary>
     /// <param name="user">The authenticated caller.</param>
