@@ -70,7 +70,8 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
 
     [McpServerTool(Name = "list_adapters", Title = "List content adapters", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("See the kinds of live content source this workspace can create (RSS feed, weather, " +
-                 "calendar and more), with the config fields each one needs. Use before create_source.")]
+                 "calendar and more), with the config fields each one needs. Use before create_source, and ask " +
+                 "the person for those settings (feed address, city, calendar link) instead of guessing them.")]
     public Task<CallToolResult> ListAdapters(CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Get, "/v1/adapters", ct: ct));
 
@@ -78,7 +79,8 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
     [Description("Create a content source InfoSlides fetches by itself, e.g. a news RSS feed for the " +
                  "ticker or a weather forecast for a slide. adapterType and the config fields come from " +
                  "list_adapters. For data your own system sends, use a push template instead " +
-                 "(create_template with dataMode push, then add_dynamic_slide). Plans without live sources " +
+                 "(create_template with dataMode push, then add_dynamic_slide). Secrets in config (API keys, " +
+                 "tokens) are write-only: they are never returned. Plans without live sources " +
                  "return EntitlementRequired with an upgrade link.")]
     public Task<CallToolResult> CreateSource(
         [Description("Adapter type from list_adapters, e.g. 'RssFeed'.")] string adapterType,

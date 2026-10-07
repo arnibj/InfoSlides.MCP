@@ -43,6 +43,8 @@ once; store it where you will find it again.
    or use a placeholder: it decides whether anyone can ever get in.
 3. Send `tenantName`, `ownerEmail`, `source` (`api` or `mcp`), `agent` (your product name, e.g.
    `"Muse"`), and `timeZone` and `locale` when you know them.
+   Add `ownerName` (their first name) only if you already know it or it is free to ask; never
+   invent one. Emails greet that name, and without it they open with the workspace name.
 4. **Verify the address.** Adding a screen fails with `EmailNotVerified` until one of these
    happens: sign in once at <https://infoslides.app/login> with Google or Microsoft using that
    address (quickest), open the verification email, or set a password through "Forgot your

@@ -173,9 +173,11 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
     [Description("Put a picture or a video on the screen — a photo of the specials board, a poster, a " +
                  "promo clip, a logo. Takes either a publicly reachable URL (downloaded server-side) or " +
                  "the id of a file already in the media library (see upload_media); provide exactly " +
-                 "one. If the picture's shape does not match the screen's, the call still succeeds but " +
-                 "returns an AspectMismatch warning — fix it rather than letting content be stretched " +
-                 "or cropped on a display the public can see.")]
+                 "one. The picture is shown exactly as it is and nothing checks what it says. It is also the " +
+                 "way to add a slide the fixed layouts of add_designed_slide cannot make: design the slide " +
+                 "as an image and add it here. If the picture's shape does not match the screen's, the call " +
+                 "still succeeds but returns an AspectMismatch warning — fix it rather than letting content " +
+                 "be stretched or cropped on a display the public can see.")]
     public Task<CallToolResult> AddMediaSlide(
         [Description("Id of the slideshow to add the slide to.")] string slideshowId,
         [Description("Publicly reachable URL of the image/video; omit when using mediaAssetId.")] string? mediaUrl = null,
@@ -197,26 +199,29 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
 
     [McpServerTool(Name = "add_designed_slide", Title = "Add text slide", ReadOnly = false, Destructive = false, OpenWorld = true, Idempotent = false)]
     [Description("Add a slide made of words: an announcement, a notice, a welcome, \"lunch moved to 1pm\". " +
+                 "This is the quickest way to put words on a screen. " +
                  "Give a heading, optionally some text and a call to action, and a background, either a " +
                  "colour, a picture already in the media library or a picture URL. A separate picture can " +
                  "sit beside the text, and the workspace's logo and accent colour can be added. The slide is drawn at " +
-                 "the screen's size from fixed layouts, so the words appear exactly as written and nothing " +
-                 "is invented. Text that is too long for the layout is refused with the field named " +
-                 "rather than cut off. Use add_media_slide to show a picture as it is.")]
+                 "the screen's size from fixed layouts, so the words appear exactly as written; they are not " +
+                 "checked for accuracy. Text that is too long for the layout is refused with the field named " +
+                 "and the number of characters that fit, rather than cut off. The layouts are fixed: for a " +
+                 "table, columns or a look they do not have, make the slide as an image and use add_media_slide. " +
+                 "The slide is added at once; undo_change takes it out.")]
     public Task<CallToolResult> AddDesignedSlide(
         [Description("Id of the slideshow to add the slide to.")] string slideshowId,
-        [Description("The headline, up to 120 characters.")] string heading,
-        [Description("Supporting text under the headline, up to 500 characters.")] string? text = null,
-        [Description("A short call to action such as \"Book now\", up to 60 characters.")] string? cta = null,
+        [Description("The headline. About 60 characters fit (50 to 80 beside a picture, depending on the screen); longer text is refused with the number that fits.")] string heading,
+        [Description("Supporting text under the headline. About 160 to 200 characters fit (175 to 275 beside a picture, depending on the screen); capitals take about 30% more room.")] string? text = null,
+        [Description("A short call to action such as \"Book now\". Up to 55 characters fit (30 to 50 beside a picture, depending on the screen).")] string? cta = null,
         [Description("Background colour as hex, e.g. #0F172A. The workspace accent colour (a dark blue when it has none) is used when no background is given.")] string? backgroundColor = null,
         [Description("Id of an image already in the media library to use as the background.")] string? mediaAssetId = null,
         [Description("Publicly reachable URL of an image to use as the background.")] string? mediaUrl = null,
         [Description("Id of an image in the media library to show beside the text; omit when using imageUrl.")] string? imageMediaAssetId = null,
         [Description("Publicly reachable URL of an image to show beside the text; omit when using imageMediaAssetId.")] string? imageUrl = null,
-        [Description("true adds the workspace logo and accent colour.")] bool? branding = null,
+        [Description("true adds the workspace logo and accent colour; a workspace without a logo gets nothing added.")] bool? branding = null,
         [Description("heading, heading-text, heading-text-cta, heading-image-right or heading-image-left. Chosen from the fields given when omitted.")] string? layout = null,
         [Description("Zero-based position in the loop; appended when omitted.")] int? position = null,
-        [Description("How long the slide stays on screen, in seconds; sized to the text when omitted.")] double? durationSeconds = null,
+        [Description("How long the slide stays on screen, in seconds, from 1 to 99; sized to the text when omitted.")] double? durationSeconds = null,
         CancellationToken ct = default) =>
         ToolResults.Execute(
             () => api.AddDesignedSlideAsync(

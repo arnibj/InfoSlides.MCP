@@ -57,8 +57,8 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
 
     [McpServerTool(Name = "get_schedule", Title = "Get screen schedule entries", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("See a screen's schedule: its default content and any timed entries (breakfast menu " +
-                 "6-11, lunch menu 11-15), in the workspace time zone. Use the entry ids with " +
-                 "delete_schedule_entry.")]
+                 "6-11, lunch menu 11-15), in the workspace time zone. Say which time zone it is when you read " +
+                 "the times out. Use the entry ids with delete_schedule_entry.")]
     public Task<CallToolResult> GetSchedule(
         [Description("Id of the screen.")] string deviceId,
         CancellationToken ct = default) =>
@@ -67,7 +67,8 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
     [McpServerTool(Name = "add_schedule_entry", Title = "Add schedule entry", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
     [Description("Play a slideshow on a screen during a time window every day, e.g. the breakfast menu " +
                  "from 06:00 to 11:00, on top of the screen's default content. Times are HH:mm in the " +
-                 "workspace time zone. Higher priority wins where windows overlap. Warnings (aspect " +
+                 "workspace time zone: name it when you confirm. For a one-off stretch (\"for two hours\", " +
+                 "\"until 17:00\") use create_takeover instead. Higher priority wins where windows overlap. Warnings (aspect " +
                  "mismatch, HTML unsupported on this screen) come back with the result: pass them on.")]
     public Task<CallToolResult> AddScheduleEntry(
         [Description("Id of the screen.")] string deviceId,

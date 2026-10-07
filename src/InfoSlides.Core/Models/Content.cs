@@ -46,7 +46,8 @@ public sealed record Clock(
 /// <param name="Name">Display name.</param>
 /// <param name="AdapterType">What kind of source it is, e.g. <c>RssFeed</c> or <c>Push</c>.</param>
 /// <param name="LastFetchedAt">When data last arrived; null before the first fetch.</param>
-public sealed record Source(string Id, string Name, string AdapterType, DateTimeOffset? LastFetchedAt = null);
+/// <param name="IsEnabled">False when fetching is paused (<c>update_source_settings</c> with <c>isEnabled</c>).</param>
+public sealed record Source(string Id, string Name, string AdapterType, DateTimeOffset? LastFetchedAt = null, bool IsEnabled = true);
 
 /// <param name="SourceId">
 /// On a slide just added from a push template: the Push source created for it, where its data is

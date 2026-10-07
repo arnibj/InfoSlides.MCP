@@ -201,21 +201,27 @@ slides stay. Wait for `Completed`, then check a slide or two with `preview_slide
 **You do**
 1. `list_devices` with `q=lobby`; `get_slideshow` on its `nowPlayingSlideshowId`: `resolution` is
    `1080x1920` (portrait) and the ticker is on.
-2. Design it yourself at 1080 x 1920: "Lunch today is at 1pm" large, the date small underneath,
-   dark background, bottom tenth clear for the ticker. Render it (your own image tools, or
-   `preview_new_template` with `aspectRatio` `9:16`).
-3. Show it: "Here's the slide for the lobby. Anything to change?" They ask for a warmer colour;
-   change it and show it again. They say it's good.
-4. `upload_media` with the PNG, `add_media_slide` with `position: 0` and `durationSeconds: 8`.
-5. It is only for today: `set_slide_conditions` with a `date` condition ending today.
-6. Wait for `Completed`; `get_now_slide_png` shows it on the lobby screen.
+2. `add_designed_slide` on that slideshow with the heading "Lunch today is at 1pm", a dark
+   `backgroundColor`, `position: 0` and `durationSeconds: 8`. It draws the slide at the screen's own
+   size (1080 x 1920 here) with the words exactly as the person said them, and answers with a
+   `previewUrl` and `undo`. The heading is short, so it fits the layout.
+3. Show it: "Here's the slide for the lobby. Anything to change?" It is already in the slideshow, so
+   say that, and that you can take it out. They ask for a warmer colour: undo it, add it again with
+   the new colour and show that. They say it's good.
+   If they had wanted something the layouts cannot do (a table of the day's dishes, say), you would
+   design it yourself at 1080 x 1920, show it, then `upload_media` and `add_media_slide`.
+4. It is only for today: `set_slide_conditions` with a `date` condition ending today.
+5. Wait for `Completed`; `get_now_slide_png` shows it on the lobby screen.
 
 **You say** "The lunch notice is the first slide on the lobby screen now, and it hides by itself
 tonight."
 
-**Why it works** You designed for the screen it plays on (portrait, ticker), the person saw every
-version before the wall did, and the slide takes itself down. AI Studio (`make_ai_slide`) is the
-other way, when they ask for it or want many slides from a document.
+**Why it works** `add_designed_slide` is the quickest path for a slide that is only words: it
+draws for the screen it plays on without you rendering anything, and it shows exactly what the
+person said. Nothing checks that the words are right, so every fact comes from them. The person saw
+the slide and could take it out, and it takes itself down. When the layouts are not flexible enough,
+a finished image added as a media slide is the better fit; AI Studio (`make_ai_slide`) is the other
+way, when they ask for it or want many slides from a document.
 
 ## When things play
 

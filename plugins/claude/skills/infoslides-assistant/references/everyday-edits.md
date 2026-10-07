@@ -43,7 +43,7 @@ A screen with nothing playing has no slideshow to edit. Several matches or none:
 | The person asks | Call |
 | --- | --- |
 | Hide or show a slide | `update_slide` (`PATCH /v1/slides/{id}`) with `{"hidden": true}` or `false` |
-| Show a slide longer or shorter | `update_slide` with `{"durationSeconds": 15}` (1 to 300). Only to override: AI-designed slides are timed from their text, a video plays its own length, other slides use the slideshow default |
+| Show a slide longer or shorter | `update_slide` with `{"durationSeconds": 15}` (1 to 300). Only to override: AI-designed slides and slides from `add_designed_slide` are timed from their text, a video plays its own length, other slides use the slideshow default |
 | Every slide the same length | `update_slideshow` (`PATCH /v1/slideshows/{id}`) with `{"defaultDurationSeconds": 12}` |
 | Move a slide | `update_slideshow` with `slideOrder`: every slide id, in the new order |
 | Remove a slide for good | `delete_slide` (`DELETE /v1/slides/{id}`); its conditions go with it. Hide instead if it may come back |

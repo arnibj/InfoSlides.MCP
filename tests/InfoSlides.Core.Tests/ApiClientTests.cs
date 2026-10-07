@@ -551,5 +551,18 @@ public sealed class ApiClientTests
         Assert.Equal(2, result.Data.Count);
         Assert.Equal("RssFeed", result.Data[0].AdapterType);
         Assert.Null(result.Data[1].LastFetchedAt);
+        Assert.True(result.Data[0].IsEnabled);
+    }
+
+    [Fact]
+    public async Task ListSources_ReadsIsEnabledFalseForAPausedSource()
+    {
+        var (client, handler) = CreateClient("isk_admin_abc");
+        handler.Enqueue(HttpStatusCode.OK,
+            """{"data":[{"id":"src1","name":"News","adapterType":"RssFeed","isEnabled":false}]}""");
+
+        var result = await client.ListSourcesAsync();
+
+        Assert.False(Assert.Single(result.Data).IsEnabled);
     }
 }

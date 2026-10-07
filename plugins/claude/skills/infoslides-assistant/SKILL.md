@@ -44,7 +44,7 @@ change, the argument names were wrong.
 | Start from nothing: a workspace, content, a screen, pairing the TV | [references/getting-started.md](references/getting-started.md) |
 | Change something already on a screen, schedule it, take screens over, see reports, undo | [references/everyday-edits.md](references/everyday-edits.md) |
 | Show data that changes by itself (a queue, prices, scores, weather, a calendar) | [references/live-data.md](references/live-data.md) |
-| Get a new slide made ("a slide saying lunch moved to 1pm"): you design it | [references/making-slides.md](references/making-slides.md) |
+| Get a new slide made ("a slide saying lunch moved to 1pm"): `add_designed_slide` first, and what to do when its layouts are not enough | [references/making-slides.md](references/making-slides.md) |
 | Have AI Studio design slides (asked for by name, or many from a document) | [references/ai-studio.md](references/ai-studio.md) |
 | See how a whole conversation goes, request by request | [references/scenarios.md](references/scenarios.md) |
 
@@ -110,7 +110,7 @@ The first call for the requests people actually make. The reference files have t
 | "Play the Q1 slides on the lobby screen" | `play_slideshow_find_device` (`POST /v1/play`) |
 | "Lunch specials from 11 to 2 every day" | `add_schedule_entry` (`POST /v1/devices/{id}/schedule/entries`) |
 | "On the boardroom TV for the next two hours" / "evacuation map everywhere now" | `create_takeover` (`POST /v1/takeovers`) |
-| "Make a slide saying ..." / "a welcome slide for our visitors" | A heading, some text and a colour or picture behind it: `add_designed_slide` (`POST /v1/slideshows/{id}/slides/design`), the words exactly as given. For a slide designed for them, `make_ai_slide` (`POST /v1/slideshows/{id}/slides/ai`), show the previews, then `insert_ai_slides` |
+| "Make a slide saying ..." / "a welcome slide for our visitors" | **First choice:** a heading, some text and a colour or picture behind it: `add_designed_slide` (`POST /v1/slideshows/{id}/slides/design`), the words exactly as given and not checked for accuracy, so the facts come from the person. When the layouts do not offer enough flexibility, `add_media_slide` with the `mediaUrl` of a finished image the person has, or for a slide designed for them `make_ai_slide` (`POST /v1/slideshows/{id}/slides/ai`), show the previews, then `insert_ai_slides` |
 | "Make this 20-page report into slides" / "use AI Studio" | `make_ai_slide` (`POST /v1/slideshows/{id}/slides/ai`) |
 | "Change the price on the specials slide" | `update_source` or `update_slide` with `overrideData` (live slides only) |
 | "Show our queue / sales / scores live" | A live data slide that already exists: `push_data` or `update_source`. New live data templates are built in the InfoSlides web app |

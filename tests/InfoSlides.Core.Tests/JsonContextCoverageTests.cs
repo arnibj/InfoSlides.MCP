@@ -33,7 +33,7 @@ public sealed class JsonContextCoverageTests
         RoundTrip(new List<ApiWarning> { new("A", "b") }, c.ListApiWarning);
         RoundTrip(OkResult.Instance, c.OkResult);
 
-        RoundTrip(new CreateTenantRequest("Acme", "o@a.test"), c.CreateTenantRequest);
+        RoundTrip(new CreateTenantRequest("Acme", "o@a.test", OwnerName: "Anna"), c.CreateTenantRequest);
         RoundTrip(new CreateTenantResult("t1", "isk_admin_x", true), c.CreateTenantResult);
         RoundTrip(new TenantInfo("t1", "Acme", "o@a.test", true, "Premium",
             new DeviceQuota(1, 10), new KeyScope("admin", null)), c.TenantInfo);
@@ -56,7 +56,7 @@ public sealed class JsonContextCoverageTests
         RoundTrip(new Ticker(false), c.Ticker);
         RoundTrip(new Ticker(true, ["src1"]), c.Ticker);
         RoundTrip(new Clock(true, "TopRight", false, "#000000", "#ffffff"), c.Clock);
-        RoundTrip(new Source("src1", "BBC News", "RssFeed", now), c.Source);
+        RoundTrip(new Source("src1", "BBC News", "RssFeed", now, IsEnabled: false), c.Source);
         RoundTrip(new List<Source> { new("src1", "BBC News", "RssFeed") }, c.ListSource);
         RoundTrip(new Slide("sl3", null, "tmpl1", 10, 2, null, null, null, "dynamic", true,
             "https://infoslides.app/t.png", "Specials", [rule]), c.Slide);

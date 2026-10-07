@@ -168,6 +168,11 @@ is to find it, change it, and confirm the change reached the wall.
    | "make this photo, page or text into a slide" | `make_ai_slide`, poll `get_ai_slide_job`, show the previews, then `insert_ai_slides` (trial: ask before `start_ai_studio_trial`) |
    | "undo that" | `undo_change` with the `undo.body.token` of the earlier result (24 hours; ask before `force`) |
 
+Dayparting versus takeover: "every day from 11 to 2" is `add_schedule_entry` (repeats daily, times in the
+   workspace time zone, name it); "for two hours" or "until 17:00" is `create_takeover` (one-off, the schedule
+   returns by itself). Before `create_source`, ask the person for the source's settings (`list_adapters`
+   shows the fields); secrets in config are write-only.
+
 4. **Wait for it to land.** After an edit the slideshow re-renders. `get_slideshow` until
    `renderStatus` is `Completed`; `Failed` means it did not reach the screen, say so.
 5. **Report it.** Tell the person what changed and give them the `playerUrl` of the screen from
