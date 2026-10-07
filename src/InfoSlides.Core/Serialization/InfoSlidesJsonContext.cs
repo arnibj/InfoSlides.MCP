@@ -46,6 +46,8 @@ namespace InfoSlides.Core.Serialization;
 [JsonSerializable(typeof(UpdateSlideshowRequest))]
 [JsonSerializable(typeof(AddMediaSlideRequest))]
 [JsonSerializable(typeof(UploadedMedia))]
+[JsonSerializable(typeof(AddDesignedSlideRequest))]
+[JsonSerializable(typeof(DesignedSlide))]
 [JsonSerializable(typeof(AddDynamicSlideRequest))]
 [JsonSerializable(typeof(SetConditionsRequest))]
 [JsonSerializable(typeof(Template))]

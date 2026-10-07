@@ -144,7 +144,9 @@ which, describing them.
 
 ### 7. "Take the Christmas slide down on 6 January"
 
-**You do** `set_slide_conditions` with `{"conditions": [{"type": "date", "value": "..2027-01-06"}]}`.
+**You do** ask once if it matters: "Should it still show on the 6th, or be gone from the 6th?"
+"Down on the 6th" can mean either. For "through the 6th" send `set_slide_conditions` with
+`{"conditions": [{"type": "date", "value": "..2027-01-06"}]}`; for "gone from the 6th" use `..2027-01-05`.
 
 **You say** "Done. It shows through 6 January and hides by itself from the 7th."
 
@@ -199,21 +201,27 @@ slides stay. Wait for `Completed`, then check a slide or two with `preview_slide
 **You do**
 1. `list_devices` with `q=lobby`; `get_slideshow` on its `nowPlayingSlideshowId`: `resolution` is
    `1080x1920` (portrait) and the ticker is on.
-2. Design it yourself at 1080 x 1920: "Lunch today is at 1pm" large, the date small underneath,
-   dark background, bottom tenth clear for the ticker. Render it (your own image tools, or
-   `preview_new_template` with `aspectRatio` `9:16`).
-3. Show it: "Here's the slide for the lobby. Anything to change?" They ask for a warmer colour;
-   change it and show it again. They say it's good.
-4. `upload_media` with the PNG, `add_media_slide` with `position: 0` and `durationSeconds: 8`.
-5. It is only for today: `set_slide_conditions` with a `date` condition ending today.
-6. Wait for `Completed`; `get_now_slide_png` shows it on the lobby screen.
+2. `add_designed_slide` on that slideshow with the heading "Lunch today is at 1pm", a dark
+   `backgroundColor`, `position: 0` and `durationSeconds: 8`. It draws the slide at the screen's own
+   size (1080 x 1920 here) with the words exactly as the person said them, and answers with a
+   `previewUrl` and `undo`. The heading is short, so it fits the layout.
+3. Show it: "Here's the slide for the lobby. Anything to change?" It is already in the slideshow, so
+   say that, and that you can take it out. They ask for a warmer colour: undo it, add it again with
+   the new colour and show that. They say it's good.
+   If they had wanted something the layouts cannot do (a table of the day's dishes, say), you would
+   design it yourself at 1080 x 1920, show it, then `upload_media` and `add_media_slide`.
+4. It is only for today: `set_slide_conditions` with a `date` condition ending today.
+5. Wait for `Completed`; `get_now_slide_png` shows it on the lobby screen.
 
 **You say** "The lunch notice is the first slide on the lobby screen now, and it hides by itself
 tonight."
 
-**Why it works** You designed for the screen it plays on (portrait, ticker), the person saw every
-version before the wall did, and the slide takes itself down. AI Studio (`make_ai_slide`) is the
-other way, when they ask for it or want many slides from a document.
+**Why it works** `add_designed_slide` is the quickest path for a slide that is only words: it
+draws for the screen it plays on without you rendering anything, and it shows exactly what the
+person said. Nothing checks that the words are right, so every fact comes from them. The person saw
+the slide and could take it out, and it takes itself down. When the layouts are not flexible enough,
+a finished image added as a media slide is the better fit; AI Studio (`make_ai_slide`) is the other
+way, when they ask for it or want many slides from a document.
 
 ## When things play
 
@@ -252,10 +260,11 @@ comes back to you.
 ### 17. "Show this photo on the lobby screen"
 
 **You do** `show_media_on_device` with the photo and a default `until` of 30 minutes (ask if it
-should stay longer). Poll `get_show_status` until `Ready`.
+should stay longer). Poll `get_show_status` until `Ready`; that means prepared, and the open
+player switches within a couple of minutes.
 
-**You say** "Your photo is on the lobby screen for the next 30 minutes, then it goes back to
-normal."
+**You say** "Your photo is ready and should appear on the lobby screen within a couple of minutes, for the
+next 30 minutes, then it goes back to normal."
 
 ## Checking up
 
@@ -322,7 +331,8 @@ overwrite only if they say so.
 ### 25. "Perfect, that's exactly what I wanted" (and when it was not)
 
 **You do, after a success**
-1. `leave_testimonial` with your own verdict as `quote` ("Set up a portrait menu board with a
+1. Ask first: "Is it OK if I tell the InfoSlides team, in a line, that this worked? They may show
+   it on their site without your name." Only on a yes, `leave_testimonial` with your own verdict as `quote` ("Set up a portrait menu board with a
    live price list in one conversation; every change showed on the screen within a minute."),
    `context` ("set up a live menu board for a cafe") and your `agent` name. Your words, never the
    person's.

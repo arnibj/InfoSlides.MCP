@@ -19,8 +19,12 @@ AI Studio is not on every plan (see Limits).
 
 ## 2. Write the prompt the way the person would say it, with every fact in it
 
-AI Studio writes the copy from your prompt and never invents prices, times, phone numbers or
-names, so pass them all: "Tonight's special: lamb chops, £28, served from 6pm." Say what kind of
+AI Studio writes the copy from your prompt. It is told never to invent prices, times, phone numbers
+or names, and a check replaces any price, time, date, phone number or web address it cannot find in
+what you gave it with a placeholder, flagged "Needs details". The check cannot tell whether a figure
+you gave it is right, and a made-up claim written in words is held back by the instruction alone. So
+pass every fact, and compare the previews with what the person said: "Tonight's special: lamb chops,
+£28, served from 6pm." Say what kind of
 slide it is when it helps (a menu item, an announcement, a welcome), and the tone if the person
 gave one. One idea per slide: several separate ideas may come back as several slides. Leave out
 layout instructions and colour codes; the template handles layout.

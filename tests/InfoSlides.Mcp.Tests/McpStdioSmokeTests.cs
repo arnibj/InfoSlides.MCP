@@ -16,7 +16,7 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
     [
         "create_tenant", "get_tenant_info", "resend_verification_email",
         "upload_slideshow", "upload_pptx", "update_slideshow", "list_slideshows", "get_slideshow",
-        "clone_slideshow", "list_gallery", "add_media_slide", "add_dynamic_slide", "upload_media", "set_slide_conditions", "preview_slide",
+        "clone_slideshow", "list_gallery", "add_media_slide", "add_designed_slide", "add_dynamic_slide", "upload_media", "set_slide_conditions", "preview_slide",
         "create_template", "list_templates", "update_source", "push_data", "get_source_status", "create_source_key",
         "create_device", "list_devices", "get_device_status", "assign_schedule", "get_stream_link",
         "create_api_key", "list_api_keys", "revoke_api_key",
@@ -449,6 +449,95 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         Assert.Contains("\"label\":\"Lobby\"", text);
     }
 
+    /// <summary>APX-17: schedule windows and takeovers reach the right routes with the right bodies.</summary>
+    [Fact]
+    public async Task ScheduleWindowsAndTakeovers_SendTheExpectedRequests()
+    {
+        _backend.MapJson("GET", "/v1/devices/d1/schedule",
+            """{"data":{"deviceId":"d1","timeZone":"Atlantic/Reykjavik","entries":[]}}""");
+        _backend.MapJson("POST", "/v1/devices/d1/schedule/entries",
+            """{"data":{"id":"e1","deviceId":"d1","slideshowId":"s1","startTime":"11:00","endTime":"14:00","priority":0,"timeZone":"Atlantic/Reykjavik"}}""", 201);
+        _backend.MapJson("POST", "/v1/takeovers", """{"data":{"id":"t1","isActive":true}}""", 201);
+        _backend.MapJson("GET", "/v1/takeovers", """{"data":[]}""");
+        _backend.MapJson("DELETE", "/v1/takeovers/t1", "", 204);
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var schedule = await client.CallToolAsync("get_schedule",
+            new Dictionary<string, object?> { ["deviceId"] = "d1" }, cancellationToken: Timeout());
+        Assert.Contains("Atlantic/Reykjavik", Assert.IsType<TextContentBlock>(Assert.Single(schedule.Content)).Text);
+
+        var added = await client.CallToolAsync("add_schedule_entry",
+            new Dictionary<string, object?> { ["deviceId"] = "d1", ["slideshowId"] = "s1", ["startTime"] = "11:00", ["endTime"] = "14:00" },
+            cancellationToken: Timeout());
+        Assert.NotEqual(true, added.IsError);
+
+        var taken = await client.CallToolAsync("create_takeover",
+            new Dictionary<string, object?> { ["deviceIds"] = new[] { "d1" }, ["slideshowId"] = "s1", ["durationMinutes"] = 120 },
+            cancellationToken: Timeout());
+        Assert.NotEqual(true, taken.IsError);
+
+        var listed = await client.CallToolAsync("list_takeovers",
+            new Dictionary<string, object?> { ["activeOnly"] = true }, cancellationToken: Timeout());
+        Assert.NotEqual(true, listed.IsError);
+
+        var ended = await client.CallToolAsync("end_takeover",
+            new Dictionary<string, object?> { ["takeoverId"] = "t1" }, cancellationToken: Timeout());
+        Assert.NotEqual(true, ended.IsError);
+
+        lock (_backend.Requests)
+        {
+            var entry = Assert.Single(_backend.Requests, r => r.Path == "/v1/devices/d1/schedule/entries");
+            Assert.Contains("\"startTime\":\"11:00\"", entry.Body);
+            Assert.Contains("\"endTime\":\"14:00\"", entry.Body);
+            var takeover = Assert.Single(_backend.Requests, r => r.Method == "POST" && r.Path == "/v1/takeovers");
+            Assert.Contains("\"deviceIds\":[\"d1\"]", takeover.Body);
+            Assert.Contains("\"durationMinutes\":120", takeover.Body);
+        }
+    }
+
+    /// <summary>APX-17: adapters, then create, edit and delete a pulled source.</summary>
+    [Fact]
+    public async Task PulledSources_ListCreateEditDelete_SendTheExpectedRequests()
+    {
+        _backend.MapJson("GET", "/v1/adapters",
+            """{"data":[{"adapterType":"RssFeed","displayName":"RSS","description":"d","tier":1,"isGloballyAvailable":true,"configFields":"[]"}]}""");
+        _backend.MapJson("POST", "/v1/sources",
+            """{"data":{"id":"src1","name":"News","adapterType":"RssFeed","isEnabled":true}}""", 201);
+        _backend.MapJson("PATCH", "/v1/sources/src1",
+            """{"data":{"id":"src1","name":"News","adapterType":"RssFeed","isEnabled":false}}""");
+        _backend.MapJson("DELETE", "/v1/sources/src1", "", 204);
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var adapters = await client.CallToolAsync("list_adapters", cancellationToken: Timeout());
+        Assert.Contains("\"configFields\"", Assert.IsType<TextContentBlock>(Assert.Single(adapters.Content)).Text);
+
+        var created = await client.CallToolAsync("create_source",
+            new Dictionary<string, object?>
+            {
+                ["adapterType"] = "RssFeed",
+                ["name"] = "News",
+                ["config"] = new Dictionary<string, object?> { ["feedUrl"] = "https://example.com/rss" },
+            }, cancellationToken: Timeout());
+        Assert.NotEqual(true, created.IsError);
+
+        var edited = await client.CallToolAsync("update_source_settings",
+            new Dictionary<string, object?> { ["sourceId"] = "src1", ["isEnabled"] = false }, cancellationToken: Timeout());
+        Assert.NotEqual(true, edited.IsError);
+
+        var deleted = await client.CallToolAsync("delete_source",
+            new Dictionary<string, object?> { ["sourceId"] = "src1" }, cancellationToken: Timeout());
+        Assert.NotEqual(true, deleted.IsError);
+
+        lock (_backend.Requests)
+        {
+            var create = Assert.Single(_backend.Requests, r => r.Method == "POST" && r.Path == "/v1/sources");
+            Assert.Contains("\"adapterType\":\"RssFeed\"", create.Body);
+            Assert.Contains("\"feedUrl\":\"https://example.com/rss\"", create.Body);
+            var edit = Assert.Single(_backend.Requests, r => r.Method == "PATCH");
+            Assert.Equal("{\"isEnabled\":false}", edit.Body);
+        }
+    }
+
     /// <summary>A 204 with no body is a success, not "missing data payload".</summary>
     [Fact]
     public async Task DeleteScheduleEntry_NoContent_IsASuccess()
@@ -814,6 +903,29 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         }
     }
 
+    /// <summary>APX-54: ownerName reaches the wire when given and is omitted when not.</summary>
+    [Fact]
+    public async Task CreateTenant_OwnerName_IsSentWhenGivenAndOmittedOtherwise()
+    {
+        _backend.MapJson("POST", "/v1/tenants",
+            """{"data":{"tenantId":"t1","apiKey":"isk_admin_new","verificationEmailSent":true}}""");
+        await using var client = await ConnectAsync(apiKey: null);
+
+        await client.CallToolAsync("create_tenant",
+            new Dictionary<string, object?> { ["tenantName"] = "Acme", ["ownerEmail"] = "o@a.test", ["ownerName"] = "Anna" },
+            cancellationToken: Timeout());
+        await client.CallToolAsync("create_tenant",
+            new Dictionary<string, object?> { ["tenantName"] = "Acme", ["ownerEmail"] = "p@a.test" },
+            cancellationToken: Timeout());
+
+        lock (_backend.Requests)
+        {
+            Assert.Equal(2, _backend.Requests.Count);
+            Assert.Contains("\"ownerName\":\"Anna\"", _backend.Requests[0].Body);
+            Assert.DoesNotContain("ownerName", _backend.Requests[1].Body);
+        }
+    }
+
     [Fact]
     public async Task AuthenticatedTool_WithoutCredential_ReturnsActionableError()
     {
@@ -999,6 +1111,13 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
     [InlineData(new[] { "slide", "delete", "sl1" }, "DELETE", "/v1/slides/sl1", "")]
     [InlineData(new[] { "slideshow", "delete", "s1" }, "DELETE", "/v1/slideshows/s1", "")]
     [InlineData(new[] { "source", "list" }, "GET", "/v1/sources", "")]
+    [InlineData(new[] { "schedule", "show", "d1" }, "GET", "/v1/devices/d1/schedule", "")]
+    [InlineData(new[] { "schedule", "add", "d1", "s1", "11:00", "14:00" }, "POST", "/v1/devices/d1/schedule/entries",
+        "{\"slideshowId\":\"s1\",\"startTime\":\"11:00\",\"endTime\":\"14:00\",\"priority\":0}")]
+    [InlineData(new[] { "schedule", "remove", "d1", "e1" }, "DELETE", "/v1/devices/d1/schedule/entries/e1", "")]
+    [InlineData(new[] { "source", "adapters" }, "GET", "/v1/adapters", "")]
+    [InlineData(new[] { "source", "edit", "src1", "--enabled", "false" }, "PATCH", "/v1/sources/src1", "{\"isEnabled\":false}")]
+    [InlineData(new[] { "source", "delete", "src1" }, "DELETE", "/v1/sources/src1", "")]
     public async Task Cli_NewEditVerbs_SendTheExpectedRequest(string[] args, string method, string path, string body)
     {
         _backend.MapJson(method, path, """{"data":{"id":"x","title":"t","resolution":{"width":1,"height":1}}}""");

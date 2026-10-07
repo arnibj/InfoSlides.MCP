@@ -10,8 +10,11 @@ namespace InfoSlides.Core.Models;
 /// it, and one that supports it records <c>Unknown</c> when it is omitted.</param>
 /// <param name="TimeZone">Optional IANA time zone for schedules and clocks, e.g. <c>Europe/London</c>.</param>
 /// <param name="Locale">Optional locale for number and date formats, e.g. <c>en-GB</c>.</param>
+/// <param name="OwnerName">Optional name of the person who owns the workspace, so emails greet them
+/// ("Hi Anna,") instead of the workspace name. A backend that predates it ignores the field.</param>
 public sealed record CreateTenantRequest(
-    string TenantName, string OwnerEmail, string? Source = null, string? TimeZone = null, string? Locale = null);
+    string TenantName, string OwnerEmail, string? Source = null, string? TimeZone = null, string? Locale = null,
+    string? OwnerName = null);
 
 public sealed record CreateTenantResult(string TenantId, string ApiKey, bool VerificationEmailSent);
 

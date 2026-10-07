@@ -163,6 +163,18 @@ public sealed class InfoSlidesApiClient
             anonymousAllowed: false, idempotent: true, ct);
     }
 
+    /// <summary>
+    /// Adds a slide rendered from a heading, text and a background colour or image, with no AI
+    /// (<c>POST /v1/slideshows/{id}/slides/design</c>).
+    /// </summary>
+    /// <param name="slideshowId">The slideshow to add the slide to.</param>
+    /// <param name="request">The slide's text, background, layout, position and duration.</param>
+    /// <param name="ct">Cancellation token.</param>
+    public Task<ApiResult<DesignedSlide>> AddDesignedSlideAsync(string slideshowId, AddDesignedSlideRequest request, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Post, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}/slides/design",
+            Json(request, InfoSlidesJsonContext.Default.AddDesignedSlideRequest),
+            InfoSlidesJsonContext.Default.DesignedSlide, false, idempotent: true, ct);
+
     public Task<ApiResult<Slide>> AddMediaSlideAsync(string slideshowId, AddMediaSlideRequest request, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Post, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}/slides",
             Json(request, InfoSlidesJsonContext.Default.AddMediaSlideRequest),

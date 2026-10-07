@@ -24,7 +24,7 @@ credit card, no trial clock, nothing expires. The whole flow below costs nothing
 ```sh
 # 1. Install (macOS/Linux; see Install for Windows and MCP clients)
 #    Version-pinned. Check /releases/latest for the current one.
-curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.7.3/infoslides-v1.7.3-linux-x64.tar.gz | tar xz
+curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.7.4/infoslides-v1.7.4-linux-x64.tar.gz | tar xz
 
 # 2. Create a workspace (anonymous; prints an admin API key and saves it to ~/.infoslides)
 ./infoslides tenant create "Acme Cafe" owner@acme.test --save

@@ -60,8 +60,12 @@ How it behaves:
 - With `hideAfterMinutes` set on the source (in the dashboard, under Sources), the slide hides
   after that long without data and returns with the next push. Suggest it for anything that stops
   overnight, like a queue.
-- Payloads are checked against the template: required fields present, types right. Extra fields
-  are ignored. A failure is `ValidationFailed` per field.
+- Payloads are checked against the template: types right, and any field the template marks required
+  present. A failure is `ValidationFailed` per field. Extra fields are ignored. The fields of a
+  code template come from its placeholders and are all optional, so a push without some of them is
+  accepted (a dry run too) and the answer carries a `FieldsNotSent` warning naming them (not fields the layout shows only inside a `{{#field}}` section, which are meant to be left out): they show
+  blank on the slide. Read the warning out and push again with the missing fields if that is not
+  what the person wanted.
 
 The worked example, a clinic queue board with its HTML, CSS and a curl push:
 <https://infoslides.app/blog/agents-guide-to-the-infoslides-galaxy>.

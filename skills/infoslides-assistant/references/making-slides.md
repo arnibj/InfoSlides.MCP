@@ -1,10 +1,45 @@
-# Making a slide: design it yourself
+# Making a slide
 
 "Make a slide saying the lunch moved to 1pm", "put up a welcome for the Acme visitors", "a slide
-for Friday's quiz night". In most cases you design the slide yourself, show it to the person,
-change it until they are happy, and only then put it on the screen they meant. You know what they
-asked for, you can iterate in the conversation, and nothing reaches the screen before they have
-seen it.
+for Friday's quiz night". There are two ways to do it. Start with the first, and move to the
+second only when the person wants something the first cannot do.
+
+## First choice: `add_designed_slide`
+
+`add_designed_slide` (`POST /v1/slideshows/{id}/slides/design`) makes a finished slide from a
+`heading`, optional `text` and `cta`, and a background:
+`backgroundColor` (hex; the workspace accent colour when omitted), `mediaAssetId` (an image from `upload_media`) or `mediaUrl`. A picture beside the text (a dish, a product, a person) is `imageMediaAssetId` or `imageUrl`, which picks the picture-right layout (`layout: "heading-image-left"` flips it), and `branding: true` adds the workspace logo (nothing is added for a workspace without one). It draws the
+slide at the slideshow's size with the words exactly as given, so there is nothing to render or
+upload yourself, and it uses no AI and no credits. `durationSeconds` is 1 to 99. The answer has a `previewUrl` to show the person, and `undo`.
+
+**It shows what it is given, and nothing checks it.** The words, prices, times and phone numbers
+go on the slide exactly as you send them. The tool cannot know whether a price is right or a time
+is true, so the facts come from the person, you read them back before the slide goes on a screen,
+and you never fill in one they did not give you.
+
+How much text fits depends on the layout and the screen. Text over it is refused with the field and the
+number that fits, never clipped, so shorten it and send again, or tell the person what you cut. Characters,
+in mixed case (text mostly in capitals fits about 30% fewer):
+
+| Layout and screen | `heading` | `text` | `cta` |
+|---|---|---|---|
+| `heading` | 60 | none | none |
+| `heading-text` | 60 | 200 | none |
+| `heading-text-cta` | 60 | 160 | 55 |
+| picture layouts, 16:9 | 75 | 260 | 45 |
+| picture layouts, 4:3 | 60 | 215 | 40 |
+| picture layouts, square | 50 | 175 | 30 |
+| picture layouts, portrait | 80 | 275 | 50 |
+
+## When the layouts are not flexible enough: an image you make yourself
+
+The five layouts carry a heading, some text, a call to action and one picture. When the person wants
+more than that (columns, a table, a menu with many items, a logo wall, a map, text in a particular
+place, a look the layouts do not have), or more text than a layout fits, design the slide as an
+image yourself, show it to the person, change it until they are happy, and add it as a media slide:
+`upload_media`, then `add_media_slide`. You know what they asked for, you can iterate in the
+conversation, and nothing reaches the screen before they have seen it. The rest of this file is how to
+do that well. A media slide is shown exactly as it is, and nothing checks what is on it either.
 
 Use AI Studio ([ai-studio.md](ai-studio.md)) instead when the person asks for it, when they want
 many slides made from a document, or when you cannot produce an image at all.
@@ -44,7 +79,8 @@ A screen is read from across a room, for a few seconds, by someone doing somethi
   photo without a dark overlay behind it.
 - **Margins** of about 5 percent on every side; TVs can crop the edges.
 - **Every fact from the person, none invented.** Prices, times, dates, names and phone numbers
-  come from what they told you. If one is missing, ask; do not fill it in.
+  come from what they told you. If one is missing, ask; do not fill it in. Nothing in InfoSlides checks
+  that a figure on an image is right, so read the prices and times back to them before it goes on a screen.
 - **Their look, if you know it.** Colours and logo from their existing slides (look at the
   `thumbnailUrl`s) keep the new slide from looking out of place.
 

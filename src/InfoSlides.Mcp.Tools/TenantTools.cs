@@ -21,17 +21,19 @@ public sealed class TenantTools(InfoSlidesApiClient api)
                  "(https://infoslides.app/privacy) links. ownerEmail must be an address you can open right " +
                  "now, never an invented one: your own is recommended, so you can verify it at once and " +
                  "then add the person with invite_team_member. Adding a screen fails with EmailNotVerified " +
-                 "until the address is verified.")]
+                 "until the address is verified. Pass ownerName (the person's first name) only when you already " +
+                 "know it or it is free to ask; never invent one. It is what emails greet them with.")]
     public Task<CallToolResult> CreateTenant(
         [Description("Name of the workspace — usually the company, venue, or shop name, e.g. 'Acme Cafe'.")] string tenantName,
         [Description("Email address of the owner. Receives the verification email and the sign-in details.")] string ownerEmail,
         [Description("Optional IANA time zone, e.g. 'Europe/London'; decides when schedules switch and what clocks show.")] string? timeZone = null,
         [Description("Optional locale for number and date formats, e.g. 'en-GB'.")] string? locale = null,
+        [Description("Optional name of the person who owns the workspace (first name is fine, at most 100 characters). Without it emails greet the workspace name.")] string? ownerName = null,
         CancellationToken ct = default) =>
         // Source is fixed to "mcp" rather than exposed as a parameter: it records how the account was
         // provisioned (InfoSlides story AGENT-01), and letting a model choose it would corrupt the
         // one signal that makes agent-originated signups countable.
-        ToolResults.Execute(() => api.CreateTenantAsync(new CreateTenantRequest(tenantName, ownerEmail, "mcp", timeZone, locale), ct),
+        ToolResults.Execute(() => api.CreateTenantAsync(new CreateTenantRequest(tenantName, ownerEmail, "mcp", timeZone, locale, ownerName), ct),
             InfoSlidesJsonContext.Default.CreateTenantResult);
 
     [McpServerTool(Name = "get_tenant_info", Title = "Get workspace info", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]

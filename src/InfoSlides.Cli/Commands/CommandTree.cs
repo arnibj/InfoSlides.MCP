@@ -48,10 +48,11 @@ internal static class CommandTree
         var email = new Argument<string>("owner-email") { Description = "Owner email address." };
         var timeZone = new Option<string?>("--time-zone") { Description = "IANA time zone, e.g. Europe/London." };
         var locale = new Option<string?>("--locale") { Description = "Locale for number and date formats, e.g. en-GB." };
+        var ownerName = new Option<string?>("--owner-name") { Description = "The owner's name, so emails greet a person instead of the workspace." };
         var save = new Option<bool>("--save") { Description = "Store the returned admin API key in ~/.infoslides." };
         var create = new Command("create", "Create a tenant anonymously; returns the Primary Admin API Key.")
         {
-            name, email, timeZone, locale, save,
+            name, email, timeZone, locale, ownerName, save,
         };
         create.SetAction((parse, ct) => CliContext.Run(parse,
             async api =>
@@ -60,7 +61,7 @@ internal static class CommandTree
                 // separately from command-line ones.
                 var result = await api.CreateTenantAsync(
                     new CreateTenantRequest(parse.GetValue(name)!, parse.GetValue(email)!, "cli",
-                        parse.GetValue(timeZone), parse.GetValue(locale)), ct);
+                        parse.GetValue(timeZone), parse.GetValue(locale), parse.GetValue(ownerName)), ct);
                 if (parse.GetValue(save))
                 {
                     new CredentialStore(CliContext.Settings(parse).ConfigDirectory)

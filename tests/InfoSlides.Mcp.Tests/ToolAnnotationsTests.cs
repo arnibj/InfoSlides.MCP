@@ -157,6 +157,7 @@ public sealed class ToolAnnotationsTests
         {
             "show_media_on_device",
             "add_media_slide",
+            "add_designed_slide",
             "create_source",
             "update_source_settings",
             "make_ai_slide"

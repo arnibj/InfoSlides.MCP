@@ -46,7 +46,8 @@ public sealed record Clock(
 /// <param name="Name">Display name.</param>
 /// <param name="AdapterType">What kind of source it is, e.g. <c>RssFeed</c> or <c>Push</c>.</param>
 /// <param name="LastFetchedAt">When data last arrived; null before the first fetch.</param>
-public sealed record Source(string Id, string Name, string AdapterType, DateTimeOffset? LastFetchedAt = null);
+/// <param name="IsEnabled">False when fetching is paused (<c>update_source_settings</c> with <c>isEnabled</c>).</param>
+public sealed record Source(string Id, string Name, string AdapterType, DateTimeOffset? LastFetchedAt = null, bool IsEnabled = true);
 
 /// <param name="SourceId">
 /// On a slide just added from a push template: the Push source created for it, where its data is
@@ -153,6 +154,34 @@ public sealed record AddMediaSlideRequest(
     string? MediaAssetId = null,
     double? DurationSeconds = null,
     int? Position = null);
+
+/// <summary>
+/// Request body for <c>POST /v1/slideshows/{id}/slides/design</c>: a slide rendered from plain
+/// parameters, with no AI. Only <see cref="Heading"/> is required; the background is at most one of
+/// <see cref="BackgroundColor"/>, <see cref="MediaAssetId"/> or <see cref="MediaUrl"/>.
+/// </summary>
+public sealed record AddDesignedSlideRequest(
+    string Heading,
+    string? Text = null,
+    string? Cta = null,
+    string? BackgroundColor = null,
+    string? MediaAssetId = null,
+    string? MediaUrl = null,
+    string? ImageMediaAssetId = null,
+    string? ImageUrl = null,
+    bool? Branding = null,
+    string? Layout = null,
+    int? Position = null,
+    double? DurationSeconds = null);
+
+/// <summary>Result of <c>POST /v1/slideshows/{id}/slides/design</c>.</summary>
+public sealed record DesignedSlide(
+    string Id,
+    string DesignId,
+    string Layout,
+    string? PreviewUrl = null,
+    int DurationSeconds = 0,
+    int Position = 0);
 
 /// <summary>Result of <c>POST /v1/media</c> — pass <see cref="Id"/> as <c>mediaAssetId</c> to <see cref="AddMediaSlideRequest"/>.</summary>
 public sealed record UploadedMedia(string Id, string FileType, int? Width = null, int? Height = null);

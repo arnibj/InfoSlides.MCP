@@ -2,6 +2,8 @@
   <PropertyGroup>
     <AssemblyName>InfoSlides.McpServer</AssemblyName>
     <RootNamespace>InfoSlides.McpServer</RootNamespace>
+    <!-- One version for the CLI and the host: read it from the CLI project, which CI and the release workflow already treat as the source of truth. -->
+    <Version>$([System.Text.RegularExpressions.Regex]::Replace($([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\InfoSlides.Cli\InfoSlides.Cli.csproj')), '(?s).*&lt;Version&gt;([^&lt;]+)&lt;/Version&gt;.*', '$1'))</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
