@@ -31,6 +31,7 @@ internal static class CommandTree
         root.Subcommands.Add(Stream());
         root.Subcommands.Add(ToolCommands.Takeover());
         root.Subcommands.Add(ToolCommands.Team());
+        root.Subcommands.Add(ToolCommands.Brand());
         root.Subcommands.Add(ToolCommands.Workspace());
         root.Subcommands.Add(ToolCommands.Ai());
         root.Subcommands.Add(ToolCommands.Undo());

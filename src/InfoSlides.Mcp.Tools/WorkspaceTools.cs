@@ -289,6 +289,41 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
                 Body(("layoutHtml", layoutHtml), ("layoutCss", layoutCss), ("sampleData", sampleData), ("aspectRatio", aspectRatio)), ct),
             "Template preview");
 
+    [McpServerTool(Name = "get_brand_guide", Title = "Get brand guide", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Read the workspace's brand guide before making slides so they match the company: colours, " +
+                 "fonts, logos, voice, picture style and layout. 'inUse' is what slides are made from, 'draft' " +
+                 "is the working copy. If 'waitingForApproval' is true a person still has to confirm the draft " +
+                 "on the Brand page (brandPageUrl): tell them, because slides keep using the confirmed version " +
+                 "until then.")]
+    public Task<CallToolResult> GetBrandGuide(CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Get, "/v1/brand", ct: ct));
+
+    [McpServerTool(Name = "update_brand_guide", Title = "Update brand guide draft", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Replace the brand guide DRAFT with the whole guide given (admin only). It never changes " +
+                 "what slides use: a person confirms it on the Brand page, so say it is waiting for their " +
+                 "approval and give them brandPageUrl. Colours are #rrggbb; low text contrast comes back as a " +
+                 "warning. Values are typed in, nothing is read from files. Call get_brand_guide first and send " +
+                 "back the full guide with your changes.")]
+    public Task<CallToolResult> UpdateBrandGuide(
+        [Description("The whole guide as JSON, e.g. {\"palette\":{\"primary\":\"#0a5c36\",\"accent\":\"#e11d48\",\"background\":\"#ffffff\",\"text\":\"#111827\"}," +
+                     "\"type\":{\"headingFontKey\":\"montserrat\"},\"voice\":{\"tone\":\"Friendly\",\"preferredPhrases\":[\"Welcome\"]}," +
+                     "\"layout\":{\"logoPosition\":\"top-right\",\"headerBand\":true}}.")] JsonObject guide,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Put, "/v1/brand", guide, ct: ct));
+
+    [McpServerTool(Name = "preview_brand", Title = "Preview brand sample slide", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("See a sample slide drawn from the brand guide as an image, so the person and you can check " +
+                 "how it looks before it is confirmed. Samples: title, text, data, image, logo-light, " +
+                 "logo-dark, ticker, clock. Shows the draft by default; source 'confirmed' shows what slides " +
+                 "use now. Rate limited.")]
+    public Task<CallToolResult> PreviewBrand(
+        [Description("Sample name (default title).")] string? sample = null,
+        [Description("draft (default) or confirmed.")] string? source = null,
+        CancellationToken ct = default) =>
+        ExecutePng(() => api.GetPngAsync(HttpMethod.Get,
+                "/v1/brand/preview.png" + InfoSlidesApiClient.Query(("sample", sample), ("source", source)), null, ct),
+            $"Brand preview: {sample ?? "title"}");
+
     private static JsonNode? Node(JsonElement? value) =>
         value is { ValueKind: not (JsonValueKind.Undefined or JsonValueKind.Null) } v ? JsonNode.Parse(v.GetRawText()) : null;
 }

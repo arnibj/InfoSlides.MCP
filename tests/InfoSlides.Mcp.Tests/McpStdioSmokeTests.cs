@@ -27,6 +27,7 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         "list_team", "invite_team_member", "revoke_team_invitation", "remove_team_member", "update_tenant",
         "list_adapters", "create_source", "update_source_settings", "delete_source",
         "fetch_source_now", "get_source_items", "test_source_config",
+        "get_brand_guide", "update_brand_guide", "preview_brand",
         "identify_devices", "get_now_slide_png", "get_device_diagnosis", "show_media_on_device", "get_show_status", "update_device",
         "set_device_offline_alerts", "get_workspace_health", "get_offline_alerts", "set_workspace_offline_alerts",
         "undo_change", "make_ai_slide", "get_ai_slide_job", "insert_ai_slides", "start_ai_studio_trial", "preview_new_template",
@@ -567,6 +568,30 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
             Assert.Contains(_backend.Requests, r => r.Method == "GET" && r.Path == "/v1/sources/src1/items");
             var test = Assert.Single(_backend.Requests, r => r.Path == "/v1/sources/test-connection");
             Assert.Equal("{\"adapterType\":\"RssFeed\",\"config\":{\"feedUrl\":\"https://x.test/rss\"}}", test.Body);
+        }
+    }
+
+    /// <summary>BG-05: read the brand guide and replace its draft.</summary>
+    [Fact]
+    public async Task BrandGuide_ReadAndUpdateDraft_SendTheExpectedRequests()
+    {
+        _backend.MapJson("GET", "/v1/brand", """{"data":{"status":"Draft","version":0,"waitingForApproval":true,"brandPageUrl":"https://infoslides.app/app/brand"}}""");
+        _backend.MapJson("PUT", "/v1/brand", """{"data":{"status":"Draft","waitingForApproval":true}}""");
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var read = await client.CallToolAsync("get_brand_guide", new Dictionary<string, object?>(), cancellationToken: Timeout());
+        var updated = await client.CallToolAsync("update_brand_guide",
+            new Dictionary<string, object?>
+            {
+                ["guide"] = new Dictionary<string, object?> { ["palette"] = new Dictionary<string, object?> { ["primary"] = "#0a5c36" } },
+            }, cancellationToken: Timeout());
+
+        Assert.Contains("waitingForApproval", Assert.IsType<TextContentBlock>(Assert.Single(read.Content)).Text);
+        Assert.NotEqual(true, updated.IsError);
+        lock (_backend.Requests)
+        {
+            var put = Assert.Single(_backend.Requests, r => r.Method == "PUT" && r.Path == "/v1/brand");
+            Assert.Equal("{\"palette\":{\"primary\":\"#0a5c36\"}}", put.Body);
         }
     }
 

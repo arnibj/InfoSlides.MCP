@@ -239,6 +239,29 @@ internal static class ToolCommands
             html, css, sample, aspect, output));
     }
 
+    /// <summary>The <c>brand</c> command: read the brand guide, change its draft, and look at sample slides.</summary>
+    public static Command Brand()
+    {
+        var brand = new Command("brand", "The workspace brand guide: colours, fonts, logos and voice (a person confirms it on the Brand page).");
+
+        brand.Subcommands.Add(Verb("show", "Show the guide slides use, the draft, and whether it waits for approval.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).GetBrandGuide(ct))));
+
+        var guide = Arg("guide", "The whole guide as a JSON object, inline or @file.");
+        brand.Subcommands.Add(Verb("set", "Replace the draft guide; a person confirms it on the Brand page.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).UpdateBrandGuide(CliContext.ParseJsonObject(p.GetValue(guide)!), ct)),
+            guide));
+
+        var sample = Opt<string?>("--sample", "title, text, data, image, logo-light, logo-dark, ticker or clock (default title).");
+        var source = Opt<string?>("--source", "draft (default) or confirmed.");
+        var output = Opt<string?>("--output", "Output PNG path (default brand-preview.png).");
+        brand.Subcommands.Add(Verb("preview", "Draw a sample slide from the brand guide to a PNG.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).PreviewBrand(p.GetValue(sample), p.GetValue(source), ct),
+                p.GetValue(output) ?? "brand-preview.png"),
+            sample, source, output));
+        return brand;
+    }
+
     /// <summary>The <c>takeover</c> command: start, list and end temporary takeovers.</summary>
     public static Command Takeover()
     {
