@@ -202,6 +202,24 @@ internal static class ToolCommands
         source.Subcommands.Add(Verb("delete", "Delete a source; slides and tickers fed by it stop updating.",
             (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).DeleteSource(p.GetValue(deleteId)!, ct)),
             deleteId));
+
+        var fetchId = Arg("source-id", "Source id.");
+        source.Subcommands.Add(Verb("fetch", "Refresh a source now instead of waiting for its next fetch.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).FetchSourceNow(p.GetValue(fetchId)!, ct)),
+            fetchId));
+
+        var itemsId = Arg("source-id", "Source id.");
+        var itemsLimit = Opt<int?>("--limit", "How many items, 1 to 100 (default 20).");
+        source.Subcommands.Add(Verb("items", "Show the latest items a source has fetched.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).GetSourceItems(p.GetValue(itemsId)!, p.GetValue(itemsLimit), ct)),
+            itemsId, itemsLimit));
+
+        var testAdapter = Arg("adapter-type", "Adapter type from `source adapters`, e.g. RssFeed.");
+        var testConfig = Opt<string?>("--config", "Config JSON object, inline or @file.");
+        source.Subcommands.Add(Verb("test", "Try source settings against the live service without saving anything.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).TestSourceConfig(p.GetValue(testAdapter)!,
+                p.GetValue(testConfig) is { } c ? CliContext.ParseJsonObject(c) : null, ct)),
+            testAdapter, testConfig));
     }
 
     /// <summary>Adds previewing an unsaved design to <c>template</c>.</summary>

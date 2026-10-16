@@ -26,6 +26,7 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         "create_takeover", "list_takeovers", "end_takeover", "get_slideshow_plays", "get_device_plays",
         "list_team", "invite_team_member", "revoke_team_invitation", "remove_team_member", "update_tenant",
         "list_adapters", "create_source", "update_source_settings", "delete_source",
+        "fetch_source_now", "get_source_items", "test_source_config",
         "identify_devices", "get_now_slide_png", "get_device_diagnosis", "show_media_on_device", "get_show_status", "update_device",
         "set_device_offline_alerts", "get_workspace_health", "get_offline_alerts", "set_workspace_offline_alerts",
         "undo_change", "make_ai_slide", "get_ai_slide_job", "insert_ai_slides", "start_ai_studio_trial", "preview_new_template",
@@ -535,6 +536,37 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
             Assert.Contains("\"feedUrl\":\"https://example.com/rss\"", create.Body);
             var edit = Assert.Single(_backend.Requests, r => r.Method == "PATCH");
             Assert.Equal("{\"isEnabled\":false}", edit.Body);
+        }
+    }
+
+    /// <summary>APX-59: fetch now, read the items, and test a configuration.</summary>
+    [Fact]
+    public async Task SourceFetchItemsAndTest_SendTheExpectedRequests()
+    {
+        _backend.MapJson("POST", "/v1/sources/src1/fetch", """{"data":{"queued":true,"message":"Queued"}}""");
+        _backend.MapJson("GET", "/v1/sources/src1/items", """{"data":[{"title":"Headline","fetchedAt":"2026-10-16T10:00:00Z"}]}""");
+        _backend.MapJson("POST", "/v1/sources/test-connection", """{"data":{"success":false,"message":"The feed address was not found (404)."}}""");
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var fetched = await client.CallToolAsync("fetch_source_now",
+            new Dictionary<string, object?> { ["sourceId"] = "src1" }, cancellationToken: Timeout());
+        var items = await client.CallToolAsync("get_source_items",
+            new Dictionary<string, object?> { ["sourceId"] = "src1", ["limit"] = 5 }, cancellationToken: Timeout());
+        var tested = await client.CallToolAsync("test_source_config",
+            new Dictionary<string, object?>
+            {
+                ["adapterType"] = "RssFeed",
+                ["config"] = new Dictionary<string, object?> { ["feedUrl"] = "https://x.test/rss" },
+            }, cancellationToken: Timeout());
+
+        Assert.NotEqual(true, fetched.IsError);
+        Assert.Contains("Headline", Assert.IsType<TextContentBlock>(Assert.Single(items.Content)).Text);
+        Assert.Contains("404", Assert.IsType<TextContentBlock>(Assert.Single(tested.Content)).Text);
+        lock (_backend.Requests)
+        {
+            Assert.Contains(_backend.Requests, r => r.Method == "GET" && r.Path == "/v1/sources/src1/items");
+            var test = Assert.Single(_backend.Requests, r => r.Path == "/v1/sources/test-connection");
+            Assert.Equal("{\"adapterType\":\"RssFeed\",\"config\":{\"feedUrl\":\"https://x.test/rss\"}}", test.Body);
         }
     }
 
@@ -1118,6 +1150,10 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
     [InlineData(new[] { "source", "adapters" }, "GET", "/v1/adapters", "")]
     [InlineData(new[] { "source", "edit", "src1", "--enabled", "false" }, "PATCH", "/v1/sources/src1", "{\"isEnabled\":false}")]
     [InlineData(new[] { "source", "delete", "src1" }, "DELETE", "/v1/sources/src1", "")]
+    [InlineData(new[] { "source", "fetch", "src1" }, "POST", "/v1/sources/src1/fetch", "")]
+    [InlineData(new[] { "source", "items", "src1", "--limit", "5" }, "GET", "/v1/sources/src1/items", "")]
+    [InlineData(new[] { "source", "test", "RssFeed", "--config", "{\"feedUrl\":\"https://x.test/rss\"}" }, "POST", "/v1/sources/test-connection",
+        "{\"adapterType\":\"RssFeed\",\"config\":{\"feedUrl\":\"https://x.test/rss\"}}")]
     public async Task Cli_NewEditVerbs_SendTheExpectedRequest(string[] args, string method, string path, string body)
     {
         _backend.MapJson(method, path, """{"data":{"id":"x","title":"t","resolution":{"width":1,"height":1}}}""");

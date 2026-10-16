@@ -155,7 +155,7 @@ is to find it, change it, and confirm the change reached the wall.
    | move a slide | `update_slideshow` with the full `slideOrder` |
    | remove a slide for good | `delete_slide` |
    | replace the whole presentation with a new file | `replace_slideshow_file` (keeps the screens and schedule) |
-   | scroll headlines from a feed | `list_sources`, then `update_slideshow` with `tickerSourceIds` (a new feed: `list_adapters`, `create_source`) |
+   | scroll headlines from a feed | `list_sources`, then `update_slideshow` with `tickerSourceIds` (a new feed: `list_adapters`, `test_source_config`, `create_source`; a feed that looks stale: `get_source_status` for `health` and `lastError`, `fetch_source_now`, `get_source_items`) |
    | "play the Q1 slides on the lobby screen" | `play_slideshow_find_device` (`dryRun` first if unsure) |
    | breakfast menu 6-11, lunch menu after | `add_schedule_entry`; `get_schedule` / `delete_schedule_entry` to review or undo |
    | fire drill notice on every screen for 30 minutes | `create_takeover`; `end_takeover` to stop early |
@@ -171,7 +171,7 @@ is to find it, change it, and confirm the change reached the wall.
 Dayparting versus takeover: "every day from 11 to 2" is `add_schedule_entry` (repeats daily, times in the
    workspace time zone, name it); "for two hours" or "until 17:00" is `create_takeover` (one-off, the schedule
    returns by itself). Before `create_source`, ask the person for the source's settings (`list_adapters`
-   shows the fields); secrets in config are write-only.
+   shows the fields), then check them with `test_source_config`; secrets in config are write-only.
 
 4. **Wait for it to land.** After an edit the slideshow re-renders. `get_slideshow` until
    `renderStatus` is `Completed`; `Failed` means it did not reach the screen, say so.
@@ -258,7 +258,9 @@ playing" in one call. From there:
   time. Fix the slideshow's resolution with `update_slideshow`, or the screen's with a correctly
   shaped device.
 - **Stale numbers on a self-updating slide** — whatever should be sending data has stopped.
-  `get_source_status` shows when data last arrived; `list_api_keys` shows each key's last use.
+  `get_source_status` shows when data last arrived; `list_api_keys` shows each key's last use. For a feed
+  InfoSlides fetches (RSS, weather), `health` is `Healthy`, `Degraded` or `Failing` and `lastError` says why in
+  plain words; `fetch_source_now` retries it and `get_source_items` shows what it holds.
 - **`EmailNotVerified`** — the owner has not clicked the link. `resend_verification_email`, and
   tell them to check spam.
 

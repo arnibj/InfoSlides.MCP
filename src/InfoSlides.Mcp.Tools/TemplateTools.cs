@@ -104,8 +104,9 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
     [Description("Check a source. For a push source: when data last arrived (lastReceivedAt), whether " +
                  "its slides are showing data (isShowingData, false before the first push or after the " +
                  "data went stale), the staleness timeout, and which slides it feeds; use it to confirm a " +
-                 "system is actually sending. For a fetched source (RSS, weather, etc.): lastFetchedAt, " +
-                 "with the push fields empty.")]
+                 "system is actually sending. For a fetched source (RSS, weather, etc.): lastFetchedAt " +
+                 "and health (Healthy, Degraded or Failing) with lastError in plain words, consecutiveFailures " +
+                 "and lastSuccessAt, with the push fields empty.")]
     public Task<CallToolResult> GetSourceStatus(
         [Description("Id of the source.")] string sourceId,
         CancellationToken ct = default) =>

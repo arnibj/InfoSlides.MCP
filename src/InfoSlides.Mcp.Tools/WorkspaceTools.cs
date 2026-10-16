@@ -114,6 +114,37 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Delete, $"/v1/sources/{Id(sourceId)}", ct: ct));
 
+    [McpServerTool(Name = "fetch_source_now", Title = "Refresh content source now", ReadOnly = false, Destructive = false, OpenWorld = true, Idempotent = false)]
+    [Description("Ask InfoSlides to fetch a source (RSS, weather, calendar) right now instead of waiting " +
+                 "for its next scheduled fetch. The fetch runs in the background: call get_source_status " +
+                 "after a few seconds to see the new health. Limited to 10 calls a minute per workspace.")]
+    public Task<CallToolResult> FetchSourceNow(
+        [Description("Id of the source (from list_sources).")] string sourceId,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Post, $"/v1/sources/{Id(sourceId)}/fetch", ct: ct));
+
+    [McpServerTool(Name = "get_source_items", Title = "Get content source items", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("See the latest items a source has fetched, newest first: title, body, imageUrl, url, " +
+                 "fetchedAt and expiresAt. Use it to check what a slide on this source would show.")]
+    public Task<CallToolResult> GetSourceItems(
+        [Description("Id of the source (from list_sources).")] string sourceId,
+        [Description("How many items, 1 to 100 (default 20).")] int? limit = null,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Get,
+            $"/v1/sources/{Id(sourceId)}/items" + (limit is null ? "" : $"?limit={limit}"), ct: ct));
+
+    [McpServerTool(Name = "test_source_config", Title = "Test content source settings", ReadOnly = true, Destructive = false, OpenWorld = true, Idempotent = true)]
+    [Description("Try a source's settings against the live service without saving anything, e.g. whether " +
+                 "an RSS address works. Returns success and a plain-language message; a failed test is " +
+                 "still an answer, not an error. Use before create_source. Limited to 10 calls a minute " +
+                 "per workspace.")]
+    public Task<CallToolResult> TestSourceConfig(
+        [Description("Adapter type from list_adapters, e.g. 'RssFeed'.")] string adapterType,
+        [Description("Config object as JSON, e.g. {\"feedUrl\":\"https://...\"}.")] JsonObject? config = null,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/sources/test-connection",
+            Body(("adapterType", adapterType), ("config", config)), ct: ct));
+
     [McpServerTool(Name = "get_workspace_health", Title = "Get workspace health", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("\"How are my screens?\" in one call: a sentence to read out (\"11 of 12 screens are online; " +
                  "Lobby has been offline since 09:12.\"), every screen with online and lastSeenAt, usage " +
