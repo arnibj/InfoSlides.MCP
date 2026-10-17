@@ -259,6 +259,11 @@ internal static class ToolCommands
             (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).PreviewBrand(p.GetValue(sample), p.GetValue(source), ct),
                 p.GetValue(output) ?? "brand-preview.png"),
             sample, source, output));
+
+        var checkShow = Arg("slideshow-id", "The slideshow to check.");
+        brand.Subcommands.Add(Verb("check", "Check a slideshow against the confirmed brand guide.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).CheckBrand(p.GetValue(checkShow)!, ct)),
+            checkShow));
         return brand;
     }
 

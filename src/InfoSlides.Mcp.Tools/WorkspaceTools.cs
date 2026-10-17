@@ -324,6 +324,16 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
                 "/v1/brand/preview.png" + InfoSlidesApiClient.Query(("sample", sample), ("source", source)), null, ct),
             $"Brand preview: {sample ?? "title"}");
 
+    [McpServerTool(Name = "check_brand", Title = "Check slideshow against brand guide", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Check whether a slideshow follows the confirmed brand guide: colours outside the palette, " +
+                 "text that is hard to read, a missing logo, banned phrases and fonts that are not the guide's, " +
+                 "slide by slide. Advisory only, nothing is blocked. Covers designed and dynamic slides, not slides " +
+                 "inside an uploaded presentation. If hasConfirmedGuide is false there is nothing to check against.")]
+    public Task<CallToolResult> CheckBrand(
+        [Description("Id of the slideshow.")] string slideshowId,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/brand/check", Body(("slideshowId", slideshowId)), ct: ct));
+
     private static JsonNode? Node(JsonElement? value) =>
         value is { ValueKind: not (JsonValueKind.Undefined or JsonValueKind.Null) } v ? JsonNode.Parse(v.GetRawText()) : null;
 }

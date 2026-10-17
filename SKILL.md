@@ -157,6 +157,7 @@ is to find it, change it, and confirm the change reached the wall.
    | replace the whole presentation with a new file | `replace_slideshow_file` (keeps the screens and schedule) |
    | scroll headlines from a feed | `list_sources`, then `update_slideshow` with `tickerSourceIds` (a new feed: `list_adapters`, `test_source_config`, `create_source`; a feed that looks stale: `get_source_status` for `health` and `lastError`, `fetch_source_now`, `get_source_items`) |
    | make slides match the company brand | `get_brand_guide` first (colours, fonts, logos, voice; `inUse` is what slides use); to propose changes `update_brand_guide` (a draft only, admin key) then `preview_brand` to look at it and tell the person it waits for their approval at `brandPageUrl`; you cannot confirm it |
+   | do our slides follow the brand | `check_brand` with the slideshow id; lists, slide by slide, colours outside the palette, hard-to-read text, a missing logo, banned phrases and other fonts; advisory only |
    | "play the Q1 slides on the lobby screen" | `play_slideshow_find_device` (`dryRun` first if unsure) |
    | breakfast menu 6-11, lunch menu after | `add_schedule_entry`; `get_schedule` / `delete_schedule_entry` to review or undo |
    | fire drill notice on every screen for 30 minutes | `create_takeover`; `end_takeover` to stop early |

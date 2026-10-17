@@ -134,7 +134,7 @@ edits to what is already playing (`update_slide` for a slide's duration, hidden 
 `list_adapters`, `create_source`, `update_source_settings`, `delete_source` for fetched feeds;
 `list_sources` and `get_source_status` show each feed's health and last error in plain words, `fetch_source_now`
 refreshes one, `get_source_items` shows what it fetched and `test_source_config` tries settings before saving;
-`get_brand_guide`, `update_brand_guide` and `preview_brand` read the workspace brand guide, replace its draft and draw sample slides from it; a person confirms the guide on the Brand page),
+`get_brand_guide`, `update_brand_guide`, `preview_brand` and `check_brand` read the workspace brand guide, replace its draft, draw sample slides from it and check a slideshow against it; a person confirms the guide on the Brand page),
 self-updating template slides driven by live data pushes (`update_source`, and push sources fed by
 the user's own system: `push_data`, `get_source_status`, `create_source_key`), devices, schedules with
 `AspectMismatch` warnings, playback-mode control (`update_slideshow`'s `playbackMode` switches a

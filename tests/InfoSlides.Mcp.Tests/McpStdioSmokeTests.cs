@@ -27,7 +27,7 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         "list_team", "invite_team_member", "revoke_team_invitation", "remove_team_member", "update_tenant",
         "list_adapters", "create_source", "update_source_settings", "delete_source",
         "fetch_source_now", "get_source_items", "test_source_config",
-        "get_brand_guide", "update_brand_guide", "preview_brand",
+        "get_brand_guide", "update_brand_guide", "preview_brand", "check_brand",
         "identify_devices", "get_now_slide_png", "get_device_diagnosis", "show_media_on_device", "get_show_status", "update_device",
         "set_device_offline_alerts", "get_workspace_health", "get_offline_alerts", "set_workspace_offline_alerts",
         "undo_change", "make_ai_slide", "get_ai_slide_job", "insert_ai_slides", "start_ai_studio_trial", "preview_new_template",
