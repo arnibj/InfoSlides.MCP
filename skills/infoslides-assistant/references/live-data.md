@@ -122,6 +122,10 @@ Paid plans only (the free plan gets only the push adapter).
 | A new feed | `create_source` (`POST /v1/sources`) with `{"adapterType": "RssFeed", "name": "News", "config": {"feedUrl": "..."}, "fetchIntervalSeconds": 300}` |
 | Change it | `update_source_settings` (`PATCH /v1/sources/{id}`): `name`, `config`, `fetchIntervalSeconds` (at least 300), `isEnabled`. Shared sources are read-only |
 | Remove it | `delete_source` (`DELETE /v1/sources/{id}`); fails while a slide or ticker uses it |
+| Is a feed working | `list_sources` / `get_source_status`: `health` (`Healthy`, `Degraded` after 1-2 failed fetches in a row, `Failing` after 3 or more), `lastError` in plain words, `consecutiveFailures`, `lastSuccessAt`. Check it before building a slide on a source |
+| Try settings before saving | `test_source_config` (`POST /v1/sources/test-connection`) with `{"adapterType": "RssFeed", "config": {...}}`. A failed test is a normal answer with `success: false` and the reason |
+| Refresh a feed now | `fetch_source_now` (`POST /v1/sources/{id}/fetch`); it runs in the background, so read `get_source_status` after a few seconds. At most 10 fetch or test calls a minute |
+| See what a feed holds | `get_source_items` (`GET /v1/sources/{id}/items?limit=`), newest first |
 | Headlines in the ticker | `update_slideshow` with `{"ticker": {"enabled": true, "sourceIds": ["..."]}}` |
 | A slide from the source | `list_templates`, `add_dynamic_slide` with the `templateId`, then `update_slide` on the new slide with `sourceId` (add takes no `sourceId`, and an unknown field is rejected) |
 

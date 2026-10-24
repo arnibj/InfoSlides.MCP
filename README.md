@@ -24,7 +24,7 @@ credit card, no trial clock, nothing expires. The whole flow below costs nothing
 ```sh
 # 1. Install (macOS/Linux; see Install for Windows and MCP clients)
 #    Version-pinned. Check /releases/latest for the current one.
-curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.7.4/infoslides-v1.7.4-linux-x64.tar.gz | tar xz
+curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.8.0/infoslides-v1.8.0-linux-x64.tar.gz | tar xz
 
 # 2. Create a workspace (anonymous; prints an admin API key and saves it to ~/.infoslides)
 ./infoslides tenant create "Acme Cafe" owner@acme.test --save
@@ -131,7 +131,10 @@ direct file upload (`upload_media`), visibility conditions (time of day, weekday
 edits to what is already playing (`update_slide` for a slide's duration, hidden flag and live data;
 `update_slideshow` for the news ticker, clock, default duration and sharing; `delete_slide`,
 `delete_slideshow`, `replace_slideshow_file`; `list_sources` for the ticker's sources, and
-`list_adapters`, `create_source`, `update_source_settings`, `delete_source` for fetched feeds),
+`list_adapters`, `create_source`, `update_source_settings`, `delete_source` for fetched feeds;
+`list_sources` and `get_source_status` show each feed's health and last error in plain words, `fetch_source_now`
+refreshes one, `get_source_items` shows what it fetched and `test_source_config` tries settings before saving;
+`get_brand_guide`, `update_brand_guide`, `preview_brand` and `check_brand` read the workspace brand guide, replace its draft, draw sample slides from it and check a slideshow against it; a person confirms the guide on the Brand page),
 self-updating template slides driven by live data pushes (`update_source`, and push sources fed by
 the user's own system: `push_data`, `get_source_status`, `create_source_key`), devices, schedules with
 `AspectMismatch` warnings, playback-mode control (`update_slideshow`'s `playbackMode` switches a
@@ -227,6 +230,9 @@ infoslides source adapters
 infoslides source create RssFeed "RÚV news" --config '{"feedUrl":"https://..."}' --interval 900
 infoslides source edit <source-id> --enabled false
 infoslides source delete <source-id>
+infoslides source test RssFeed --config '{"feedUrl":"https://..."}'   # try settings, nothing is saved
+infoslides source fetch <source-id>                         # refresh now; source status shows the new health
+infoslides source items <source-id> --limit 5
 infoslides team invite colleague@acme.test --role TenantAdmin
 infoslides team list                                        # team revoke <invitation-id>, team remove <member-id>
 infoslides workspace settings --time-zone Europe/London --locale en-GB

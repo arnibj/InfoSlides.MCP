@@ -103,7 +103,7 @@ public sealed class McpHostTransportTests(McpHostFactory factory, ITestOutputHel
         var tools = result.GetProperty("tools").EnumerateArray().ToList();
         output.WriteLine("tools/list result keys: " + string.Join(", ", result.EnumerateObject().Select(p => p.Name)));
         output.WriteLine("first tool: " + tools[0].GetRawText());
-        Assert.Equal(72, tools.Count); // 74 shared tools - 3 that need a local file + the host's profile tool
+        Assert.Equal(78, tools.Count); // 80 shared tools - 3 that need a local file + the host's profile tool
         Assert.All(tools, t =>
         {
             var annotations = t.GetProperty("annotations");
@@ -168,7 +168,7 @@ public sealed class McpHostTransportTests(McpHostFactory factory, ITestOutputHel
         var list = await ReadRpcAsync(await client.SendAsync(Rpc(new { jsonrpc = "2.0", id = 2, method = "tools/list" }, key)));
         var call = await ReadRpcAsync(await client.SendAsync(Rpc(new { jsonrpc = "2.0", id = 3, method = "tools/call", @params = new { name = "list_slideshows", arguments = new { } } }, key)));
 
-        Assert.Equal(71, list.GetProperty("result").GetProperty("tools").GetArrayLength()); // 74 shared - 3 local-file tools
+        Assert.Equal(77, list.GetProperty("result").GetProperty("tools").GetArrayLength()); // 80 shared - 3 local-file tools
         output.WriteLine(call.GetRawText());
         Assert.Equal("Bearer " + key, Assert.Single(factory.ApiRequests).Authorization);
     }

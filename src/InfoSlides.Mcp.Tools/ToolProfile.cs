@@ -125,7 +125,7 @@ public static class HostedToolProfile
             ["create_takeover"] =
                 "Takes over one or more screens for a while, such as a fire drill notice for 30 minutes or a launch announcement until 17:00, then returns them to their schedule by themselves. Takes deviceIds, the slideshow, and either durationMinutes or endsAt. Without an end it runs until it is ended.",
             ["list_sources"] =
-                "Lists the data sources the workspace can show on a screen: RSS news feeds, calendars, weather and live data pushed by another system. Each entry has its name, type and when it last received data.",
+                "Lists the data sources the workspace can show on a screen: RSS news feeds, calendars, weather and live data pushed by another system. Each entry has its name, type, when it last received data and its health (Healthy, Degraded or Failing, with lastError in plain words).",
             ["end_takeover"] =
                 "Ends a takeover now; the screen goes back to its schedule within about a minute.",
             ["play_slideshow_find_device"] =
@@ -143,7 +143,7 @@ public static class HostedToolProfile
             ["insert_ai_slides"] =
                 "Adds the previews of a Ready AI slide job to the slideshow. Repeating the call does not add them twice. Queues a re-render.",
             ["get_source_status"] =
-                "Returns the status of a source. For a push source: when data last arrived (lastReceivedAt), whether its slides are showing data (isShowingData, false before the first push or after the data went stale), the staleness timeout, and which slides it feeds. For a fetched source (RSS, weather and so on): lastFetchedAt, with the push fields empty.",
+                "Returns the status of a source. For a push source: when data last arrived (lastReceivedAt), whether its slides are showing data (isShowingData, false before the first push or after the data went stale), the staleness timeout, and which slides it feeds. For a fetched source (RSS, weather and so on): lastFetchedAt and health (Healthy, Degraded or Failing) with lastError in plain words, consecutiveFailures and lastSuccessAt, with the push fields empty.",
             ["get_device_status"] =
                 "Returns whether a screen is on and what it is showing right now: whether the TV is live, when it last checked in and which content is playing.",
             ["get_show_status"] =

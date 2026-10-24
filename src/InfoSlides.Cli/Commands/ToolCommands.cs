@@ -202,6 +202,24 @@ internal static class ToolCommands
         source.Subcommands.Add(Verb("delete", "Delete a source; slides and tickers fed by it stop updating.",
             (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).DeleteSource(p.GetValue(deleteId)!, ct)),
             deleteId));
+
+        var fetchId = Arg("source-id", "Source id.");
+        source.Subcommands.Add(Verb("fetch", "Refresh a source now instead of waiting for its next fetch.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).FetchSourceNow(p.GetValue(fetchId)!, ct)),
+            fetchId));
+
+        var itemsId = Arg("source-id", "Source id.");
+        var itemsLimit = Opt<int?>("--limit", "How many items, 1 to 100 (default 20).");
+        source.Subcommands.Add(Verb("items", "Show the latest items a source has fetched.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).GetSourceItems(p.GetValue(itemsId)!, p.GetValue(itemsLimit), ct)),
+            itemsId, itemsLimit));
+
+        var testAdapter = Arg("adapter-type", "Adapter type from `source adapters`, e.g. RssFeed.");
+        var testConfig = Opt<string?>("--config", "Config JSON object, inline or @file.");
+        source.Subcommands.Add(Verb("test", "Try source settings against the live service without saving anything.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).TestSourceConfig(p.GetValue(testAdapter)!,
+                p.GetValue(testConfig) is { } c ? CliContext.ParseJsonObject(c) : null, ct)),
+            testAdapter, testConfig));
     }
 
     /// <summary>Adds previewing an unsaved design to <c>template</c>.</summary>
@@ -219,6 +237,34 @@ internal static class ToolCommands
                     p.GetValue(sample) is { } s ? CliContext.ParseJsonObject(s) : null, p.GetValue(aspect), ct),
                 p.GetValue(output) ?? "template-preview.png"),
             html, css, sample, aspect, output));
+    }
+
+    /// <summary>The <c>brand</c> command: read the brand guide, change its draft, and look at sample slides.</summary>
+    public static Command Brand()
+    {
+        var brand = new Command("brand", "The workspace brand guide: colours, fonts, logos and voice (a person confirms it on the Brand page).");
+
+        brand.Subcommands.Add(Verb("show", "Show the guide slides use, the draft, and whether it waits for approval.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).GetBrandGuide(ct))));
+
+        var guide = Arg("guide", "The whole guide as a JSON object, inline or @file.");
+        brand.Subcommands.Add(Verb("set", "Replace the draft guide; a person confirms it on the Brand page.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).UpdateBrandGuide(CliContext.ParseJsonObject(p.GetValue(guide)!), ct)),
+            guide));
+
+        var sample = Opt<string?>("--sample", "title, text, data, image, logo-light, logo-dark, ticker or clock (default title).");
+        var source = Opt<string?>("--source", "draft (default) or confirmed.");
+        var output = Opt<string?>("--output", "Output PNG path (default brand-preview.png).");
+        brand.Subcommands.Add(Verb("preview", "Draw a sample slide from the brand guide to a PNG.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).PreviewBrand(p.GetValue(sample), p.GetValue(source), ct),
+                p.GetValue(output) ?? "brand-preview.png"),
+            sample, source, output));
+
+        var checkShow = Arg("slideshow-id", "The slideshow to check.");
+        brand.Subcommands.Add(Verb("check", "Check a slideshow against the confirmed brand guide.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).CheckBrand(p.GetValue(checkShow)!, ct)),
+            checkShow));
+        return brand;
     }
 
     /// <summary>The <c>takeover</c> command: start, list and end temporary takeovers.</summary>

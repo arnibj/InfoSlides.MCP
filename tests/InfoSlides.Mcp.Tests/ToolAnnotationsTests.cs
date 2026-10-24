@@ -160,6 +160,8 @@ public sealed class ToolAnnotationsTests
             "add_designed_slide",
             "create_source",
             "update_source_settings",
+            "fetch_source_now",
+            "test_source_config",
             "make_ai_slide"
         };
 

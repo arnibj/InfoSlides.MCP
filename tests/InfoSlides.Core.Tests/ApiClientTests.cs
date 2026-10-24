@@ -143,6 +143,36 @@ public sealed class ApiClientTests
     }
 
     [Fact]
+    public async Task GetSourceStatus_ReadsHealthAndTheLastError()
+    {
+        var (client, handler) = CreateClient("isk_admin_abc");
+        handler.Enqueue(HttpStatusCode.OK,
+            """{"data":{"id":"src-1","name":"News","lastReceivedAt":null,"hideAfterMinutes":null,"isShowingData":false,"slideIds":[],"adapterType":"RssFeed","health":"Failing","lastError":"The feed address was not found (404).","consecutiveFailures":4,"lastSuccessAt":"2026-10-15T08:00:00Z"}}""");
+
+        var result = await client.GetSourceStatusAsync("src-1");
+
+        Assert.Equal("Failing", result.Data!.Health);
+        Assert.Contains("404", result.Data.LastError);
+        Assert.Equal(4, result.Data.ConsecutiveFailures);
+        Assert.NotNull(result.Data.LastSuccessAt);
+    }
+
+    [Fact]
+    public async Task ListSources_ReadsHealth()
+    {
+        var (client, handler) = CreateClient("isk_admin_abc");
+        handler.Enqueue(HttpStatusCode.OK,
+            """{"data":[{"id":"s1","name":"News","adapterType":"RssFeed","isEnabled":true,"health":"Degraded","lastError":"Timed out.","consecutiveFailures":1}]}""");
+
+        var result = await client.ListSourcesAsync();
+
+        var source = Assert.Single(result.Data!);
+        Assert.Equal("Degraded", source.Health);
+        Assert.Equal("Timed out.", source.LastError);
+        Assert.Equal(1, source.ConsecutiveFailures);
+    }
+
+    [Fact]
     public async Task CreateSourceKey_PostsTheName_AndReturnsTheKey()
     {
         var (client, handler) = CreateClient("isk_admin_abc");

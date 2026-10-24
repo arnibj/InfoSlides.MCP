@@ -355,7 +355,9 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
                  "calendars, weather, live data pushed by another system. Use it to find the id of a " +
                  "source before scrolling its headlines in a slideshow's news ticker " +
                  "(update_slideshow tickerSourceIds) or pointing a live-data slide at it (update_slide " +
-                 "sourceId). Each entry has its name, type and when it last received data.")]
+                 "sourceId). Each entry has its name, type, when it last received data and its health " +
+                 "(Healthy, Degraded or Failing, with lastError in plain words): check it before " +
+                 "building a slide on a source.")]
     public Task<CallToolResult> ListSources(CancellationToken ct = default) =>
         ToolResults.Execute(() => api.ListSourcesAsync(ct), InfoSlidesJsonContext.Default.ListSource);
 
