@@ -18,7 +18,8 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
                  "rate, a live sales counter, the next departure time. Requires a paid plan. Two ways " +
                  "to build it: describe the look in 'prompt' and give an example of the data in " +
                  "'sampleJson', or hand over finished 'html' with {{field}} placeholders plus optional " +
-                 "'css'. The example data defines the shape every later push must match. Set " +
+                 "'css' (leave sampleJson out: the placeholders are the fields). That shape is what " +
+                 "every later push must match. Set " +
                  "dataMode='push' when the data will come from the user's own system (a queue, meters, " +
                  "scores): the slide then gets a push source, stays hidden until the first data " +
                  "arrives, and every plan includes one such live data slide, the free plan too (code " +
@@ -28,7 +29,7 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
     public Task<CallToolResult> CreateTemplate(
         [Description("What this layout is for, e.g. 'Soup of the day' or 'Live sales board'.")] string title,
         [Description("Description of how the slide should look (AI mode). Requires sampleJson.")] string? prompt = null,
-        [Description("Example of the data this slide will show, as JSON — defines the shape update_source must send.")] JsonObject? sampleJson = null,
+        [Description("Example of the data this slide will show, as JSON (AI mode only, with prompt). Defines the shape update_source must send.")] JsonObject? sampleJson = null,
         [Description("Finished HTML with {{field}} placeholders (code mode).")] string? html = null,
         [Description("Optional stylesheet for the custom HTML (code mode).")] string? css = null,
         [Description("'push' when an outside system will send the data (gives the slide a push source); omit otherwise.")] string? dataMode = null,
@@ -59,7 +60,7 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
         }
 
         return ToolResults.Execute(
-            () => api.CreateTemplateAsync(new CreateTemplateRequest(title, prompt, ToolResults.ToElement(sampleJson), html, css, dataMode?.ToLowerInvariant()), dryRun, ct),
+            () => api.CreateTemplateAsync(new CreateTemplateRequest(title, prompt, ToolResults.ToElement(sampleJson), html, html is null ? css : css ?? "", dataMode?.ToLowerInvariant()), dryRun, ct),
             InfoSlidesJsonContext.Default.Template);
     }
 

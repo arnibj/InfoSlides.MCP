@@ -1061,7 +1061,9 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         Assert.NotEqual(true, result.IsError);
         lock (_backend.Requests)
         {
-            Assert.Contains("\"dataMode\":\"push\"", Assert.Single(_backend.Requests).Body);
+            var body = Assert.Single(_backend.Requests).Body;
+            Assert.Contains("\"dataMode\":\"push\"", body);
+            Assert.Contains("\"css\":\"\"", body); // the API needs css in code mode; the tool sends an empty one
         }
     }
 

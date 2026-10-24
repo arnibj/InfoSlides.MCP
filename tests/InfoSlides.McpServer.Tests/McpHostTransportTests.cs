@@ -174,6 +174,56 @@ public sealed class McpHostTransportTests(McpHostFactory factory, ITestOutputHel
     }
 
     [Fact]
+    public async Task ToolCall_MissingRequiredArgument_IsAValidationErrorNamingIt_WithoutCallingTheApi()
+    {
+        var client = factory.CreateClient();
+        const string key = "isk_abcdefghijklmnopqrstuvwxyz012345";
+        factory.ApiRequests.Clear();
+
+        var call = await ReadRpcAsync(await client.SendAsync(Rpc(new
+        {
+            jsonrpc = "2.0",
+            id = 3,
+            method = "tools/call",
+            @params = new { name = "get_device_plays", arguments = new { deviceId = "d1", to = "2026-10-24" } },
+        }, key)));
+
+        output.WriteLine(call.GetRawText());
+        var result = call.GetProperty("result");
+        Assert.True(result.GetProperty("isError").GetBoolean());
+        var text = result.GetProperty("content")[0].GetProperty("text").GetString()!;
+        var error = JsonDocument.Parse(text).RootElement.GetProperty("error");
+        Assert.Equal("ValidationFailed", error.GetProperty("code").GetString());
+        Assert.Contains("'from'", error.GetProperty("message").GetString());
+        Assert.Empty(factory.ApiRequests);
+    }
+
+    [Fact]
+    public async Task ToolCall_UnknownArgument_IsAValidationErrorNamingIt_WithoutCallingTheApi()
+    {
+        var client = factory.CreateClient();
+        const string key = "isk_abcdefghijklmnopqrstuvwxyz012345";
+        factory.ApiRequests.Clear();
+
+        var call = await ReadRpcAsync(await client.SendAsync(Rpc(new
+        {
+            jsonrpc = "2.0",
+            id = 3,
+            method = "tools/call",
+            @params = new { name = "update_slideshow", arguments = new { slideshowId = "s1", playbackModeOverride = "Html" } },
+        }, key)));
+
+        output.WriteLine(call.GetRawText());
+        var result = call.GetProperty("result");
+        Assert.True(result.GetProperty("isError").GetBoolean());
+        var text = result.GetProperty("content")[0].GetProperty("text").GetString()!;
+        var error = JsonDocument.Parse(text).RootElement.GetProperty("error");
+        Assert.Equal("ValidationFailed", error.GetProperty("code").GetString());
+        Assert.Contains("'playbackModeOverride'", error.GetProperty("message").GetString());
+        Assert.Empty(factory.ApiRequests);
+    }
+
+    [Fact]
     public async Task RevokedApiKey_IsRefusedByTheApiAndReportedAsAToolError()
     {
         var client = factory.CreateClient();
