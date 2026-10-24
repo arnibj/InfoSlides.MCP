@@ -171,7 +171,8 @@ public sealed record AddMediaSlideRequest(
 /// <summary>
 /// Request body for <c>POST /v1/slideshows/{id}/slides/design</c>: a slide rendered from plain
 /// parameters, with no AI. Only <see cref="Heading"/> is required; the background is at most one of
-/// <see cref="BackgroundColor"/>, <see cref="MediaAssetId"/> or <see cref="MediaUrl"/>.
+/// <see cref="BackgroundColor"/>, <see cref="MediaAssetId"/>, <see cref="MediaUrl"/> or <see cref="StockPhoto"/>
+/// (a stock image search result, sent back with its credit fields).
 /// </summary>
 public sealed record AddDesignedSlideRequest(
     string Heading,
@@ -185,7 +186,8 @@ public sealed record AddDesignedSlideRequest(
     bool? Branding = null,
     string? Layout = null,
     int? Position = null,
-    double? DurationSeconds = null);
+    double? DurationSeconds = null,
+    JsonElement? StockPhoto = null);
 
 /// <summary>Result of <c>POST /v1/slideshows/{id}/slides/design</c>.</summary>
 public sealed record DesignedSlide(

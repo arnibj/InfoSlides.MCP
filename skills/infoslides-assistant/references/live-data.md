@@ -126,8 +126,11 @@ Paid plans only (the free plan gets only the push adapter).
 | Try settings before saving | `test_source_config` (`POST /v1/sources/test-connection`) with `{"adapterType": "RssFeed", "config": {...}}`. A failed test is a normal answer with `success: false` and the reason |
 | Refresh a feed now | `fetch_source_now` (`POST /v1/sources/{id}/fetch`); it runs in the background, so read `get_source_status` after a few seconds. At most 10 fetch or test calls a minute |
 | See what a feed holds | `get_source_items` (`GET /v1/sources/{id}/items?limit=`), newest first |
+| Which fields it has | `get_source_fields` (`GET /v1/sources/{id}/fields`): `key`, `label` and a `sample` from its latest item; empty until it has fetched one |
 | Headlines in the ticker | `update_slideshow` with `{"ticker": {"enabled": true, "sourceIds": ["..."]}}` |
 | A slide from the source | `list_templates`, `add_dynamic_slide` with the `templateId`, then `update_slide` on the new slide with `sourceId` (add takes no `sourceId`, and an unknown field is rejected) |
+| A weather alert timeline | `add_weather_alert_timeline` (`POST /v1/slideshows/{id}/slides/dynamic/weather-alert-timeline`) with a `WeatherAlert` source: 8 slides, 6 hours apart, one `undo` for all of them |
+| Change a layout | `get_template`, `get_template_usage` (slides using it change too), then `update_template`. A built-in layout: `clone_template` first. `delete_template` is refused while slides use it |
 
 A pulled source refreshes on its interval (weather every 15 minutes by default) and the slide
 re-renders when the data changes.

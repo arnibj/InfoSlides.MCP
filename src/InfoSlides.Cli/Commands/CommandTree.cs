@@ -35,6 +35,7 @@ internal static class CommandTree
         root.Subcommands.Add(ToolCommands.Workspace());
         root.Subcommands.Add(ToolCommands.Ai());
         root.Subcommands.Add(ToolCommands.Undo());
+        root.Subcommands.Add(ToolCommands.Platform());
         root.Subcommands.Add(Billing());
         root.Subcommands.Add(Config());
         root.Subcommands.Add(Mcp());
@@ -363,6 +364,7 @@ internal static class CommandTree
                 InfoSlidesJsonContext.Default.UploadedMedia);
         });
         media.Subcommands.Add(upload);
+        ToolCommands.AddMediaVerbs(media);
         return media;
     }
 
@@ -562,6 +564,7 @@ internal static class CommandTree
             }
         });
         slide.Subcommands.Add(preview);
+        ToolCommands.AddSlideVerbs(slide);
         return slide;
     }
 
@@ -766,6 +769,9 @@ internal static class CommandTree
         upgrade.SetAction((parse, ct) => CliContext.RunTool(parse,
             api => new InfoSlides.Mcp.Tools.BillingTools(api).UpgradeSubscription(parse.GetValue(plan), parse.GetValue(period), ct)));
         billing.Subcommands.Add(upgrade);
+        var show = new Command("show", "Which plan the workspace is on, when it renews, and usage against its limits.");
+        show.SetAction((parse, ct) => CliContext.RunTool(parse, api => new InfoSlides.Mcp.Tools.BillingTools(api).GetBilling(ct)));
+        billing.Subcommands.Add(show);
         return billing;
     }
 

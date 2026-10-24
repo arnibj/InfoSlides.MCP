@@ -186,6 +186,23 @@ latest payload and feeds every slide bound to it; those slides stay hidden until
 | `GET /v1/billing` ✅ | admin | Read-only summary (APX-67): `plan`, `monthlyPriceEur`, `annualPriceEur`, `status` (`free`\|`active`\|`cancelling`\|`paused`\|`past_due`\|`cancelled`\|`suspended`), `renewsAt`, `endsAt`, `pausedUntil`, `slideshows`/`devices`/`users`/`storageMb` as `{ used, limit }`, `invoicesUrl` (omitted on hosted surfaces). No card data. Plan changes, pause and cancel stay in the web app. |
 | `POST /v1/billing/checkout` ✅ | admin | → `{ "checkoutUrl" }`. In v1 this is the web app's billing page (one click from Paddle checkout) — the same URL used in `EntitlementRequired.details.upgradeUrl`. A raw `checkout.paddle.com` transaction URL requires adding a plan/price field to this endpoint's body (v1.1 candidate; the backend's Paddle API client already exists). Subscription state syncs back via Paddle webhooks. |
 
+### 4.7 Added for 1.8.0
+
+Each route is a pass-through tool of the same name; request and response shapes are in `GET /v1/openapi.json`.
+
+| Method & path | Tool |
+| --- | --- |
+| `POST /v1/sources/{id}/fetch`, `GET /v1/sources/{id}/items`, `POST /v1/sources/test-connection`, `GET /v1/sources/{id}/fields` ✅ | `fetch_source_now`, `get_source_items`, `test_source_config`, `get_source_fields` |
+| `GET`/`PUT /v1/brand`, `GET /v1/brand/preview.png`, `GET /v1/brand/preview`, `POST /v1/brand/check`, `POST /v1/brand/logo?slot=` ✅ | `get_brand_guide`, `update_brand_guide`, `preview_brand`, `list_brand_previews`, `check_brand`, `upload_brand_logo` |
+| `GET /v1/media/limits`, `GET /v1/media`, `GET`/`PATCH`/`DELETE /v1/media/{id}` ✅ | `get_upload_limits`, `list_media`, `get_media`, `update_media`, `delete_media` |
+| `GET`/`POST /v1/media/folders`, `PATCH`/`DELETE /v1/media/folders/{id}` ✅ | `list_media_folders`, `create_media_folder`, `rename_media_folder`, `delete_media_folder` |
+| `GET /v1/templates/categories`, `GET`/`PATCH`/`DELETE /v1/templates/{id}`, `POST /v1/templates/{id}/clone`, `GET /v1/templates/{id}/usage`, `POST /v1/templates/{id}/thumbnail` ✅ | `list_template_categories`, `get_template`, `update_template`, `delete_template`, `clone_template`, `get_template_usage`, `regenerate_template_thumbnail` |
+| `GET`/`PUT /v1/slides/{id}/design`, `GET /v1/stock-images` ✅ | `get_slide_design`, `update_slide_design`, `search_stock_images` (and `stockPhoto` on `add_designed_slide`) |
+| `POST /v1/slideshows/import/google`, `POST /v1/slideshows/{id}/undelete`, `GET /v1/slideshows/shared`, `POST /v1/slideshows/{id}/slides/import`, `POST /v1/slideshows/{id}/slides/dynamic/weather-alert-timeline` ✅ | `import_google_slides`, `restore_slideshow`, `list_shared_slideshows`, `import_slide`, `add_weather_alert_timeline` |
+| `PATCH /v1/devices/{id}/schedule/entries/{entryId}`, `DELETE /v1/devices/{id}`, `POST /v1/devices/broadcast` ✅ | `update_schedule_entry`, `delete_device`, `create_broadcast_device` |
+| `POST /v1/team/members/{id}/deactivate`, `POST /v1/team/members/{id}/reactivate`, `GET /v1/audit`, `GET /v1/errors` ✅ | `deactivate_member`, `reactivate_member`, `get_audit_trail`, `get_error_log` |
+| `GET /v1/platform/version`, `GET /v1/platform/notices`, `GET /v1/articles`, `GET /v1/articles/{type}/{slug}` ✅ | `get_platform_version`, `get_platform_notices`, `search_articles`, `get_article` |
+
 ## 5. Client behavior rules
 
 - Surface `warnings[]` in MCP tool results and CLI output so agents can self-correct.

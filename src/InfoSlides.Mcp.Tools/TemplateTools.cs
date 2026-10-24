@@ -70,6 +70,79 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
     public Task<CallToolResult> ListTemplates(CancellationToken ct = default) =>
         ToolResults.Execute(() => api.ListTemplatesAsync(ct), InfoSlidesJsonContext.Default.ListTemplate);
 
+    private static string Id(string id) => Uri.EscapeDataString(id);
+
+    [McpServerTool(Name = "list_template_categories", Title = "List template categories", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("List the template category names this workspace may use, such as News or Generic: the same set " +
+                 "that decides which built-in layouts list_templates shows.")]
+    public Task<CallToolResult> ListTemplateCategories(CancellationToken ct = default) =>
+        ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Get, "/v1/templates/categories", ct: ct));
+
+    [McpServerTool(Name = "get_template", Title = "Get slide template", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Read one self-updating layout: title, sampleJson (its data fields with example values, the shape " +
+                 "a push to its source must send), html and css. Read it before changing it with update_template.")]
+    public Task<CallToolResult> GetTemplate(
+        [Description("Id of the template.")] string templateId,
+        CancellationToken ct = default) =>
+        ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Get, $"/v1/templates/{Id(templateId)}", ct: ct));
+
+    [McpServerTool(Name = "update_template", Title = "Update slide template", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Change a layout the workspace owns: title, html, css and/or schema (the data fields, e.g. " +
+                 "{\"fields\":[{\"name\":\"sales\",\"type\":\"number\"}]}). Send only what should change; new html " +
+                 "without a schema takes its fields from the {{field}} tokens. Slides already using it pick up the " +
+                 "change, so check get_template_usage first. A built-in layout cannot be changed: copy it with " +
+                 "clone_template and change the copy.")]
+    public Task<CallToolResult> UpdateTemplate(
+        [Description("Id of the template.")] string templateId,
+        [Description("New title.")] string? title = null,
+        [Description("New HTML with {{field}} placeholders.")] string? html = null,
+        [Description("New stylesheet.")] string? css = null,
+        [Description("The data fields as JSON, e.g. {\"fields\":[{\"name\":\"sales\",\"type\":\"number\"}]}.")] JsonObject? schema = null,
+        CancellationToken ct = default)
+    {
+        if (title is null && html is null && css is null && schema is null)
+        {
+            return Task.FromResult(ToolResults.ValidationError("Give at least one of title, html, css or schema."));
+        }
+
+        return ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Patch, $"/v1/templates/{Id(templateId)}",
+            ToolResults.Body(("title", title), ("html", html), ("css", css), ("schema", schema)), ct: ct));
+    }
+
+    [McpServerTool(Name = "delete_template", Title = "Delete slide template", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
+    [Description("Delete a layout the workspace owns, for good. Confirm with the person first. Refused while a " +
+                 "slide uses it: the error lists those slides, so change or remove them first. Built-in layouts " +
+                 "cannot be deleted.")]
+    public Task<CallToolResult> DeleteTemplate(
+        [Description("Id of the template.")] string templateId,
+        CancellationToken ct = default) =>
+        ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Delete, $"/v1/templates/{Id(templateId)}", ct: ct));
+
+    [McpServerTool(Name = "clone_template", Title = "Copy slide template", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
+    [Description("Copy a layout, usually a built-in one from list_templates, into the workspace as '<title> (Copy)', " +
+                 "so it can be changed with update_template. Needs a plan with live data slides; the error carries " +
+                 "an upgrade link otherwise.")]
+    public Task<CallToolResult> CloneTemplate(
+        [Description("Id of the template to copy.")] string templateId,
+        CancellationToken ct = default) =>
+        ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Post, $"/v1/templates/{Id(templateId)}/clone", idempotent: true, ct: ct));
+
+    [McpServerTool(Name = "get_template_usage", Title = "Get slide template usage", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Where a layout is used in this workspace: slideCount, slideshowCount and the slides (slideId, " +
+                 "slideshowId, slideshowTitle). Check it before deleting or reworking a layout.")]
+    public Task<CallToolResult> GetTemplateUsage(
+        [Description("Id of the template.")] string templateId,
+        CancellationToken ct = default) =>
+        ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Get, $"/v1/templates/{Id(templateId)}/usage", ct: ct));
+
+    [McpServerTool(Name = "regenerate_template_thumbnail", Title = "Redraw template thumbnail", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Redraw the gallery picture of a layout the workspace owns, for example after its look changed. " +
+                 "Returns thumbnailPath. Rate limited.")]
+    public Task<CallToolResult> RegenerateTemplateThumbnail(
+        [Description("Id of the template.")] string templateId,
+        CancellationToken ct = default) =>
+        ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Post, $"/v1/templates/{Id(templateId)}/thumbnail", ct: ct));
+
     [McpServerTool(Name = "update_source", Title = "Update live slide data", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("Put fresh information on the screen: send today's menu, the new price, the current " +
                  "total, the updated opening hours. The display re-renders itself server-side — nobody " +

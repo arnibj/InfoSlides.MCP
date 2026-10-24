@@ -88,13 +88,67 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
     [McpServerTool(Name = "delete_slideshow", Title = "Delete slideshow", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
     [Description("Delete a slideshow for good: the old lunch menu, a campaign that has ended, a test " +
                  "deck. Its schedules are removed and any screen playing it stops " +
-                 "showing it at its next check-in. The API has no undelete, so confirm with the person " +
-                 "first unless they clearly asked for it. To take one slide out, use delete_slide or " +
-                 "hide it with update_slide instead.")]
+                 "showing it at its next check-in. restore_slideshow can bring it back for a while, but " +
+                 "not its schedules, so confirm with the person first unless they clearly asked for it. " +
+                 "To take one slide out, use delete_slide or hide it with update_slide instead.")]
     public Task<CallToolResult> DeleteSlideshow(
         [Description("Id of the slideshow to delete.")] string slideshowId,
         CancellationToken ct = default) =>
         ToolResults.Execute(() => api.DeleteSlideshowAsync(slideshowId, ct), InfoSlidesJsonContext.Default.OkResult);
+
+    [McpServerTool(Name = "restore_slideshow", Title = "Restore deleted slideshow", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Bring back a deleted slideshow with its slides and settings. Its schedules and the screens that " +
+                 "played it are not brought back, so assign it to a screen again. Find the id with get_audit_trail " +
+                 "(action SlideshowDeleted, entityId). Deleted slideshows are removed for good after 90 days. Fails " +
+                 "when the plan's slideshow limit is full.")]
+    public Task<CallToolResult> RestoreSlideshow(
+        [Description("Id of the deleted slideshow.")] string slideshowId,
+        CancellationToken ct = default) =>
+        ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Post, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}/undelete", ct: ct));
+
+    [McpServerTool(Name = "import_google_slides", Title = "Import Google Slides", ReadOnly = false, Destructive = false, OpenWorld = true, Idempotent = false)]
+    [Description("Make a slideshow from a Google Slides presentation. Needs a short-lived Google access token with " +
+                 "Drive read access to that file (from a Google sign-in you run with the drive.readonly scope); it is " +
+                 "used for this one call and never stored. Give fileId or the presentation url. Google exports at " +
+                 "most 10 MB. Counts against the plan's slideshow limit. Without a token, ask the person to download " +
+                 "the presentation as PDF or PowerPoint and use upload_pptx instead.")]
+    public Task<CallToolResult> ImportGoogleSlides(
+        [Description("Google access token with Drive read access to the file.")] string accessToken,
+        [Description("The Google Drive file id; omit when giving url.")] string? fileId = null,
+        [Description("The presentation address, e.g. https://docs.google.com/presentation/d/.../edit.")] string? url = null,
+        [Description("Title for the slideshow; the Google file name when omitted.")] string? title = null,
+        CancellationToken ct = default)
+    {
+        if ((fileId is null) == (url is null))
+        {
+            return Task.FromResult(ToolResults.ValidationError("Give fileId or url, not both."));
+        }
+
+        return ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/slideshows/import/google",
+            ToolResults.Body(("fileId", fileId), ("url", url), ("accessToken", accessToken), ("title", title)), idempotent: true, ct));
+    }
+
+    [McpServerTool(Name = "list_shared_slideshows", Title = "List shared slideshows", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("List the workspace's shared slideshows with id, title, slideCount and importableSlideNumbers (the " +
+                 "pages that can be copied), to pick a page for import_slide. excludeId leaves one out, usually the " +
+                 "slideshow that will receive the page.")]
+    public Task<CallToolResult> ListSharedSlideshows(
+        [Description("A slideshow to leave out of the list.")] string? excludeId = null,
+        CancellationToken ct = default) =>
+        ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Get, "/v1/slideshows/shared" + InfoSlidesApiClient.Query(("excludeId", excludeId)), ct: ct));
+
+    [McpServerTool(Name = "import_slide", Title = "Copy slide from shared slideshow", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
+    [Description("Copy one page of a shared slideshow to the end of this slideshow. Both must come from a " +
+                 "PowerPoint or PDF file; slideNumber must be one of the source's importableSlideNumbers from " +
+                 "list_shared_slideshows. The copy does not change when the source does. There is no undo: remove " +
+                 "the page with delete_slide.")]
+    public Task<CallToolResult> ImportSlide(
+        [Description("The slideshow that receives the page.")] string slideshowId,
+        [Description("The shared slideshow to copy from.")] string sourceSlideshowId,
+        [Description("The page number to copy.")] int slideNumber,
+        CancellationToken ct = default) =>
+        ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Post, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}/slides/import",
+            ToolResults.Body(("sourceSlideshowId", sourceSlideshowId), ("slideNumber", slideNumber)), idempotent: true, ct));
 
     [McpServerTool(Name = "replace_slideshow_file", Title = "Replace slideshow file", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
     [Description("Swap the PowerPoint or PDF behind an existing slideshow for a new version, so " +
@@ -222,13 +276,71 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
         [Description("heading, heading-text, heading-text-cta, heading-image-right or heading-image-left. Chosen from the fields given when omitted.")] string? layout = null,
         [Description("Zero-based position in the loop; appended when omitted.")] int? position = null,
         [Description("How long the slide stays on screen, in seconds, from 1 to 99; sized to the text when omitted.")] double? durationSeconds = null,
+        [Description("A stock photo background: one search_stock_images result as given (photoId, downloadLocation, fullUrl and the photographer credit fields).")] JsonObject? stockPhoto = null,
         CancellationToken ct = default) =>
         ToolResults.Execute(
             () => api.AddDesignedSlideAsync(
                 slideshowId,
-                new AddDesignedSlideRequest(heading, text, cta, backgroundColor, mediaAssetId, mediaUrl, imageMediaAssetId, imageUrl, branding, layout, position, durationSeconds),
+                new AddDesignedSlideRequest(heading, text, cta, backgroundColor, mediaAssetId, mediaUrl, imageMediaAssetId, imageUrl, branding, layout, position, durationSeconds,
+                    ToolResults.ToElement(stockPhoto)),
                 ct),
             InfoSlidesJsonContext.Default.DesignedSlide);
+
+    [McpServerTool(Name = "get_slide_design", Title = "Get text slide design", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Read the design behind a slide made with add_designed_slide, in the same fields that tool takes " +
+                 "(design: heading, text, cta, the background, imageMediaAssetId, branding, layout, durationSeconds), " +
+                 "so you can change one and send the whole design back with update_slide_design. A slide that was " +
+                 "not made that way answers NotFound.")]
+    public Task<CallToolResult> GetSlideDesign(
+        [Description("Id of the slide.")] string slideId,
+        CancellationToken ct = default) =>
+        ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Get, $"/v1/slides/{Uri.EscapeDataString(slideId)}/design", ct: ct));
+
+    [McpServerTool(Name = "update_slide_design", Title = "Update text slide design", ReadOnly = false, Destructive = false, OpenWorld = true, Idempotent = true)]
+    [Description("Change a slide made with add_designed_slide, such as new wording or another background. Send the " +
+                 "whole design: read it with get_slide_design, change what you need and send all of it back, since " +
+                 "a field left out is not kept. The slide is drawn again in place and keeps its position, hidden " +
+                 "state and visibility rules. The same length and colour checks apply as when adding it. The result " +
+                 "carries an undo token that puts the old design back.")]
+    public Task<CallToolResult> UpdateSlideDesign(
+        [Description("Id of the slide.")] string slideId,
+        [Description("The whole design as JSON, the design object from get_slide_design with your changes, e.g. " +
+                     "{\"heading\":\"Lunch moved to 1pm\",\"backgroundColor\":\"#0F172A\"}.")] JsonObject design,
+        CancellationToken ct = default) =>
+        ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Put, $"/v1/slides/{Uri.EscapeDataString(slideId)}/design", design, ct: ct));
+
+    [McpServerTool(Name = "search_stock_images", Title = "Search stock photos", ReadOnly = true, Destructive = false, OpenWorld = true, Idempotent = true)]
+    [Description("Search free stock photos (Unsplash) for a text slide background, 9 a page. Show the person " +
+                 "thumbUrl with the photographer credit (photographerName, photographerProfileUrl, unsplashPhotoUrl) " +
+                 "beside it: the credit must be visible whenever a photo is shown. To use one, pass the whole result " +
+                 "as stockPhoto to add_designed_slide or in the design for update_slide_design; that is the only way " +
+                 "to use a stock photo. Rate limited to 30 searches a minute.")]
+    public Task<CallToolResult> SearchStockImages(
+        [Description("What the photo should show, e.g. 'lake at sunrise'.")] string q,
+        [Description("landscape (default), portrait or squarish.")] string? orientation = null,
+        [Description("Page number, from 1.")] int? page = null,
+        CancellationToken ct = default) =>
+        ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Get, "/v1/stock-images" + InfoSlidesApiClient.Query(
+            ("q", q), ("orientation", orientation), ("page", page?.ToString())), ct: ct));
+
+    [McpServerTool(Name = "add_weather_alert_timeline", Title = "Add weather alert timeline", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
+    [Description("Add a weather alert timeline to a slideshow: 8 live data slides, one per 6 hours over the next 48 " +
+                 "hours, each showing the weather alerts for its step and hiding itself when there are none. Needs a " +
+                 "Weather alert source (list_sources, adapter WeatherAlert) and a plan with live data slides. Returns " +
+                 "the 8 slides and an undo token that removes them all.")]
+    public Task<CallToolResult> AddWeatherAlertTimeline(
+        [Description("Id of the slideshow.")] string slideshowId,
+        [Description("Id of a WeatherAlert source.")] string sourceId,
+        [Description("Zero-based position of the first slide; appended when omitted.")] int? position = null,
+        [Description("Seconds per slide (default 10).")] int? durationSeconds = null,
+        [Description("Whether the first slide hides itself when it has no alerts (the later ones always do).")] bool? hideWhenEmpty = null,
+        [Description("A weather alert timeline template; found for you when omitted.")] string? templateId = null,
+        CancellationToken ct = default) =>
+        ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Post,
+            $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}/slides/dynamic/weather-alert-timeline",
+            ToolResults.Body(("sourceId", sourceId), ("position", position), ("durationSeconds", durationSeconds),
+                ("hideWhenEmpty", hideWhenEmpty), ("templateId", templateId)),
+            idempotent: true, ct));
 
     [McpServerTool(Name = "add_dynamic_slide", Title = "Add live data slide", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
     [Description("Add a slide that keeps itself up to date instead of showing a fixed picture — " +

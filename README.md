@@ -134,7 +134,17 @@ edits to what is already playing (`update_slide` for a slide's duration, hidden 
 `list_adapters`, `create_source`, `update_source_settings`, `delete_source` for fetched feeds;
 `list_sources` and `get_source_status` show each feed's health and last error in plain words, `fetch_source_now`
 refreshes one, `get_source_items` shows what it fetched and `test_source_config` tries settings before saving;
-`get_brand_guide`, `update_brand_guide`, `preview_brand` and `check_brand` read the workspace brand guide, replace its draft, draw sample slides from it and check a slideshow against it; a person confirms the guide on the Brand page),
+`get_brand_guide`, `update_brand_guide`, `preview_brand` and `check_brand` read the workspace brand guide, replace its draft, draw sample slides from it and check a slideshow against it, `upload_brand_logo` and `list_brand_previews`; a person confirms the guide on the Brand page;
+`get_source_fields` for a source's fields, `add_weather_alert_timeline`, and template upkeep: `list_template_categories`, `get_template`,
+`update_template`, `delete_template`, `clone_template`, `get_template_usage`, `regenerate_template_thumbnail`),
+text slide edits (`get_slide_design`, `update_slide_design`, stock photos with `search_stock_images`), Google Slides import
+(`import_google_slides`), copying a page from a shared slideshow (`list_shared_slideshows`, `import_slide`), the media library
+(`get_upload_limits`, `list_media`, `get_media`, `update_media`, `delete_media`, `list_media_folders`, `create_media_folder`,
+`rename_media_folder`, `delete_media_folder`), removing a screen and broadcast channels (`delete_device`,
+`create_broadcast_device`), editing a schedule window in place (`update_schedule_entry`), the audit trail, error log and
+restoring a deleted slideshow (`get_audit_trail`, `get_error_log`, `restore_slideshow`), turning team access off and on
+(`deactivate_member`, `reactivate_member`), platform news (`get_platform_version`, `get_platform_notices`) and the help
+articles, blog and release notes (`search_articles`, `get_article`),
 self-updating template slides driven by live data pushes (`update_source`, and push sources fed by
 the user's own system: `push_data`, `get_source_status`, `create_source_key`), devices, schedules with
 `AspectMismatch` warnings, playback-mode control (`update_slideshow`'s `playbackMode` switches a
@@ -233,6 +243,17 @@ infoslides source delete <source-id>
 infoslides source test RssFeed --config '{"feedUrl":"https://..."}'   # try settings, nothing is saved
 infoslides source fetch <source-id>                         # refresh now; source status shows the new health
 infoslides source items <source-id> --limit 5
+infoslides source fields <source-id>                        # field names and a sample value for mapping
+infoslides schedule edit <device-id> <entry-id> --end 15:00
+infoslides device delete <device-id>                        # prints an undo token; device broadcast "Hall" for a channel
+infoslides media limits                                     # free space and largest file before a big upload
+infoslides media list --type video                          # media edit/delete, folders, folder-create/-rename/-delete
+infoslides template usage <template-id>                     # template show/edit/clone/delete/categories/thumbnail
+infoslides slide design <slide-id>                          # slide set-design <slide-id> @design.json; slide stock-search lake
+infoslides slideshow restore <slideshow-id>                 # find it with: workspace audit --action SlideshowDeleted
+infoslides slideshow shared                                 # then slideshow import-slide <target> <source> <page>
+infoslides workspace errors --level Error
+infoslides platform version                                 # platform notices, platform search "portrait screen", platform article help <slug>
 infoslides team invite colleague@acme.test --role TenantAdmin
 infoslides team list                                        # team revoke <invitation-id>, team remove <member-id>
 infoslides workspace settings --time-zone Europe/London --locale en-GB

@@ -26,8 +26,9 @@ plans and limits are in <https://infoslides.app/agents.md>.
 A few MCP tools differ from the REST names because they shipped before the names were aligned:
 `upload_slideshow` is `create_slideshow`, `clone_slideshow` with `fromGallery` is
 `clone_gallery_slideshow`, `play_slideshow` is `play_slideshow_find_device` with `deviceId`, and
-`upload_pptx` takes a PDF too (`upload_pdf`). A handful of read
-calls have no MCP tool yet (`get_template`, `get_media`, `get_takeover`); use the REST route.
+`upload_pptx` takes a PDF too (`upload_pdf`). The reference files sometimes give only the REST
+name; with MCP, use the tool it maps to here. One read call has no MCP tool yet (`get_takeover`,
+`GET /v1/takeovers/{id}`); use the REST route, or `list_takeovers`.
 
 The file tools (`upload_pptx`, `upload_pdf`, `replace_slideshow_file`, `upload_media`) read a path
 on the machine that runs the local MCP server. The remote MCP host at `https://infoslides.app/mcp`
@@ -139,10 +140,32 @@ The first call for the requests people actually make. The reference files have t
 | "Which screen is this?" | `list_devices` with `near`, else `identify_devices` (`POST /v1/devices/identify`) |
 | "How long did the promo play?" | `get_slideshow_plays` (`GET /v1/slideshows/{id}/plays`) |
 | "Add my colleague" | `invite_team_member` (`POST /v1/team/invitations`) |
+| "Turn off Anna's access for now" | `deactivate_member` (`POST /v1/team/members/{id}/deactivate`), `reactivate_member` to turn it back on |
+| "Anna has left" / "cancel that invite" | `list_team`, then `remove_team_member` (`DELETE /v1/team/members/{id}`) after the person's yes, or `revoke_team_invitation` (`DELETE /v1/team/invitations/{id}`) for an invite not yet accepted |
+| "Give our till system a key" / "a key has leaked" | `create_api_key` (`POST /v1/apikeys`): `dataProvider` for a system that feeds named slides, `admin` only when full access is needed; the key is shown once. `list_api_keys` to audit, `revoke_api_key` (`DELETE /v1/apikeys/{id}`) cuts one off at once |
 | "Which plan are we on, when does it renew?" | `get_billing` (`GET /v1/billing`), read-only; changing the plan is the person's job in the web app |
+| "Who deleted the menu?" / "bring it back" | `get_audit_trail` (`GET /v1/audit?action=SlideshowDeleted`), then `restore_slideshow` (`POST /v1/slideshows/{id}/undelete`) and assign it to the screen again |
+| "Why did that fail?" | `get_error_log` (`GET /v1/errors`) |
+| "Is there room for this video?" | `get_upload_limits` (`GET /v1/media/limits`) before a large upload |
+| "Tidy up the media library" | `list_media`, `list_media_folders`, then `update_media` (rename, or move with `folderId`) / `delete_media`; `create_media_folder` (`POST /v1/media/folders`), `rename_media_folder`, and `delete_media_folder`, which only deletes an empty folder |
+| "Change the wording on the welcome slide" | `get_slide_design`, change the fields, send the whole design to `update_slide_design` |
+| "Use a photo of a lake behind it" | `search_stock_images`, show the thumbnail with the credit, pass the pick as `stockPhoto` |
+| "Move lunch to 12 to 3" | `update_schedule_entry` (`PATCH /v1/devices/{id}/schedule/entries/{entryId}`) |
+| "We took the old TV down" | `delete_device` (`DELETE /v1/devices/{id}`) after the person's yes; it returns `undo` |
+| "One stream for all the TVs in the hall" | `create_broadcast_device` (`POST /v1/devices/broadcast`) |
+| "Put my Google Slides on the TV" | `import_google_slides` with the person's Google access token, else ask them to download it as PDF |
+| "Use slide 3 from the sales deck" | `list_shared_slideshows`, then `import_slide` |
+| "Make the slides match our brand" | `get_brand_guide` first (`inUse` is what slides use). To propose changes: `update_brand_guide` (a draft, admin key), `upload_brand_logo` for a logo file, `preview_brand` to look at it; tell the person it waits for their approval at `brandPageUrl`, which you cannot give |
+| "Do our slides follow the brand?" | `check_brand` with the slideshow id; advisory only |
+| "Show me the brand on a menu slide" | `list_brand_previews` for the sample names, then `preview_brand` (`GET /v1/brand/preview.png`) with one |
+| "Why can't I see the sports layouts?" | `list_template_categories` (`GET /v1/templates/categories`): the categories this workspace may use decide which built-in layouts `list_templates` shows |
+| "The layout's gallery picture is out of date" | `regenerate_template_thumbnail` (`POST /v1/templates/{id}/thumbnail`), for a layout the workspace owns |
+| "Is the news feed working?" | `get_source_status` for `health` and `lastError`, `fetch_source_now`, `get_source_items` (live-data.md) |
 | "We need more screens" | `upgrade_subscription` (`POST /v1/billing/checkout`), after the person's yes |
 | "Remove the InfoSlides mark / watermark" | It comes with the free plan, not the slides: any paid plan removes it. Offer `upgrade_subscription`. After an upgrade from free the slideshows re-render by themselves and the mark is gone shortly after; a screen already playing may keep it until the slideshow is reloaded, so tell the person to restart it (or reopen the player link) if it lingers |
 | "Undo that" | `undo_change` (`POST /v1/undo`) with the token you kept |
+| "Is an update coming?" / "what changed?" | `get_platform_notices`, `get_platform_version`, then `get_article` for its release notes |
+| "How do I ...?" when you are not sure it can be done | `search_articles` (`GET /v1/articles?q=`) before saying no |
 
 ## Talking to the person
 
@@ -211,12 +234,25 @@ Warnings come back with a success, and matter as much: `AspectMismatch` (the con
 stretched or cropped: fix the resolution), `StreamNotReady` (still rendering: tell the person to
 wait a minute), `HtmlPlaybackUnsupported` (this screen's app plays a video stream instead).
 
+## Keeping the person informed
+
+InfoSlides posts a notice before an update, deploys it, then publishes release notes. Follow that
+for the person without being asked:
+
+1. Check `get_platform_notices` now and then. When a `SystemUpdate` notice is active, tell the
+   person what is coming and when (`startsAt`).
+2. Remember `version` from `get_platform_version`. When it changes, tell the person the update is
+   live. When `releaseNotes` has entries, read them with `get_article` and pass on what matters to
+   them; while it is empty, check again later rather than guessing what changed.
+3. Before saying something cannot be done, search the help articles and blog with
+   `search_articles`.
+
 ## When you cannot do it
 
-Some things are not possible: importing from Google Slides (web app only; ask for a `.pptx` or
-`.pdf`), editing text inside a PowerPoint, deleting the whole workspace (email
-privacy@infoslides.app from the owner address). Say so plainly and offer the nearest thing that
-works.
+Some things are not possible: importing from Google Slides without a Google access token from the
+person (ask for a `.pptx` or `.pdf` instead), editing text inside a PowerPoint, deleting the whole
+workspace (email privacy@infoslides.app from the owner address). Search `search_articles` first,
+then say so plainly and offer the nearest thing that works.
 
 ## Feedback: to the InfoSlides team, and from the person
 

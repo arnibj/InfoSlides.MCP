@@ -90,6 +90,51 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Delete, $"/v1/devices/{Id(deviceId)}/schedule/entries/{Id(entryId)}", ct: ct));
 
+    [McpServerTool(Name = "update_schedule_entry", Title = "Update schedule entry", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Change a daily time window in place (ids from get_schedule): what it plays, its start or end " +
+                 "(HH:mm, workspace time zone) or its priority. Send only what should change. A window that would " +
+                 "overlap another is refused. Returns the entry with the same warnings as add_schedule_entry and an " +
+                 "undo token. The default content has no times: change it with assign_schedule.")]
+    public Task<CallToolResult> UpdateScheduleEntry(
+        [Description("Id of the screen.")] string deviceId,
+        [Description("Id of the schedule entry.")] string entryId,
+        [Description("The slideshow to play in the window instead.")] string? slideshowId = null,
+        [Description("New start, HH:mm.")] string? startTime = null,
+        [Description("New end, HH:mm.")] string? endTime = null,
+        [Description("New priority where windows overlap.")] int? priority = null,
+        CancellationToken ct = default)
+    {
+        if (slideshowId is null && startTime is null && endTime is null && priority is null)
+        {
+            return Task.FromResult(ValidationError("Give at least one of slideshowId, startTime, endTime or priority."));
+        }
+
+        return Json(() => api.SendJsonAsync(HttpMethod.Patch, $"/v1/devices/{Id(deviceId)}/schedule/entries/{Id(entryId)}",
+            Body(("slideshowId", slideshowId), ("startTime", startTime), ("endTime", endTime), ("priority", priority)), ct: ct));
+    }
+
+    [McpServerTool(Name = "delete_device", Title = "Remove screen", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
+    [Description("Remove a screen from the workspace, as the Devices page does: it stops playing, no longer counts " +
+                 "against the plan's screen limit and leaves list_devices. Its schedule and pairing are kept. Say which " +
+                 "screen by name and get the person's yes first. The result carries an undo token that brings it back " +
+                 "(which fails with DeviceLimitReached if the plan has filled up since).")]
+    public Task<CallToolResult> DeleteDevice(
+        [Description("Id of the screen.")] string deviceId,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Delete, $"/v1/devices/{Id(deviceId)}", ct: ct));
+
+    [McpServerTool(Name = "create_broadcast_device", Title = "Create broadcast channel", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
+    [Description("Create a broadcast channel: one stream that plays a slideshow on any number of screens or in a " +
+                 "browser, with no pairing. Optionally give the slideshow it plays. Its watch link comes from " +
+                 "get_stream_link. Needs a plan with broadcast channels and counts against the screen limit; the " +
+                 "error carries an upgrade link otherwise.")]
+    public Task<CallToolResult> CreateBroadcastDevice(
+        [Description("Name of the channel, e.g. 'Lobby channel'.")] string name,
+        [Description("The slideshow it plays; set later with play_slideshow_find_device when omitted.")] string? slideshowId = null,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/devices/broadcast",
+            Body(("name", name), ("slideshowId", slideshowId)), idempotent: true, ct));
+
     [McpServerTool(Name = "create_takeover", Title = "Start screen takeover", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = false)]
     [Description("Take over one or more screens for a while, e.g. a fire drill notice for 30 minutes or " +
                  "a launch announcement on every screen until 17:00, then return them to their schedule by " +

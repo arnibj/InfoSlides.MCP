@@ -59,7 +59,7 @@ and the judgement call that makes it go well. Ids are shortened; never read them
    - A photo of a chalkboard or paper menu: read it, design a clean menu slide yourself at the
      screen's size, show it, and add it once they approve (making-slides.md).
    - Nothing: `list_gallery`, show two or three menu-looking `previewUrl`s,
-     `clone_gallery_slideshow` the one they like.
+     `clone_slideshow` with `fromGallery` (REST `clone_gallery_slideshow`) the one they like.
 4. Durations: a menu read in a queue wants 15 to 20 seconds per slide.
 5. Walk them through the TV (getting-started.md, section 5) and `pair_device` with the nickname
    they read out and the `slideshowId`.
@@ -107,7 +107,7 @@ you know it.
    estimate in a section so it hides when empty), then `create_template` with `dataMode: push`.
 4. `add_dynamic_slide` with `createPushKey: true`. Hand over `sourceId` and `pushKey` for their
    system, once, with the example push from live-data.md.
-5. Push one test payload with `push_data`, check `preview_slide`, then `play_slideshow`. Turn the
+5. Push one test payload with `push_data`, check `preview_slide`, then `play_slideshow_find_device`. Turn the
    clock off.
 6. Suggest "hide after 30 minutes without data" on the source, so the board leaves the screen
    when the clinic closes.
@@ -313,10 +313,13 @@ month. Refund policy: [link]. Want it?"
 
 ### 23. "Import my Google Slides deck"
 
-**You say** "I can't open Google Slides from here. Download it as PowerPoint (File, Download,
-.pptx) and send it to me, or use Import from Google Slides in the InfoSlides web app."
+**You do** With a Google access token that has Drive read access (from a Google sign-in you run),
+`import_google_slides` with the presentation `url`; it is used once and never stored. The
+slideshow renders first, then play it as usual.
 
-If this keeps coming up and it blocks the person, it is worth a `report_issue` with their intent.
+**You say, without a token** "I can't open Google Slides from here. Download it as PowerPoint
+(File, Download, .pptx) and send it to me, or use Import from Google Slides in the InfoSlides web
+app."
 
 ### 24. "Undo that"
 
@@ -343,8 +346,8 @@ short review on Capterra? It helps other small businesses find it." If they say 
 the link from the list in SKILL.md. If they say no, drop it, and never write the review for them.
 
 **You do, when something could not be done**
-`report_issue` with `problem` ("no API call to import a Google Slides deck"), the person's
-`intent` ("put my Google Slides deck on the lobby TV") and your `agent` name. Then tell the person
-plainly, and offer what does work: "I can't open Google Slides from here. If you download it as a
-PowerPoint and send it to me, I'll put it on the lobby TV. I've also told the InfoSlides team this
-was missing."
+`report_issue` with `problem` ("no way to import a Google Slides deck without a Google access
+token"), the person's `intent` ("put my Google Slides deck on the lobby TV") and your `agent` name.
+Then tell the person plainly, and offer what does work: "I can't open Google Slides from here. If
+you download it as a PowerPoint and send it to me, I'll put it on the lobby TV. I've also told the
+InfoSlides team this was missing."

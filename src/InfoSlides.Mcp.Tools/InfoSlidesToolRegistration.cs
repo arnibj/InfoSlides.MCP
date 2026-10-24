@@ -43,5 +43,6 @@ public static class InfoSlidesToolRegistration
         .WithTools<ApiKeyTools>(jsonOptions)
         .WithTools<BillingTools>(jsonOptions)
         .WithTools<ScreenTools>(jsonOptions)
-        .WithTools<WorkspaceTools>(jsonOptions);
+        .WithTools<WorkspaceTools>(jsonOptions)
+        .WithTools<PlatformTools>(jsonOptions);
 }

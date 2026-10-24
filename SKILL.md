@@ -169,6 +169,14 @@ is to find it, change it, and confirm the change reached the wall.
    | "don't email me about screens at night" | `set_workspace_offline_alerts`; one TV switched off on purpose: `set_device_offline_alerts` |
    | "make this photo, page or text into a slide" | `make_ai_slide`, poll `get_ai_slide_job`, show the previews, then `insert_ai_slides` (trial: ask before `start_ai_studio_trial`) |
    | "undo that" | `undo_change` with the `undo.body.token` of the earlier result (24 hours; ask before `force`) |
+   | change the wording or background of a text slide | `get_slide_design`, change the fields, send the whole design to `update_slide_design`; a stock photo comes from `search_stock_images` (show the credit) as `stockPhoto` |
+   | "who deleted the menu?" / "bring it back" | `get_audit_trail` with `action` `SlideshowDeleted`, then `restore_slideshow`, then assign it to the screen again |
+   | "is there room for this video?" / tidy the media library | `get_upload_limits` before a large upload; `list_media`, `update_media`, `delete_media` and the folder tools |
+   | change or retire a layout | `get_template_usage` first, then `update_template`; a built-in one: `clone_template`; `delete_template` |
+   | "lunch is 12 to 3 now" | `update_schedule_entry` in place |
+   | the old TV came down | `delete_device` after the person's yes (it returns `undo`); one stream for many TVs: `create_broadcast_device` |
+   | "is an update coming?" / "what changed?" | `get_platform_notices`, `get_platform_version`, then `get_article` for the release notes |
+   | "can InfoSlides do ...?" | `search_articles` before saying no |
 
 Dayparting versus takeover: "every day from 11 to 2" is `add_schedule_entry` (repeats daily, times in the
    workspace time zone, name it); "for two hours" or "until 17:00" is `create_takeover` (one-off, the schedule
