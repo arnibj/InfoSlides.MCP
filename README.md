@@ -141,7 +141,7 @@ work whichever mode a screen is in, pairing the TV in front of the person (`pair
 `delete_schedule_entry`), temporary takeovers (`create_takeover`, `list_takeovers`, `end_takeover`),
 play-time reports (`get_slideshow_plays`, `get_device_plays`), screen locations (`update_device`, `list_devices` near a
 point), the team (`list_team`, `invite_team_member`, `revoke_team_invitation`, `remove_team_member`),
-workspace time zone and locale (`update_tenant`), "which screen is this?"
+workspace time zone and locale (`update_tenant`), "which plan are we on and when does it renew?" (`get_billing`), "which screen is this?"
 (`identify_devices`), what is on a screen and why it is black (`get_now_slide_png`, `get_device_diagnosis`),
 a photo or video on a screen in a minute (`show_media_on_device`, `get_show_status`), renaming a screen
 (`update_device`), one workspace health summary and offline-alert emails (`get_workspace_health`,

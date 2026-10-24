@@ -183,6 +183,7 @@ latest payload and feeds every slide bound to it; those slides stay hidden until
 | `POST /v1/apikeys` ✅ | admin | Body `{ "type": "admin"\|"dataProvider", "name", "slideIds": [...] }` (`slideIds` required for dataProvider). Plaintext key returned **once**. |
 | `GET /v1/apikeys` ✅ | admin | List: id, name, type, prefix, `slideIds`, `createdAt`, `lastUsedAt`, `revokedAt`. Never returns full keys. |
 | `DELETE /v1/apikeys/{id}` ✅ | admin | Revoke. |
+| `GET /v1/billing` ✅ | admin | Read-only summary (APX-67): `plan`, `monthlyPriceEur`, `annualPriceEur`, `status` (`free`\|`active`\|`cancelling`\|`paused`\|`past_due`\|`cancelled`\|`suspended`), `renewsAt`, `endsAt`, `pausedUntil`, `slideshows`/`devices`/`users`/`storageMb` as `{ used, limit }`, `invoicesUrl` (omitted on hosted surfaces). No card data. Plan changes, pause and cancel stay in the web app. |
 | `POST /v1/billing/checkout` ✅ | admin | → `{ "checkoutUrl" }`. In v1 this is the web app's billing page (one click from Paddle checkout) — the same URL used in `EntitlementRequired.details.upgradeUrl`. A raw `checkout.paddle.com` transaction URL requires adding a plan/price field to this endpoint's body (v1.1 candidate; the backend's Paddle API client already exists). Subscription state syncs back via Paddle webhooks. |
 
 ## 5. Client behavior rules

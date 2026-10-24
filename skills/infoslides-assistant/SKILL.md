@@ -139,6 +139,7 @@ The first call for the requests people actually make. The reference files have t
 | "Which screen is this?" | `list_devices` with `near`, else `identify_devices` (`POST /v1/devices/identify`) |
 | "How long did the promo play?" | `get_slideshow_plays` (`GET /v1/slideshows/{id}/plays`) |
 | "Add my colleague" | `invite_team_member` (`POST /v1/team/invitations`) |
+| "Which plan are we on, when does it renew?" | `get_billing` (`GET /v1/billing`), read-only; changing the plan is the person's job in the web app |
 | "We need more screens" | `upgrade_subscription` (`POST /v1/billing/checkout`), after the person's yes |
 | "Remove the InfoSlides mark / watermark" | It comes with the free plan, not the slides: any paid plan removes it. Offer `upgrade_subscription`. After an upgrade from free the slideshows re-render by themselves and the mark is gone shortly after; a screen already playing may keep it until the slideshow is reloaded, so tell the person to restart it (or reopen the player link) if it lingers |
 | "Undo that" | `undo_change` (`POST /v1/undo`) with the token you kept |

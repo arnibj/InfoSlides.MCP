@@ -20,7 +20,7 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         "create_template", "list_templates", "update_source", "push_data", "get_source_status", "create_source_key",
         "create_device", "list_devices", "get_device_status", "assign_schedule", "get_stream_link",
         "create_api_key", "list_api_keys", "revoke_api_key",
-        "upgrade_subscription",
+        "upgrade_subscription", "get_billing",
         "update_slide", "delete_slide", "delete_slideshow", "replace_slideshow_file", "list_sources",
         "pair_device", "play_slideshow_find_device", "get_schedule", "add_schedule_entry", "delete_schedule_entry",
         "create_takeover", "list_takeovers", "end_takeover", "get_slideshow_plays", "get_device_plays",
@@ -696,6 +696,25 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
             var request = Assert.Single(_backend.Requests);
             Assert.Contains("\"name\":\"Lobby\"", request.Body);
             Assert.Contains("\"longitude\":-21.9", request.Body);
+        }
+    }
+
+    [Fact]
+    public async Task GetBilling_ReadsTheSummary_WithoutABody()
+    {
+        _backend.MapJson("GET", "/v1/billing",
+            """{"data":{"plan":"Professional","status":"active","renewsAt":"2026-11-29T00:00:00Z","devices":{"used":2,"limit":5}}}""");
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var result = await client.CallToolAsync("get_billing", new Dictionary<string, object?>(), cancellationToken: Timeout());
+
+        Assert.NotEqual(true, result.IsError);
+        Assert.Contains("\"status\":\"active\"", Assert.IsType<TextContentBlock>(Assert.Single(result.Content)).Text);
+        lock (_backend.Requests)
+        {
+            var request = Assert.Single(_backend.Requests);
+            Assert.Equal("GET", request.Method);
+            Assert.Equal("/v1/billing", request.Path);
         }
     }
 
