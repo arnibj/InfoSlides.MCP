@@ -108,8 +108,9 @@ builder.Services
         };
     })
     .WithTools<ProfileTools>()
-    .WithInfoSlidesTools(InfoSlidesToolRegistration.CreateJsonOptions())
-    .WithProfileFilters();
+    // Profile refusals first: a tool or parameter this caller may not use is refused before its arguments are checked.
+    .WithProfileFilters()
+    .WithInfoSlidesTools(InfoSlidesToolRegistration.CreateJsonOptions());
 
 // Limits are per caller, never per IP alone: hosted assistants call from shared cloud address ranges.
 builder.Services.AddRateLimiter(limiter =>

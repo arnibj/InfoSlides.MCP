@@ -41,6 +41,10 @@
     "get_tenant_info",
     "get_workspace_health",
     "undo_change",
+    "get_platform_version",
+    "get_platform_notices",
+    "search_articles",
+    "get_article",
     "get_user_profile"
   ],
   "allowedNonToolWords": [

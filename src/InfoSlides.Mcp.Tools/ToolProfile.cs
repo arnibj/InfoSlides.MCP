@@ -41,6 +41,8 @@ public static class HostedToolProfile
         "list_sources", "get_source_status", "push_data", "update_source",
         // Workspace
         "get_tenant_info", "get_workspace_health", "undo_change",
+        // Platform news and help (APX-77): read-only public content.
+        "get_platform_version", "get_platform_notices", "search_articles", "get_article",
         // Provided by the host itself (not a CLI tool): who is connected, for multi-account support.
         "get_user_profile",
     };
@@ -76,6 +78,8 @@ public static class HostedToolProfile
             ["update_device"] = new HashSet<string>(StringComparer.Ordinal) { "latitude", "longitude", "locationName" },
             // A push key outlives the connection (revoking the app does not revoke the key), so a hosted caller may not mint one.
             ["add_dynamic_slide"] = new HashSet<string>(StringComparer.Ordinal) { "createPushKey" },
+            // A stock photo comes from search_stock_images, which the hosted profile does not offer yet (APX-70).
+            ["add_designed_slide"] = new HashSet<string>(StringComparer.Ordinal) { "stockPhoto" },
         };
 
     /// <summary>
@@ -125,7 +129,7 @@ public static class HostedToolProfile
             ["create_takeover"] =
                 "Takes over one or more screens for a while, such as a fire drill notice for 30 minutes or a launch announcement until 17:00, then returns them to their schedule by themselves. Takes deviceIds, the slideshow, and either durationMinutes or endsAt. Without an end it runs until it is ended.",
             ["list_sources"] =
-                "Lists the data sources the workspace can show on a screen: RSS news feeds, calendars, weather and live data pushed by another system. Each entry has its name, type and when it last received data.",
+                "Lists the data sources the workspace can show on a screen: RSS news feeds, calendars, weather and live data pushed by another system. Each entry has its name, type, when it last received data and its health (Healthy, Degraded or Failing, with lastError in plain words).",
             ["end_takeover"] =
                 "Ends a takeover now; the screen goes back to its schedule within about a minute.",
             ["play_slideshow_find_device"] =
@@ -143,7 +147,7 @@ public static class HostedToolProfile
             ["insert_ai_slides"] =
                 "Adds the previews of a Ready AI slide job to the slideshow. Repeating the call does not add them twice. Queues a re-render.",
             ["get_source_status"] =
-                "Returns the status of a source. For a push source: when data last arrived (lastReceivedAt), whether its slides are showing data (isShowingData, false before the first push or after the data went stale), the staleness timeout, and which slides it feeds. For a fetched source (RSS, weather and so on): lastFetchedAt, with the push fields empty.",
+                "Returns the status of a source. For a push source: when data last arrived (lastReceivedAt), whether its slides are showing data (isShowingData, false before the first push or after the data went stale), the staleness timeout, and which slides it feeds. For a fetched source (RSS, weather and so on): lastFetchedAt and health (Healthy, Degraded or Failing) with lastError in plain words, consecutiveFailures and lastSuccessAt, with the push fields empty.",
             ["get_device_status"] =
                 "Returns whether a screen is on and what it is showing right now: whether the TV is live, when it last checked in and which content is playing.",
             ["get_show_status"] =
@@ -166,6 +170,14 @@ public static class HostedToolProfile
                 "Registers the physical screen the content will play on, such as the TV in reception or a menu board (Icelandic: upplýsingaskjár, skjár). Once per screen. The workspace's plan sets how many screens can be active; DeviceLimitReached means they are all in use, and a workspace admin can change the plan in InfoSlides account settings. Resolution defaults to 1920x1080; 1080x1920 is for a screen turned on its end.",
             ["make_ai_slide"] =
                 "AI Studio: designs a slide in the workspace's style from a description (handler prompt: headline, details, prices, times), a photo of a poster, menu or whiteboard (photo: mediaUrl, or mediaAssetId of a file in the media library), a web page (url) or a PDF/Word file (document: mediaAssetId). Returns a job at once; the job moves from Processing to Ready with preview images, taking 10 to 60 seconds. EntitlementRequired means AI Studio is not on the workspace's plan; a workspace admin can change the plan in InfoSlides account settings.",
+            ["get_platform_version"] =
+                "Returns which InfoSlides release is running: version (for example v1.10.2), build (changes with every deploy), deployedAt, and releaseNotes, the published release notes of this version as title, slug and url. An empty releaseNotes list means the notes for this version are not published yet.",
+            ["get_platform_notices"] =
+                "Returns the notices from the InfoSlides team that are still active, newest first, or an empty list. Each has kind (SystemUpdate for an update or maintenance window, NewFeature for news), title, message, postedAt, startsAt (when the update begins, or null) and expiresAt.",
+            ["search_articles"] =
+                "Searches the published InfoSlides help articles, blog posts and release notes. q is free text (best match first; newest first without it), type is help, blog or release-note, since is a date, releaseVersion picks the notes of one release. Each item has type, title, slug, url, publishedAt, releaseVersion, appRoute (the InfoSlides web app page the article is about) and a short excerpt.",
+            ["get_article"] =
+                "Returns one published InfoSlides help article, blog post or release note as Markdown, with its type, title, slug, url, publishedAt, releaseVersion and appRoute. type is help, blog or release-note.",
         };
 
     /// <summary>
@@ -178,6 +190,10 @@ public static class HostedToolProfile
             ["add_dynamic_slide"] = new Dictionary<string, string>(StringComparer.Ordinal)
             {
                 ["templateId"] = "Id of a template (the templateId of an existing live-data slide).",
+            },
+            ["get_article"] = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["slug"] = "The article's slug, as a search result or a version's release notes give it.",
             },
             ["add_media_slide"] = new Dictionary<string, string>(StringComparer.Ordinal)
             {

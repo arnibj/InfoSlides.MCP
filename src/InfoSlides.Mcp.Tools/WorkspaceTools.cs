@@ -49,6 +49,23 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Delete, $"/v1/team/members/{Id(memberId)}", ct: ct));
 
+    [McpServerTool(Name = "deactivate_member", Title = "Turn off team member access", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
+    [Description("Turn off a team member's access without removing them (ids from list_team); reactivate_member " +
+                 "turns it back on. Confirm with the person first. The last active admin cannot be turned off. " +
+                 "Workspace admins only.")]
+    public Task<CallToolResult> DeactivateMember(
+        [Description("Id of the member.")] string memberId,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Post, $"/v1/team/members/{Id(memberId)}/deactivate", ct: ct));
+
+    [McpServerTool(Name = "reactivate_member", Title = "Turn on team member access", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Turn a team member's access back on. Fails with EntitlementRequired when the plan's user limit " +
+                 "is reached. Workspace admins only.")]
+    public Task<CallToolResult> ReactivateMember(
+        [Description("Id of the member.")] string memberId,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Post, $"/v1/team/members/{Id(memberId)}/reactivate", ct: ct));
+
     [McpServerTool(Name = "update_tenant", Title = "Update workspace settings", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("Set the workspace time zone and/or locale. The time zone decides when schedules switch, " +
                  "what TV clocks show and when time-based slide conditions apply; set it early for a " +
@@ -114,6 +131,85 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Delete, $"/v1/sources/{Id(sourceId)}", ct: ct));
 
+    [McpServerTool(Name = "fetch_source_now", Title = "Refresh content source now", ReadOnly = false, Destructive = false, OpenWorld = true, Idempotent = false)]
+    [Description("Ask InfoSlides to fetch a source (RSS, weather, calendar) right now instead of waiting " +
+                 "for its next scheduled fetch. The fetch runs in the background: call get_source_status " +
+                 "after a few seconds to see the new health. Limited to 10 calls a minute per workspace.")]
+    public Task<CallToolResult> FetchSourceNow(
+        [Description("Id of the source (from list_sources).")] string sourceId,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Post, $"/v1/sources/{Id(sourceId)}/fetch", ct: ct));
+
+    [McpServerTool(Name = "get_source_items", Title = "Get content source items", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("See the latest items a source has fetched, newest first: title, body, imageUrl, url, " +
+                 "fetchedAt and expiresAt. Use it to check what a slide on this source would show.")]
+    public Task<CallToolResult> GetSourceItems(
+        [Description("Id of the source (from list_sources).")] string sourceId,
+        [Description("How many items, 1 to 100 (default 20).")] int? limit = null,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Get,
+            $"/v1/sources/{Id(sourceId)}/items" + (limit is null ? "" : $"?limit={limit}"), ct: ct));
+
+    [McpServerTool(Name = "test_source_config", Title = "Test content source settings", ReadOnly = true, Destructive = false, OpenWorld = true, Idempotent = true)]
+    [Description("Try a source's settings against the live service without saving anything, e.g. whether " +
+                 "an RSS address works. Returns success and a plain-language message; a failed test is " +
+                 "still an answer, not an error. Use before create_source. Limited to 10 calls a minute " +
+                 "per workspace.")]
+    public Task<CallToolResult> TestSourceConfig(
+        [Description("Adapter type from list_adapters, e.g. 'RssFeed'.")] string adapterType,
+        [Description("Config object as JSON, e.g. {\"feedUrl\":\"https://...\"}.")] JsonObject? config = null,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/sources/test-connection",
+            Body(("adapterType", adapterType), ("config", config)), ct: ct));
+
+    [McpServerTool(Name = "get_source_fields", Title = "Get content source fields", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("List the fields a source's items have (key, label and a sample value from its latest item), to " +
+                 "decide which template fields to fill from it. Empty until the source has fetched something: " +
+                 "fetch_source_now asks for that.")]
+    public Task<CallToolResult> GetSourceFields(
+        [Description("Id of the source (from list_sources).")] string sourceId,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Get, $"/v1/sources/{Id(sourceId)}/fields", ct: ct));
+
+    [McpServerTool(Name = "get_audit_trail", Title = "Get audit trail", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("\"Who changed this?\" The workspace's audit trail, newest first: time, action (e.g. " +
+                 "SlideshowDeleted), entityType, entityId, userId and details. Filter by what it is about " +
+                 "(entityType and entityId), who (userId), action, category (User, Tenant, Slideshow, Device, " +
+                 "Schedule, Sources, Templates, Billing, Settings, Support, TvDevice, WebClient) and a UTC from/to. " +
+                 "action SlideshowDeleted finds the id restore_slideshow needs. Workspace admins only.")]
+    public Task<CallToolResult> GetAuditTrail(
+        [Description("Only events about this kind of thing, e.g. Slideshow.")] string? entityType = null,
+        [Description("Only events about this id.")] string? entityId = null,
+        [Description("Only events by this user id.")] string? userId = null,
+        [Description("Only this action, e.g. SlideshowDeleted.")] string? action = null,
+        [Description("Only this category, e.g. Device.")] string? category = null,
+        [Description("From this time, UTC, e.g. 2026-10-01T00:00:00Z.")] string? from = null,
+        [Description("Up to this time, UTC.")] string? to = null,
+        [Description("Page number, from 1.")] int? page = null,
+        [Description("Items per page, 1 to 100 (default 25).")] int? pageSize = null,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Get, "/v1/audit" + InfoSlidesApiClient.Query(
+            ("entityType", entityType), ("entityId", entityId), ("userId", userId), ("action", action), ("category", category),
+            ("from", from), ("to", to), ("page", page?.ToString()), ("pageSize", pageSize?.ToString())), ct: ct));
+
+    [McpServerTool(Name = "get_error_log", Title = "Get error log", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("The workspace's error log, newest first, as a workspace admin sees it in the web app: time, level " +
+                 "(Warning, Error, Critical), component, message, entityType, entityId and acknowledged. Use it to " +
+                 "explain a failed render or a source that stopped. Filter by level, component, acknowledged and a " +
+                 "UTC from/to. Workspace admins only.")]
+    public Task<CallToolResult> GetErrorLog(
+        [Description("Warning, Error or Critical.")] string? level = null,
+        [Description("Only errors from this component.")] string? component = null,
+        [Description("True for acknowledged errors only, false for new ones only.")] bool? acknowledged = null,
+        [Description("From this time, UTC.")] string? from = null,
+        [Description("Up to this time, UTC.")] string? to = null,
+        [Description("Page number, from 1.")] int? page = null,
+        [Description("Items per page, 1 to 100 (default 25).")] int? pageSize = null,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Get, "/v1/errors" + InfoSlidesApiClient.Query(
+            ("level", level), ("component", component), ("acknowledged", acknowledged?.ToString().ToLowerInvariant()),
+            ("from", from), ("to", to), ("page", page?.ToString()), ("pageSize", pageSize?.ToString())), ct: ct));
+
     [McpServerTool(Name = "get_workspace_health", Title = "Get workspace health", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("\"How are my screens?\" in one call: a sentence to read out (\"11 of 12 screens are online; " +
                  "Lobby has been offline since 09:12.\"), every screen with online and lastSeenAt, usage " +
@@ -152,7 +248,7 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
     [Description("Undo the last change: puts back what an earlier call changed. Calls that change " +
                  "something return an undo field; pass its body.token here within 24 hours. A deleted " +
                  "slide comes back, an added slide, takeover or paired screen is removed. Not covered: " +
-                 "deleting a slideshow, and screen settings. If the same thing was changed again since, " +
+                 "deleting a slideshow (restore_slideshow brings one back), and screen settings. If the same thing was changed again since, " +
                  "the answer is NeedsClarification: ask the person before sending force=true, which " +
                  "overwrites that later change.")]
     public Task<CallToolResult> UndoChange(
@@ -257,6 +353,75 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
         ExecutePng(() => api.GetPngAsync(HttpMethod.Post, "/v1/templates/preview",
                 Body(("layoutHtml", layoutHtml), ("layoutCss", layoutCss), ("sampleData", sampleData), ("aspectRatio", aspectRatio)), ct),
             "Template preview");
+
+    [McpServerTool(Name = "get_brand_guide", Title = "Get brand guide", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Read the workspace's brand guide before making slides so they match the company: colours, " +
+                 "fonts, logos, voice, picture style and layout. 'inUse' is what slides are made from, 'draft' " +
+                 "is the working copy. If 'waitingForApproval' is true a person still has to confirm the draft " +
+                 "on the Brand page (brandPageUrl): tell them, because slides keep using the confirmed version " +
+                 "until then.")]
+    public Task<CallToolResult> GetBrandGuide(CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Get, "/v1/brand", ct: ct));
+
+    [McpServerTool(Name = "update_brand_guide", Title = "Update brand guide draft", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Replace the brand guide DRAFT with the whole guide given (admin only). It never changes " +
+                 "what slides use: a person confirms it on the Brand page, so say it is waiting for their " +
+                 "approval and give them brandPageUrl. Colours are #rrggbb; low text contrast comes back as a " +
+                 "warning. Values are typed in, nothing is read from files. Call get_brand_guide first and send " +
+                 "back the full guide with your changes.")]
+    public Task<CallToolResult> UpdateBrandGuide(
+        [Description("The whole guide as JSON, e.g. {\"palette\":{\"primary\":\"#0a5c36\",\"accent\":\"#e11d48\",\"background\":\"#ffffff\",\"text\":\"#111827\"}," +
+                     "\"type\":{\"headingFontKey\":\"montserrat\"},\"voice\":{\"tone\":\"Friendly\",\"preferredPhrases\":[\"Welcome\"]}," +
+                     "\"layout\":{\"logoPosition\":\"top-right\",\"headerBand\":true}}.")] JsonObject guide,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Put, "/v1/brand", guide, ct: ct));
+
+    [McpServerTool(Name = "preview_brand", Title = "Preview brand sample slide", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("See a sample slide drawn from the brand guide as an image, so the person and you can check " +
+                 "how it looks before it is confirmed. Samples: title, text, data, image, logo-light, " +
+                 "logo-dark, ticker, clock. Shows the draft by default; source 'confirmed' shows what slides " +
+                 "use now. Rate limited.")]
+    public Task<CallToolResult> PreviewBrand(
+        [Description("Sample name (default title).")] string? sample = null,
+        [Description("draft (default) or confirmed.")] string? source = null,
+        CancellationToken ct = default) =>
+        ExecutePng(() => api.GetPngAsync(HttpMethod.Get,
+                "/v1/brand/preview.png" + InfoSlidesApiClient.Query(("sample", sample), ("source", source)), null, ct),
+            $"Brand preview: {sample ?? "title"}");
+
+    [McpServerTool(Name = "list_brand_previews", Title = "List brand sample slides", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("List the sample slide names preview_brand can draw.")]
+    public Task<CallToolResult> ListBrandPreviews(CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Get, "/v1/brand/preview", ct: ct));
+
+    [McpServerTool(Name = "upload_brand_logo", Title = "Upload brand logo", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
+    [Description("Put a logo image from the user's computer (up to 5 MB) into the brand guide draft, for light " +
+                 "backgrounds (slot light), dark backgrounds (dark) or as a small square mark (icon). Returns the " +
+                 "brand guide. A person still confirms the draft on the Brand page. Workspace admins only.")]
+    public async Task<CallToolResult> UploadBrandLogo(
+        [Description("Absolute path to the logo image on disk.")] string filePath,
+        [Description("light (default), dark or icon.")] string slot = "light",
+        CancellationToken ct = default)
+    {
+        if (!File.Exists(filePath))
+        {
+            return ValidationError($"File not found: {filePath}");
+        }
+
+        await using var stream = File.OpenRead(filePath);
+        return await Json(() => api.SendFileAsync(HttpMethod.Post, "/v1/brand/logo" + InfoSlidesApiClient.Query(("slot", slot)),
+            stream, Path.GetFileName(filePath), MediaTools.ResolveContentType(filePath), ct));
+    }
+
+    [McpServerTool(Name = "check_brand", Title = "Check slideshow against brand guide", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Check whether a slideshow follows the confirmed brand guide: colours outside the palette, " +
+                 "text that is hard to read, a missing logo, banned phrases and fonts that are not the guide's, " +
+                 "slide by slide. Advisory only, nothing is blocked. Covers designed and dynamic slides, not slides " +
+                 "inside an uploaded presentation. If hasConfirmedGuide is false there is nothing to check against.")]
+    public Task<CallToolResult> CheckBrand(
+        [Description("Id of the slideshow.")] string slideshowId,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/brand/check", Body(("slideshowId", slideshowId)), ct: ct));
 
     private static JsonNode? Node(JsonElement? value) =>
         value is { ValueKind: not (JsonValueKind.Undefined or JsonValueKind.Null) } v ? JsonNode.Parse(v.GetRawText()) : null;

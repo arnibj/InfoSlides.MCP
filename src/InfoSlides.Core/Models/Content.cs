@@ -47,7 +47,20 @@ public sealed record Clock(
 /// <param name="AdapterType">What kind of source it is, e.g. <c>RssFeed</c> or <c>Push</c>.</param>
 /// <param name="LastFetchedAt">When data last arrived; null before the first fetch.</param>
 /// <param name="IsEnabled">False when fetching is paused (<c>update_source_settings</c> with <c>isEnabled</c>).</param>
-public sealed record Source(string Id, string Name, string AdapterType, DateTimeOffset? LastFetchedAt = null, bool IsEnabled = true);
+/// <param name="Health"><c>Healthy</c>, <c>Degraded</c> (1-2 failed fetches in a row) or <c>Failing</c> (3 or more). Null from an older server.</param>
+/// <param name="LastError">Plain-language reason the last fetch failed; null when healthy.</param>
+/// <param name="ConsecutiveFailures">Failed fetches in a row.</param>
+/// <param name="LastSuccessAt">When a fetch last succeeded; null if never.</param>
+public sealed record Source(
+    string Id,
+    string Name,
+    string AdapterType,
+    DateTimeOffset? LastFetchedAt = null,
+    bool IsEnabled = true,
+    string? Health = null,
+    string? LastError = null,
+    int ConsecutiveFailures = 0,
+    DateTimeOffset? LastSuccessAt = null);
 
 /// <param name="SourceId">
 /// On a slide just added from a push template: the Push source created for it, where its data is
@@ -158,7 +171,8 @@ public sealed record AddMediaSlideRequest(
 /// <summary>
 /// Request body for <c>POST /v1/slideshows/{id}/slides/design</c>: a slide rendered from plain
 /// parameters, with no AI. Only <see cref="Heading"/> is required; the background is at most one of
-/// <see cref="BackgroundColor"/>, <see cref="MediaAssetId"/> or <see cref="MediaUrl"/>.
+/// <see cref="BackgroundColor"/>, <see cref="MediaAssetId"/>, <see cref="MediaUrl"/> or <see cref="StockPhoto"/>
+/// (a stock image search result, sent back with its credit fields).
 /// </summary>
 public sealed record AddDesignedSlideRequest(
     string Heading,
@@ -172,7 +186,8 @@ public sealed record AddDesignedSlideRequest(
     bool? Branding = null,
     string? Layout = null,
     int? Position = null,
-    double? DurationSeconds = null);
+    double? DurationSeconds = null,
+    JsonElement? StockPhoto = null);
 
 /// <summary>Result of <c>POST /v1/slideshows/{id}/slides/design</c>.</summary>
 public sealed record DesignedSlide(
@@ -237,6 +252,10 @@ public sealed record PushReceived(DateTimeOffset? ReceivedAt = null);
 /// <param name="AdapterType">Adapter type, e.g. "Push" or "RssFeed". Null from an older server.</param>
 /// <param name="LastFetchedAt">Fetched only: when it last fetched; null if never.</param>
 /// <param name="IsEnabled">Whether the source is active.</param>
+/// <param name="Health">Fetched only: <c>Healthy</c>, <c>Degraded</c> or <c>Failing</c>. Null from an older server.</param>
+/// <param name="LastError">Fetched only: plain-language reason the last fetch failed; null when healthy.</param>
+/// <param name="ConsecutiveFailures">Fetched only: failed fetches in a row.</param>
+/// <param name="LastSuccessAt">Fetched only: when a fetch last succeeded; null if never.</param>
 public sealed record PushSourceStatus(
     string Id,
     string Name,
@@ -246,7 +265,11 @@ public sealed record PushSourceStatus(
     IReadOnlyList<string> SlideIds,
     string? AdapterType = null,
     DateTimeOffset? LastFetchedAt = null,
-    bool IsEnabled = true);
+    bool IsEnabled = true,
+    string? Health = null,
+    string? LastError = null,
+    int ConsecutiveFailures = 0,
+    DateTimeOffset? LastSuccessAt = null);
 
 /// <summary>Request body for <c>POST /v1/sources/{id}/keys</c>.</summary>
 /// <param name="Name">A label, e.g. the system that will use the key.</param>

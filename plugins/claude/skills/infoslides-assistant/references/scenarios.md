@@ -57,7 +57,7 @@ and the judgement call that makes it go well. Ids are shortened; never read them
 - A photo of a chalkboard or paper menu: `make_ai_slide` with handler `photo` and the photo's `mediaUrl`
         (ai-studio.md); show the previews and `insert_ai_slides` once they approve.
    - Nothing: `list_gallery`, show two or three menu-looking `previewUrl`s,
-     `clone_slideshow` the one they like.
+     `clone_slideshow` with `fromGallery` the one they like.
 4. Durations: a menu read in a queue wants 15 to 20 seconds per slide.
 5. Walk them through the TV (getting-started.md, section 5) and `pair_device` with the nickname
    they read out and the `slideshowId`.
@@ -253,9 +253,14 @@ comes back to you.
 
 ### 17. "Show this photo on the lobby screen"
 
-**You do** add the photo as a slide using `add_media_slide` with its `mediaUrl`, to the slideshow playing on the lobby screen, and optionally set a temporary condition with `set_slide_conditions`.
+**You do** `show_media_on_device` with the photo's public `mediaUrl` and a default `until` of 30
+minutes (ask if it should stay longer). It is a temporary takeover: the normal schedule returns by
+itself, and `end_takeover` ends it early. Poll `get_show_status` until `Ready`; that means
+prepared, and the open player switches within a couple of minutes. To keep the photo in the
+slideshow for good instead, `add_media_slide` with its `mediaUrl`.
 
-**You say** "Your photo is on the lobby screen now."
+**You say** "Your photo is ready and should appear on the lobby screen within a couple of minutes, for the
+next 30 minutes, then it goes back to normal."
 
 ## Checking up
 
@@ -299,7 +304,6 @@ Explain the plan screen limit neutrally and direct them to their InfoSlides acco
 
 **You say** "I can't open Google Slides from here. Download it as PowerPoint (File, Download,
 .pptx) and send it to me, or use Import from Google Slides in the InfoSlides web app."
-
 
 ### 24. "Undo that"
 

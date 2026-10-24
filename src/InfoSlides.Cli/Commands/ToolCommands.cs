@@ -133,9 +133,20 @@ internal static class ToolCommands
         device.Subcommands.Add(Verb("plays", "Estimated play time per slideshow on a screen.",
             (p, ct) => CliContext.RunTool(p, api => new ScreenTools(api).GetDevicePlays(p.GetValue(playsId)!, p.GetValue(from)!, p.GetValue(to)!, ct)),
             playsId, from, to));
+
+        var deleteId = Arg("device-id", "Screen id.");
+        device.Subcommands.Add(Verb("delete", "Remove a screen from the workspace; prints an undo token.",
+            (p, ct) => CliContext.RunTool(p, api => new ScreenTools(api).DeleteDevice(p.GetValue(deleteId)!, ct)),
+            deleteId));
+
+        var broadcastName = Arg("name", "Name of the channel.");
+        var broadcastShow = Opt<string?>("--slideshow-id", "The slideshow it plays.");
+        device.Subcommands.Add(Verb("broadcast", "Create a broadcast channel: one stream for any number of screens, no pairing.",
+            (p, ct) => CliContext.RunTool(p, api => new ScreenTools(api).CreateBroadcastDevice(p.GetValue(broadcastName)!, p.GetValue(broadcastShow), ct)),
+            broadcastName, broadcastShow));
     }
 
-    /// <summary>Adds play time per screen to <c>slideshow</c>.</summary>
+    /// <summary>Adds play time, restore, Google import, shared slides and the weather alert timeline to <c>slideshow</c>.</summary>
     /// <param name="slideshow">The <c>slideshow</c> command.</param>
     public static void AddSlideshowVerbs(Command slideshow)
     {
@@ -144,6 +155,122 @@ internal static class ToolCommands
         slideshow.Subcommands.Add(Verb("plays", "Estimated play time per screen for a slideshow.",
             (p, ct) => CliContext.RunTool(p, api => new ScreenTools(api).GetSlideshowPlays(p.GetValue(id)!, p.GetValue(from)!, p.GetValue(to)!, ct)),
             id, from, to));
+
+        var restoreId = Arg("slideshow-id", "Id of the deleted slideshow (see `workspace audit --action SlideshowDeleted`).");
+        slideshow.Subcommands.Add(Verb("restore", "Bring back a deleted slideshow; assign it to a screen again afterwards.",
+            (p, ct) => CliContext.RunTool(p, api => new SlideshowTools(api).RestoreSlideshow(p.GetValue(restoreId)!, ct)),
+            restoreId));
+
+        var token = Arg("access-token", "Google access token with Drive read access to the file.");
+        var fileId = Opt<string?>("--file-id", "Google Drive file id.");
+        var url = Opt<string?>("--url", "Presentation address.");
+        var title = Opt<string?>("--title", "Slideshow title; the Google file name when omitted.");
+        slideshow.Subcommands.Add(Verb("import-google", "Make a slideshow from a Google Slides presentation.",
+            (p, ct) => CliContext.RunTool(p, api => new SlideshowTools(api).ImportGoogleSlides(p.GetValue(token)!, p.GetValue(fileId),
+                p.GetValue(url), p.GetValue(title), ct)),
+            token, fileId, url, title));
+
+        var exclude = Opt<string?>("--exclude-id", "Leave this slideshow out.");
+        slideshow.Subcommands.Add(Verb("shared", "List shared slideshows and the pages that can be copied.",
+            (p, ct) => CliContext.RunTool(p, api => new SlideshowTools(api).ListSharedSlideshows(p.GetValue(exclude), ct)),
+            exclude));
+
+        var importTarget = Arg("slideshow-id", "The slideshow that receives the page.");
+        var importSource = Arg("source-slideshow-id", "The shared slideshow to copy from.");
+        var importPage = new Argument<int>("slide-number") { Description = "The page number to copy." };
+        slideshow.Subcommands.Add(Verb("import-slide", "Copy one page of a shared slideshow to the end of this one.",
+            (p, ct) => CliContext.RunTool(p, api => new SlideshowTools(api).ImportSlide(p.GetValue(importTarget)!, p.GetValue(importSource)!,
+                p.GetValue(importPage), ct)),
+            importTarget, importSource, importPage));
+
+        var alertsShow = Arg("slideshow-id", "Slideshow id.");
+        var alertsSource = Arg("source-id", "A WeatherAlert source.");
+        var alertsPosition = Opt<int?>("--position", "Zero-based position of the first slide.");
+        var alertsDuration = Opt<int?>("--duration", "Seconds per slide (default 10).");
+        slideshow.Subcommands.Add(Verb("weather-alerts", "Add an 8-slide weather alert timeline over the next 48 hours.",
+            (p, ct) => CliContext.RunTool(p, api => new SlideshowTools(api).AddWeatherAlertTimeline(p.GetValue(alertsShow)!, p.GetValue(alertsSource)!,
+                p.GetValue(alertsPosition), p.GetValue(alertsDuration), null, null, ct)),
+            alertsShow, alertsSource, alertsPosition, alertsDuration));
+    }
+
+    /// <summary>Adds reading and changing a text slide's design, and the stock photo search, to <c>slide</c>.</summary>
+    /// <param name="slide">The <c>slide</c> command.</param>
+    public static void AddSlideVerbs(Command slide)
+    {
+        var designId = Arg("slide-id", "Slide id.");
+        slide.Subcommands.Add(Verb("design", "Show the design behind a text slide.",
+            (p, ct) => CliContext.RunTool(p, api => new SlideshowTools(api).GetSlideDesign(p.GetValue(designId)!, ct)),
+            designId));
+
+        var setId = Arg("slide-id", "Slide id.");
+        var design = Arg("design", "The whole design as a JSON object, inline or @file.");
+        slide.Subcommands.Add(Verb("set-design", "Replace a text slide's design; prints an undo token.",
+            (p, ct) => CliContext.RunTool(p, api => new SlideshowTools(api).UpdateSlideDesign(p.GetValue(setId)!,
+                CliContext.ParseJsonObject(p.GetValue(design)!), ct)),
+            setId, design));
+
+        var q = Arg("query", "What the photo should show.");
+        var orientation = Opt<string?>("--orientation", "landscape (default), portrait or squarish.");
+        var page = Opt<int?>("--page", "Page number.");
+        slide.Subcommands.Add(Verb("stock-search", "Search free stock photos (Unsplash) for a text slide background.",
+            (p, ct) => CliContext.RunTool(p, api => new SlideshowTools(api).SearchStockImages(p.GetValue(q)!, p.GetValue(orientation), p.GetValue(page), ct)),
+            q, orientation, page));
+    }
+
+    /// <summary>Adds limits, browsing, changing and deleting files, and folders to <c>media</c>.</summary>
+    /// <param name="media">The <c>media</c> command.</param>
+    public static void AddMediaVerbs(Command media)
+    {
+        media.Subcommands.Add(Verb("limits", "Free storage, largest file and accepted file types.",
+            (p, ct) => CliContext.RunTool(p, api => new MediaTools(api).GetUploadLimits(ct))));
+
+        var folder = Opt<string?>("--folder-id", "Only files in this folder.");
+        var type = Opt<string?>("--type", "image, video or document.");
+        var name = Opt<string?>("--name", "Only names containing this.");
+        var page = Opt<int?>("--page", "Page number.");
+        media.Subcommands.Add(Verb("list", "List the media library, newest first.",
+            (p, ct) => CliContext.RunTool(p, api => new MediaTools(api).ListMedia(p.GetValue(folder), p.GetValue(type), p.GetValue(name), p.GetValue(page), null, ct)),
+            folder, type, name, page));
+
+        var getId = Arg("media-id", "Media file id.");
+        media.Subcommands.Add(Verb("status", "Whether an uploaded file is ready (video progress while it is prepared).",
+            (p, ct) => CliContext.RunTool(p, api => new MediaTools(api).GetMedia(p.GetValue(getId)!, ct)),
+            getId));
+
+        var editId = Arg("media-id", "Media file id.");
+        var editName = Opt<string?>("--name", "New name.");
+        var editFolder = Opt<string?>("--folder-id", "Move it to this folder.");
+        var root = Opt<bool>("--root", "Move it to the top level.");
+        var shared = Opt<bool?>("--shared", "true shares it with other workspaces, false stops.");
+        media.Subcommands.Add(Verb("edit", "Rename, move or share a file.",
+            (p, ct) => CliContext.RunTool(p, api => new MediaTools(api).UpdateMedia(p.GetValue(editId)!, p.GetValue(editName),
+                p.GetValue(editFolder), p.GetValue(root), p.GetValue(shared), ct)),
+            editId, editName, editFolder, root, shared));
+
+        var deleteId = Arg("media-id", "Media file id.");
+        media.Subcommands.Add(Verb("delete", "Delete a file; refused while a slide uses it.",
+            (p, ct) => CliContext.RunTool(p, api => new MediaTools(api).DeleteMedia(p.GetValue(deleteId)!, ct)),
+            deleteId));
+
+        media.Subcommands.Add(Verb("folders", "List media folders.",
+            (p, ct) => CliContext.RunTool(p, api => new MediaTools(api).ListMediaFolders(ct))));
+
+        var folderName = Arg("name", "Folder name.");
+        var parent = Opt<string?>("--parent-id", "Create it inside this folder.");
+        media.Subcommands.Add(Verb("folder-create", "Create a media folder.",
+            (p, ct) => CliContext.RunTool(p, api => new MediaTools(api).CreateMediaFolder(p.GetValue(folderName)!, p.GetValue(parent), ct)),
+            folderName, parent));
+
+        var renameId = Arg("folder-id", "Folder id.");
+        var newName = Arg("name", "New name.");
+        media.Subcommands.Add(Verb("folder-rename", "Rename a media folder.",
+            (p, ct) => CliContext.RunTool(p, api => new MediaTools(api).RenameMediaFolder(p.GetValue(renameId)!, p.GetValue(newName)!, ct)),
+            renameId, newName));
+
+        var folderDelete = Arg("folder-id", "Folder id.");
+        media.Subcommands.Add(Verb("folder-delete", "Delete an empty media folder.",
+            (p, ct) => CliContext.RunTool(p, api => new MediaTools(api).DeleteMediaFolder(p.GetValue(folderDelete)!, ct)),
+            folderDelete));
     }
 
     /// <summary>Adds viewing and editing timed entries to <c>schedule</c>.</summary>
@@ -170,6 +297,17 @@ internal static class ToolCommands
         schedule.Subcommands.Add(Verb("remove", "Remove a timed entry.",
             (p, ct) => CliContext.RunTool(p, api => new ScreenTools(api).DeleteScheduleEntry(p.GetValue(removeDevice)!, p.GetValue(entry)!, ct)),
             removeDevice, entry));
+
+        var editDevice = Arg("device-id", "Screen id.");
+        var editEntry = Arg("entry-id", "Entry id from `schedule show`.");
+        var editShow = Opt<string?>("--slideshow-id", "Play this slideshow in the window instead.");
+        var editStart = Opt<string?>("--start", "New start, HH:mm.");
+        var editEnd = Opt<string?>("--end", "New end, HH:mm.");
+        var editPriority = Opt<int?>("--priority", "New priority.");
+        schedule.Subcommands.Add(Verb("edit", "Change a timed entry in place.",
+            (p, ct) => CliContext.RunTool(p, api => new ScreenTools(api).UpdateScheduleEntry(p.GetValue(editDevice)!, p.GetValue(editEntry)!,
+                p.GetValue(editShow), p.GetValue(editStart), p.GetValue(editEnd), p.GetValue(editPriority), ct)),
+            editDevice, editEntry, editShow, editStart, editEnd, editPriority));
     }
 
     /// <summary>Adds adapters and creating, editing and deleting pulled sources to <c>source</c>.</summary>
@@ -202,6 +340,29 @@ internal static class ToolCommands
         source.Subcommands.Add(Verb("delete", "Delete a source; slides and tickers fed by it stop updating.",
             (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).DeleteSource(p.GetValue(deleteId)!, ct)),
             deleteId));
+
+        var fetchId = Arg("source-id", "Source id.");
+        source.Subcommands.Add(Verb("fetch", "Refresh a source now instead of waiting for its next fetch.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).FetchSourceNow(p.GetValue(fetchId)!, ct)),
+            fetchId));
+
+        var itemsId = Arg("source-id", "Source id.");
+        var itemsLimit = Opt<int?>("--limit", "How many items, 1 to 100 (default 20).");
+        source.Subcommands.Add(Verb("items", "Show the latest items a source has fetched.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).GetSourceItems(p.GetValue(itemsId)!, p.GetValue(itemsLimit), ct)),
+            itemsId, itemsLimit));
+
+        var testAdapter = Arg("adapter-type", "Adapter type from `source adapters`, e.g. RssFeed.");
+        var testConfig = Opt<string?>("--config", "Config JSON object, inline or @file.");
+        source.Subcommands.Add(Verb("test", "Try source settings against the live service without saving anything.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).TestSourceConfig(p.GetValue(testAdapter)!,
+                p.GetValue(testConfig) is { } c ? CliContext.ParseJsonObject(c) : null, ct)),
+            testAdapter, testConfig));
+
+        var fieldsId = Arg("source-id", "Source id.");
+        source.Subcommands.Add(Verb("fields", "List the fields a source's items have, with a sample value.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).GetSourceFields(p.GetValue(fieldsId)!, ct)),
+            fieldsId));
     }
 
     /// <summary>Adds previewing an unsaved design to <c>template</c>.</summary>
@@ -219,6 +380,111 @@ internal static class ToolCommands
                     p.GetValue(sample) is { } s ? CliContext.ParseJsonObject(s) : null, p.GetValue(aspect), ct),
                 p.GetValue(output) ?? "template-preview.png"),
             html, css, sample, aspect, output));
+
+        template.Subcommands.Add(Verb("categories", "List the template categories the workspace may use.",
+            (p, ct) => CliContext.RunTool(p, api => new TemplateTools(api).ListTemplateCategories(ct))));
+
+        var showId = Arg("template-id", "Template id.");
+        template.Subcommands.Add(Verb("show", "Show a template's fields, HTML and CSS.",
+            (p, ct) => CliContext.RunTool(p, api => new TemplateTools(api).GetTemplate(p.GetValue(showId)!, ct)),
+            showId));
+
+        var editId = Arg("template-id", "Template id.");
+        var title = Opt<string?>("--title", "New title.");
+        var editHtml = Opt<string?>("--html", "New HTML, inline or @file.");
+        var editCss = Opt<string?>("--css", "New CSS, inline or @file.");
+        var schema = Opt<string?>("--schema", "Data fields JSON object, inline or @file.");
+        template.Subcommands.Add(Verb("edit", "Change a template the workspace owns; slides using it pick up the change.",
+            (p, ct) => CliContext.RunTool(p, api => new TemplateTools(api).UpdateTemplate(p.GetValue(editId)!, p.GetValue(title),
+                p.GetValue(editHtml) is { } h ? CliContext.ValueOrFile(h) : null, p.GetValue(editCss) is { } c ? CliContext.ValueOrFile(c) : null,
+                p.GetValue(schema) is { } s ? CliContext.ParseJsonObject(s) : null, ct)),
+            editId, title, editHtml, editCss, schema));
+
+        var deleteId = Arg("template-id", "Template id.");
+        template.Subcommands.Add(Verb("delete", "Delete a template; refused while a slide uses it.",
+            (p, ct) => CliContext.RunTool(p, api => new TemplateTools(api).DeleteTemplate(p.GetValue(deleteId)!, ct)),
+            deleteId));
+
+        var cloneId = Arg("template-id", "Template id, usually a built-in one.");
+        template.Subcommands.Add(Verb("clone", "Copy a template into the workspace so it can be changed.",
+            (p, ct) => CliContext.RunTool(p, api => new TemplateTools(api).CloneTemplate(p.GetValue(cloneId)!, ct)),
+            cloneId));
+
+        var usageId = Arg("template-id", "Template id.");
+        template.Subcommands.Add(Verb("usage", "Show which slides use a template.",
+            (p, ct) => CliContext.RunTool(p, api => new TemplateTools(api).GetTemplateUsage(p.GetValue(usageId)!, ct)),
+            usageId));
+
+        var thumbId = Arg("template-id", "Template id.");
+        template.Subcommands.Add(Verb("thumbnail", "Redraw a template's gallery picture.",
+            (p, ct) => CliContext.RunTool(p, api => new TemplateTools(api).RegenerateTemplateThumbnail(p.GetValue(thumbId)!, ct)),
+            thumbId));
+    }
+
+    /// <summary>The <c>platform</c> command: the running release, notices, and help articles, blog and release notes.</summary>
+    public static Command Platform()
+    {
+        var platform = new Command("platform", "InfoSlides itself: the running version, upcoming updates, and help and news articles.");
+
+        platform.Subcommands.Add(Verb("version", "Which InfoSlides release is running, with its release notes.",
+            (p, ct) => CliContext.RunTool(p, api => new PlatformTools(api).GetPlatformVersion(ct))));
+
+        platform.Subcommands.Add(Verb("notices", "Active notices, such as an upcoming update and when it starts.",
+            (p, ct) => CliContext.RunTool(p, api => new PlatformTools(api).GetPlatformNotices(ct))));
+
+        var q = new Argument<string?>("query") { Description = "Free text; newest first when omitted.", Arity = ArgumentArity.ZeroOrOne };
+        var type = Opt<string?>("--type", "help, blog or release-note.");
+        var since = Opt<string?>("--since", "Published on or after this date, yyyy-MM-dd.");
+        var release = Opt<string?>("--release-version", "Only the notes of this release, e.g. v1.10.2.");
+        var page = Opt<int?>("--page", "Page number.");
+        platform.Subcommands.Add(Verb("search", "Search the help articles, blog posts and release notes.",
+            (p, ct) => CliContext.RunTool(p, api => new PlatformTools(api).SearchArticles(p.GetValue(q), p.GetValue(type),
+                p.GetValue(since), p.GetValue(release), p.GetValue(page), null, ct)),
+            q, type, since, release, page));
+
+        var articleType = Arg("type", "help, blog or release-note.");
+        var slug = Arg("slug", "The slug from `platform search`.");
+        platform.Subcommands.Add(Verb("article", "Read one article as Markdown.",
+            (p, ct) => CliContext.RunTool(p, api => new PlatformTools(api).GetArticle(p.GetValue(articleType)!, p.GetValue(slug)!, ct)),
+            articleType, slug));
+        return platform;
+    }
+
+    /// <summary>The <c>brand</c> command: read the brand guide, change its draft, and look at sample slides.</summary>
+    public static Command Brand()
+    {
+        var brand = new Command("brand", "The workspace brand guide: colours, fonts, logos and voice (a person confirms it on the Brand page).");
+
+        brand.Subcommands.Add(Verb("show", "Show the guide slides use, the draft, and whether it waits for approval.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).GetBrandGuide(ct))));
+
+        var guide = Arg("guide", "The whole guide as a JSON object, inline or @file.");
+        brand.Subcommands.Add(Verb("set", "Replace the draft guide; a person confirms it on the Brand page.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).UpdateBrandGuide(CliContext.ParseJsonObject(p.GetValue(guide)!), ct)),
+            guide));
+
+        var sample = Opt<string?>("--sample", "title, text, data, image, logo-light, logo-dark, ticker or clock (default title).");
+        var source = Opt<string?>("--source", "draft (default) or confirmed.");
+        var output = Opt<string?>("--output", "Output PNG path (default brand-preview.png).");
+        brand.Subcommands.Add(Verb("preview", "Draw a sample slide from the brand guide to a PNG.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).PreviewBrand(p.GetValue(sample), p.GetValue(source), ct),
+                p.GetValue(output) ?? "brand-preview.png"),
+            sample, source, output));
+
+        var checkShow = Arg("slideshow-id", "The slideshow to check.");
+        brand.Subcommands.Add(Verb("check", "Check a slideshow against the confirmed brand guide.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).CheckBrand(p.GetValue(checkShow)!, ct)),
+            checkShow));
+
+        brand.Subcommands.Add(Verb("samples", "List the sample slides `brand preview` can draw.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).ListBrandPreviews(ct))));
+
+        var logo = Arg("file", "Path to the logo image (up to 5 MB).");
+        var slot = Opt<string?>("--slot", "light (default), dark or icon.");
+        brand.Subcommands.Add(Verb("logo", "Put a logo into the draft guide; a person confirms it on the Brand page.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).UploadBrandLogo(p.GetValue(logo)!, p.GetValue(slot) ?? "light", ct)),
+            logo, slot));
+        return brand;
     }
 
     /// <summary>The <c>takeover</c> command: start, list and end temporary takeovers.</summary>
@@ -280,6 +546,16 @@ internal static class ToolCommands
         team.Subcommands.Add(Verb("remove", "Remove a person from the workspace.",
             (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).RemoveTeamMember(p.GetValue(member)!, ct)),
             member));
+
+        var deactivate = Arg("member-id", "Member id from `team list`.");
+        team.Subcommands.Add(Verb("deactivate", "Turn off a person's access without removing them.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).DeactivateMember(p.GetValue(deactivate)!, ct)),
+            deactivate));
+
+        var reactivate = Arg("member-id", "Member id from `team list`.");
+        team.Subcommands.Add(Verb("reactivate", "Turn a person's access back on.",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).ReactivateMember(p.GetValue(reactivate)!, ct)),
+            reactivate));
         return team;
     }
 
@@ -305,6 +581,22 @@ internal static class ToolCommands
         workspace.Subcommands.Add(Verb("set-offline-alerts", "Set the quiet hours for offline emails; neither option alerts at any hour.",
             (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).SetWorkspaceOfflineAlerts(p.GetValue(quietStart), p.GetValue(quietEnd), ct)),
             quietStart, quietEnd));
+
+        var entityType = Opt<string?>("--entity-type", "Only events about this kind of thing, e.g. Slideshow.");
+        var entityId = Opt<string?>("--entity-id", "Only events about this id.");
+        var action = Opt<string?>("--action", "Only this action, e.g. SlideshowDeleted.");
+        var (from, to) = (Opt<string?>("--from", "From this time, UTC."), Opt<string?>("--to", "Up to this time, UTC."));
+        var page = Opt<int?>("--page", "Page number.");
+        workspace.Subcommands.Add(Verb("audit", "Who changed what, newest first (workspace admins).",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).GetAuditTrail(p.GetValue(entityType), p.GetValue(entityId), null,
+                p.GetValue(action), null, p.GetValue(from), p.GetValue(to), p.GetValue(page), null, ct)),
+            entityType, entityId, action, from, to, page));
+
+        var level = Opt<string?>("--level", "Warning, Error or Critical.");
+        var errorPage = Opt<int?>("--page", "Page number.");
+        workspace.Subcommands.Add(Verb("errors", "The workspace's error log, newest first (workspace admins).",
+            (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).GetErrorLog(p.GetValue(level), null, null, null, null, p.GetValue(errorPage), null, ct)),
+            level, errorPage));
         return workspace;
     }
 

@@ -24,7 +24,7 @@ credit card, no trial clock, nothing expires. The whole flow below costs nothing
 ```sh
 # 1. Install (macOS/Linux; see Install for Windows and MCP clients)
 #    Version-pinned. Check /releases/latest for the current one.
-curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.7.4/infoslides-v1.7.4-linux-x64.tar.gz | tar xz
+curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.8.0/infoslides-v1.8.0-linux-x64.tar.gz | tar xz
 
 # 2. Create a workspace (anonymous; prints an admin API key and saves it to ~/.infoslides)
 ./infoslides tenant create "Acme Cafe" owner@acme.test --save
@@ -131,7 +131,20 @@ direct file upload (`upload_media`), visibility conditions (time of day, weekday
 edits to what is already playing (`update_slide` for a slide's duration, hidden flag and live data;
 `update_slideshow` for the news ticker, clock, default duration and sharing; `delete_slide`,
 `delete_slideshow`, `replace_slideshow_file`; `list_sources` for the ticker's sources, and
-`list_adapters`, `create_source`, `update_source_settings`, `delete_source` for fetched feeds),
+`list_adapters`, `create_source`, `update_source_settings`, `delete_source` for fetched feeds;
+`list_sources` and `get_source_status` show each feed's health and last error in plain words, `fetch_source_now`
+refreshes one, `get_source_items` shows what it fetched and `test_source_config` tries settings before saving;
+`get_brand_guide`, `update_brand_guide`, `preview_brand` and `check_brand` read the workspace brand guide, replace its draft, draw sample slides from it and check a slideshow against it, `upload_brand_logo` and `list_brand_previews`; a person confirms the guide on the Brand page;
+`get_source_fields` for a source's fields, `add_weather_alert_timeline`, and template upkeep: `list_template_categories`, `get_template`,
+`update_template`, `delete_template`, `clone_template`, `get_template_usage`, `regenerate_template_thumbnail`),
+text slide edits (`get_slide_design`, `update_slide_design`, stock photos with `search_stock_images`), Google Slides import
+(`import_google_slides`), copying a page from a shared slideshow (`list_shared_slideshows`, `import_slide`), the media library
+(`get_upload_limits`, `list_media`, `get_media`, `update_media`, `delete_media`, `list_media_folders`, `create_media_folder`,
+`rename_media_folder`, `delete_media_folder`), removing a screen and broadcast channels (`delete_device`,
+`create_broadcast_device`), editing a schedule window in place (`update_schedule_entry`), the audit trail, error log and
+restoring a deleted slideshow (`get_audit_trail`, `get_error_log`, `restore_slideshow`), turning team access off and on
+(`deactivate_member`, `reactivate_member`), platform news (`get_platform_version`, `get_platform_notices`) and the help
+articles, blog and release notes (`search_articles`, `get_article`),
 self-updating template slides driven by live data pushes (`update_source`, and push sources fed by
 the user's own system: `push_data`, `get_source_status`, `create_source_key`), devices, schedules with
 `AspectMismatch` warnings, playback-mode control (`update_slideshow`'s `playbackMode` switches a
@@ -141,7 +154,7 @@ work whichever mode a screen is in, pairing the TV in front of the person (`pair
 `delete_schedule_entry`), temporary takeovers (`create_takeover`, `list_takeovers`, `end_takeover`),
 play-time reports (`get_slideshow_plays`, `get_device_plays`), screen locations (`update_device`, `list_devices` near a
 point), the team (`list_team`, `invite_team_member`, `revoke_team_invitation`, `remove_team_member`),
-workspace time zone and locale (`update_tenant`), "which screen is this?"
+workspace time zone and locale (`update_tenant`), "which plan are we on and when does it renew?" (`get_billing`), "which screen is this?"
 (`identify_devices`), what is on a screen and why it is black (`get_now_slide_png`, `get_device_diagnosis`),
 a photo or video on a screen in a minute (`show_media_on_device`, `get_show_status`), renaming a screen
 (`update_device`), one workspace health summary and offline-alert emails (`get_workspace_health`,
@@ -227,6 +240,20 @@ infoslides source adapters
 infoslides source create RssFeed "RÚV news" --config '{"feedUrl":"https://..."}' --interval 900
 infoslides source edit <source-id> --enabled false
 infoslides source delete <source-id>
+infoslides source test RssFeed --config '{"feedUrl":"https://..."}'   # try settings, nothing is saved
+infoslides source fetch <source-id>                         # refresh now; source status shows the new health
+infoslides source items <source-id> --limit 5
+infoslides source fields <source-id>                        # field names and a sample value for mapping
+infoslides schedule edit <device-id> <entry-id> --end 15:00
+infoslides device delete <device-id>                        # prints an undo token; device broadcast "Hall" for a channel
+infoslides media limits                                     # free space and largest file before a big upload
+infoslides media list --type video                          # media edit/delete, folders, folder-create/-rename/-delete
+infoslides template usage <template-id>                     # template show/edit/clone/delete/categories/thumbnail
+infoslides slide design <slide-id>                          # slide set-design <slide-id> @design.json; slide stock-search lake
+infoslides slideshow restore <slideshow-id>                 # find it with: workspace audit --action SlideshowDeleted
+infoslides slideshow shared                                 # then slideshow import-slide <target> <source> <page>
+infoslides workspace errors --level Error
+infoslides platform version                                 # platform notices, platform search "portrait screen", platform article help <slug>
 infoslides team invite colleague@acme.test --role TenantAdmin
 infoslides team list                                        # team revoke <invitation-id>, team remove <member-id>
 infoslides workspace settings --time-zone Europe/London --locale en-GB

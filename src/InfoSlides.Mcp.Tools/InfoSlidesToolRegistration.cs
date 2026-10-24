@@ -30,7 +30,10 @@ public static class InfoSlidesToolRegistration
             McpJsonUtilities.DefaultOptions.TypeInfoResolver),
     };
 
-    /// <summary>Registers every InfoSlides tool class on the MCP server builder.</summary>
+    /// <summary>
+    /// Registers every InfoSlides tool class on the MCP server builder, with arguments checked against each tool's
+    /// schema before it runs (<see cref="ToolArgumentValidation"/>).
+    /// </summary>
     /// <param name="builder">The MCP server builder.</param>
     /// <param name="jsonOptions">Options from <see cref="CreateJsonOptions"/>.</param>
     /// <returns>The same builder, for chaining.</returns>
@@ -43,5 +46,7 @@ public static class InfoSlidesToolRegistration
         .WithTools<ApiKeyTools>(jsonOptions)
         .WithTools<BillingTools>(jsonOptions)
         .WithTools<ScreenTools>(jsonOptions)
-        .WithTools<WorkspaceTools>(jsonOptions);
+        .WithTools<WorkspaceTools>(jsonOptions)
+        .WithTools<PlatformTools>(jsonOptions)
+        .WithRequestFilters(filters => filters.AddCallToolFilter(ToolArgumentValidation.Filter));
 }

@@ -160,7 +160,12 @@ public sealed class ToolAnnotationsTests
             "add_designed_slide",
             "create_source",
             "update_source_settings",
-            "make_ai_slide"
+            "fetch_source_now",
+            "test_source_config",
+            "make_ai_slide",
+            "update_slide_design",
+            "search_stock_images",
+            "import_google_slides"
         };
 
         var tools = GetAllTools();
@@ -187,7 +192,12 @@ public sealed class ToolAnnotationsTests
             "revoke_team_invitation",
             "remove_team_member",
             "delete_source",
-            "undo_change"
+            "undo_change",
+            "delete_media",
+            "delete_media_folder",
+            "delete_template",
+            "delete_device",
+            "deactivate_member"
         };
 
         var tools = GetAllTools();

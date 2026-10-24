@@ -9,6 +9,17 @@ namespace InfoSlides.Mcp.Tools;
 [McpServerToolType]
 public sealed class BillingTools(InfoSlidesApiClient api)
 {
+    [McpServerTool(Name = "get_billing", Title = "Get billing summary", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Which plan the workspace is on and when it renews. Returns the plan with its prices, the " +
+                 "status (free, active, cancelling, paused, past_due, cancelled or suspended), renewsAt " +
+                 "(empty when the plan does not renew or the date could not be read), endsAt when a " +
+                 "cancellation is already scheduled, and what is used against each limit: slideshows, " +
+                 "devices, users and storageMb, each as used and limit. invoicesUrl points a person at " +
+                 "their invoices. Read-only and without card data; changing the plan, pausing or cancelling " +
+                 "is done by the person in the web app. Needs a workspace admin key.")]
+    public Task<CallToolResult> GetBilling(CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Get, "/v1/billing", ct: ct));
+
     [McpServerTool(Name = "upgrade_subscription", Title = "Upgrade subscription", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
     [Description("Get the checkout link when the plan runs out: a second screen is needed, or the user " +
                  "wants self-updating slides fed by live data. Reach for this after a DeviceLimitReached " +

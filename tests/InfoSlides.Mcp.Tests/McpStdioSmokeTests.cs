@@ -20,16 +20,28 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         "create_template", "list_templates", "update_source", "push_data", "get_source_status", "create_source_key",
         "create_device", "list_devices", "get_device_status", "assign_schedule", "get_stream_link",
         "create_api_key", "list_api_keys", "revoke_api_key",
-        "upgrade_subscription",
+        "upgrade_subscription", "get_billing",
         "update_slide", "delete_slide", "delete_slideshow", "replace_slideshow_file", "list_sources",
         "pair_device", "play_slideshow_find_device", "get_schedule", "add_schedule_entry", "delete_schedule_entry",
         "create_takeover", "list_takeovers", "end_takeover", "get_slideshow_plays", "get_device_plays",
         "list_team", "invite_team_member", "revoke_team_invitation", "remove_team_member", "update_tenant",
         "list_adapters", "create_source", "update_source_settings", "delete_source",
+        "fetch_source_now", "get_source_items", "test_source_config",
+        "get_brand_guide", "update_brand_guide", "preview_brand", "check_brand",
         "identify_devices", "get_now_slide_png", "get_device_diagnosis", "show_media_on_device", "get_show_status", "update_device",
         "set_device_offline_alerts", "get_workspace_health", "get_offline_alerts", "set_workspace_offline_alerts",
         "undo_change", "make_ai_slide", "get_ai_slide_job", "insert_ai_slides", "start_ai_studio_trial", "preview_new_template",
         "report_issue", "leave_testimonial",
+        "get_platform_version", "get_platform_notices", "search_articles", "get_article",
+        "get_upload_limits", "list_media", "get_media", "update_media", "delete_media",
+        "list_media_folders", "create_media_folder", "rename_media_folder", "delete_media_folder",
+        "list_template_categories", "get_template", "update_template", "delete_template", "clone_template",
+        "get_template_usage", "regenerate_template_thumbnail",
+        "get_source_fields", "get_audit_trail", "get_error_log", "deactivate_member", "reactivate_member",
+        "list_brand_previews", "upload_brand_logo",
+        "restore_slideshow", "import_google_slides", "list_shared_slideshows", "import_slide",
+        "get_slide_design", "update_slide_design", "search_stock_images", "add_weather_alert_timeline",
+        "update_schedule_entry", "delete_device", "create_broadcast_device",
     ];
 
     private readonly FakeBackend _backend = new();
@@ -115,7 +127,7 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
     [InlineData("update_slideshow", new[] { "ticker", "clock", "renderStatus" })]
     [InlineData("update_slide", new[] { "hide", "Christmas", "PowerPoint" })]
     [InlineData("delete_slide", new[] { "hide", "confirm" })]
-    [InlineData("delete_slideshow", new[] { "no undelete", "confirm" })]
+    [InlineData("delete_slideshow", new[] { "restore_slideshow", "confirm" })]
     [InlineData("replace_slideshow_file", new[] { "PowerPoint", "same screens" })]
     [InlineData("list_sources", new[] { "ticker", "RSS" })]
     [InlineData("list_devices", new[] { "lobby", "nowPlayingSlideshowId" })]
@@ -538,6 +550,61 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         }
     }
 
+    /// <summary>APX-59: fetch now, read the items, and test a configuration.</summary>
+    [Fact]
+    public async Task SourceFetchItemsAndTest_SendTheExpectedRequests()
+    {
+        _backend.MapJson("POST", "/v1/sources/src1/fetch", """{"data":{"queued":true,"message":"Queued"}}""");
+        _backend.MapJson("GET", "/v1/sources/src1/items", """{"data":[{"title":"Headline","fetchedAt":"2026-10-16T10:00:00Z"}]}""");
+        _backend.MapJson("POST", "/v1/sources/test-connection", """{"data":{"success":false,"message":"The feed address was not found (404)."}}""");
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var fetched = await client.CallToolAsync("fetch_source_now",
+            new Dictionary<string, object?> { ["sourceId"] = "src1" }, cancellationToken: Timeout());
+        var items = await client.CallToolAsync("get_source_items",
+            new Dictionary<string, object?> { ["sourceId"] = "src1", ["limit"] = 5 }, cancellationToken: Timeout());
+        var tested = await client.CallToolAsync("test_source_config",
+            new Dictionary<string, object?>
+            {
+                ["adapterType"] = "RssFeed",
+                ["config"] = new Dictionary<string, object?> { ["feedUrl"] = "https://x.test/rss" },
+            }, cancellationToken: Timeout());
+
+        Assert.NotEqual(true, fetched.IsError);
+        Assert.Contains("Headline", Assert.IsType<TextContentBlock>(Assert.Single(items.Content)).Text);
+        Assert.Contains("404", Assert.IsType<TextContentBlock>(Assert.Single(tested.Content)).Text);
+        lock (_backend.Requests)
+        {
+            Assert.Contains(_backend.Requests, r => r.Method == "GET" && r.Path == "/v1/sources/src1/items");
+            var test = Assert.Single(_backend.Requests, r => r.Path == "/v1/sources/test-connection");
+            Assert.Equal("{\"adapterType\":\"RssFeed\",\"config\":{\"feedUrl\":\"https://x.test/rss\"}}", test.Body);
+        }
+    }
+
+    /// <summary>BG-05: read the brand guide and replace its draft.</summary>
+    [Fact]
+    public async Task BrandGuide_ReadAndUpdateDraft_SendTheExpectedRequests()
+    {
+        _backend.MapJson("GET", "/v1/brand", """{"data":{"status":"Draft","version":0,"waitingForApproval":true,"brandPageUrl":"https://infoslides.app/app/brand"}}""");
+        _backend.MapJson("PUT", "/v1/brand", """{"data":{"status":"Draft","waitingForApproval":true}}""");
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var read = await client.CallToolAsync("get_brand_guide", new Dictionary<string, object?>(), cancellationToken: Timeout());
+        var updated = await client.CallToolAsync("update_brand_guide",
+            new Dictionary<string, object?>
+            {
+                ["guide"] = new Dictionary<string, object?> { ["palette"] = new Dictionary<string, object?> { ["primary"] = "#0a5c36" } },
+            }, cancellationToken: Timeout());
+
+        Assert.Contains("waitingForApproval", Assert.IsType<TextContentBlock>(Assert.Single(read.Content)).Text);
+        Assert.NotEqual(true, updated.IsError);
+        lock (_backend.Requests)
+        {
+            var put = Assert.Single(_backend.Requests, r => r.Method == "PUT" && r.Path == "/v1/brand");
+            Assert.Equal("{\"palette\":{\"primary\":\"#0a5c36\"}}", put.Body);
+        }
+    }
+
     /// <summary>A 204 with no body is a success, not "missing data payload".</summary>
     [Fact]
     public async Task DeleteScheduleEntry_NoContent_IsASuccess()
@@ -696,6 +763,25 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
             var request = Assert.Single(_backend.Requests);
             Assert.Contains("\"name\":\"Lobby\"", request.Body);
             Assert.Contains("\"longitude\":-21.9", request.Body);
+        }
+    }
+
+    [Fact]
+    public async Task GetBilling_ReadsTheSummary_WithoutABody()
+    {
+        _backend.MapJson("GET", "/v1/billing",
+            """{"data":{"plan":"Professional","status":"active","renewsAt":"2026-11-29T00:00:00Z","devices":{"used":2,"limit":5}}}""");
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var result = await client.CallToolAsync("get_billing", new Dictionary<string, object?>(), cancellationToken: Timeout());
+
+        Assert.NotEqual(true, result.IsError);
+        Assert.Contains("\"status\":\"active\"", Assert.IsType<TextContentBlock>(Assert.Single(result.Content)).Text);
+        lock (_backend.Requests)
+        {
+            var request = Assert.Single(_backend.Requests);
+            Assert.Equal("GET", request.Method);
+            Assert.Equal("/v1/billing", request.Path);
         }
     }
 
@@ -975,7 +1061,9 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         Assert.NotEqual(true, result.IsError);
         lock (_backend.Requests)
         {
-            Assert.Contains("\"dataMode\":\"push\"", Assert.Single(_backend.Requests).Body);
+            var body = Assert.Single(_backend.Requests).Body;
+            Assert.Contains("\"dataMode\":\"push\"", body);
+            Assert.Contains("\"css\":\"\"", body); // the API needs css in code mode; the tool sends an empty one
         }
     }
 
@@ -1118,6 +1206,20 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
     [InlineData(new[] { "source", "adapters" }, "GET", "/v1/adapters", "")]
     [InlineData(new[] { "source", "edit", "src1", "--enabled", "false" }, "PATCH", "/v1/sources/src1", "{\"isEnabled\":false}")]
     [InlineData(new[] { "source", "delete", "src1" }, "DELETE", "/v1/sources/src1", "")]
+    [InlineData(new[] { "source", "fetch", "src1" }, "POST", "/v1/sources/src1/fetch", "")]
+    [InlineData(new[] { "source", "items", "src1", "--limit", "5" }, "GET", "/v1/sources/src1/items", "")]
+    [InlineData(new[] { "source", "test", "RssFeed", "--config", "{\"feedUrl\":\"https://x.test/rss\"}" }, "POST", "/v1/sources/test-connection",
+        "{\"adapterType\":\"RssFeed\",\"config\":{\"feedUrl\":\"https://x.test/rss\"}}")]
+    [InlineData(new[] { "platform", "version" }, "GET", "/v1/platform/version", "")]
+    [InlineData(new[] { "platform", "article", "help", "pairing" }, "GET", "/v1/articles/help/pairing", "")]
+    [InlineData(new[] { "media", "edit", "m1", "--root" }, "PATCH", "/v1/media/m1", "{\"folderId\":null}")]
+    [InlineData(new[] { "media", "folder-create", "Menus" }, "POST", "/v1/media/folders", "{\"name\":\"Menus\"}")]
+    [InlineData(new[] { "template", "clone", "t1" }, "POST", "/v1/templates/t1/clone", "")]
+    [InlineData(new[] { "schedule", "edit", "d1", "e1", "--end", "15:00" }, "PATCH", "/v1/devices/d1/schedule/entries/e1", "{\"endTime\":\"15:00\"}")]
+    [InlineData(new[] { "slideshow", "import-slide", "s1", "s2", "3" }, "POST", "/v1/slideshows/s1/slides/import",
+        "{\"sourceSlideshowId\":\"s2\",\"slideNumber\":3}")]
+    [InlineData(new[] { "team", "deactivate", "u1" }, "POST", "/v1/team/members/u1/deactivate", "")]
+    [InlineData(new[] { "billing", "show" }, "GET", "/v1/billing", "")]
     public async Task Cli_NewEditVerbs_SendTheExpectedRequest(string[] args, string method, string path, string body)
     {
         _backend.MapJson(method, path, """{"data":{"id":"x","title":"t","resolution":{"width":1,"height":1}}}""");
@@ -1152,6 +1254,90 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
             Assert.Equal(method, request.Method);
             Assert.Equal(path, request.Path);
             Assert.Equal(body, request.Body);
+        }
+    }
+
+    /// <summary>
+    /// The 1.8.0 pass-through tools: each sends the route and body the API catalogue documents. The query string is
+    /// not part of <see cref="FakeBackend"/>'s recorded path, so query parameters are covered by the body-less cases.
+    /// </summary>
+    public static TheoryData<string, string, string, string, string> PassThroughTools => new()
+    {
+        { "get_platform_version", "{}", "GET", "/v1/platform/version", "" },
+        { "get_platform_notices", "{}", "GET", "/v1/platform/notices", "" },
+        { "search_articles", """{"q":"portrait","type":"help"}""", "GET", "/v1/articles", "" },
+        { "get_article", """{"type":"release-note","slug":"also-in-1-10-2"}""", "GET", "/v1/articles/release-note/also-in-1-10-2", "" },
+        { "get_upload_limits", "{}", "GET", "/v1/media/limits", "" },
+        { "list_media", """{"type":"image"}""", "GET", "/v1/media", "" },
+        { "get_media", """{"mediaAssetId":"m1"}""", "GET", "/v1/media/m1", "" },
+        { "update_media", """{"mediaAssetId":"m1","name":"Menu","shared":true}""", "PATCH", "/v1/media/m1", """{"name":"Menu","shared":true}""" },
+        { "delete_media", """{"mediaAssetId":"m1"}""", "DELETE", "/v1/media/m1", "" },
+        { "list_media_folders", "{}", "GET", "/v1/media/folders", "" },
+        { "create_media_folder", """{"name":"Menus","parentFolderId":"f0"}""", "POST", "/v1/media/folders", """{"name":"Menus","parentFolderId":"f0"}""" },
+        { "rename_media_folder", """{"folderId":"f1","name":"Specials"}""", "PATCH", "/v1/media/folders/f1", """{"name":"Specials"}""" },
+        { "delete_media_folder", """{"folderId":"f1"}""", "DELETE", "/v1/media/folders/f1", "" },
+        { "list_template_categories", "{}", "GET", "/v1/templates/categories", "" },
+        { "get_template", """{"templateId":"t1"}""", "GET", "/v1/templates/t1", "" },
+        { "update_template", """{"templateId":"t1","title":"Sales"}""", "PATCH", "/v1/templates/t1", """{"title":"Sales"}""" },
+        { "delete_template", """{"templateId":"t1"}""", "DELETE", "/v1/templates/t1", "" },
+        { "clone_template", """{"templateId":"t1"}""", "POST", "/v1/templates/t1/clone", "" },
+        { "get_template_usage", """{"templateId":"t1"}""", "GET", "/v1/templates/t1/usage", "" },
+        { "regenerate_template_thumbnail", """{"templateId":"t1"}""", "POST", "/v1/templates/t1/thumbnail", "" },
+        { "get_source_fields", """{"sourceId":"src1"}""", "GET", "/v1/sources/src1/fields", "" },
+        { "get_audit_trail", """{"action":"SlideshowDeleted"}""", "GET", "/v1/audit", "" },
+        { "get_error_log", """{"level":"Error"}""", "GET", "/v1/errors", "" },
+        { "deactivate_member", """{"memberId":"u1"}""", "POST", "/v1/team/members/u1/deactivate", "" },
+        { "reactivate_member", """{"memberId":"u1"}""", "POST", "/v1/team/members/u1/reactivate", "" },
+        { "list_brand_previews", "{}", "GET", "/v1/brand/preview", "" },
+        { "restore_slideshow", """{"slideshowId":"s1"}""", "POST", "/v1/slideshows/s1/undelete", "" },
+        { "import_google_slides", """{"accessToken":"ya29.x","fileId":"g1"}""", "POST", "/v1/slideshows/import/google",
+            """{"fileId":"g1","accessToken":"ya29.x"}""" },
+        { "list_shared_slideshows", """{"excludeId":"s1"}""", "GET", "/v1/slideshows/shared", "" },
+        { "import_slide", """{"slideshowId":"s1","sourceSlideshowId":"s2","slideNumber":3}""", "POST", "/v1/slideshows/s1/slides/import",
+            """{"sourceSlideshowId":"s2","slideNumber":3}""" },
+        { "get_slide_design", """{"slideId":"sl1"}""", "GET", "/v1/slides/sl1/design", "" },
+        { "update_slide_design", """{"slideId":"sl1","design":{"heading":"Lunch at 1pm"}}""", "PUT", "/v1/slides/sl1/design", """{"heading":"Lunch at 1pm"}""" },
+        { "search_stock_images", """{"q":"lake"}""", "GET", "/v1/stock-images", "" },
+        { "add_weather_alert_timeline", """{"slideshowId":"s1","sourceId":"w1"}""", "POST", "/v1/slideshows/s1/slides/dynamic/weather-alert-timeline",
+            """{"sourceId":"w1"}""" },
+        { "update_schedule_entry", """{"deviceId":"d1","entryId":"e1","priority":2}""", "PATCH", "/v1/devices/d1/schedule/entries/e1", """{"priority":2}""" },
+        { "delete_device", """{"deviceId":"d1"}""", "DELETE", "/v1/devices/d1", "" },
+        { "create_broadcast_device", """{"name":"Lobby channel"}""", "POST", "/v1/devices/broadcast", """{"name":"Lobby channel"}""" },
+    };
+
+    [Theory]
+    [MemberData(nameof(PassThroughTools))]
+    public async Task PassThroughTool_SendsTheDocumentedRequest(string tool, string argsJson, string method, string path, string body)
+    {
+        _backend.MapJson(method, path, """{"data":{"ok":true}}""");
+        await using var client = await ConnectAsync("isk_admin_test");
+        var args = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(argsJson)!
+            .ToDictionary(kv => kv.Key, kv => (object?)kv.Value);
+
+        var result = await client.CallToolAsync(tool, args, cancellationToken: Timeout());
+
+        Assert.NotEqual(true, result.IsError);
+        lock (_backend.Requests)
+        {
+            var request = Assert.Single(_backend.Requests);
+            Assert.Equal(method, request.Method);
+            Assert.Equal(path, request.Path);
+            Assert.Equal(body, request.Body);
+        }
+    }
+
+    [Fact]
+    public async Task UpdateMedia_WithNothingToChange_IsRefusedWithoutACall()
+    {
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var result = await client.CallToolAsync("update_media", new Dictionary<string, object?> { ["mediaAssetId"] = "m1" }, cancellationToken: Timeout());
+
+        Assert.True(result.IsError);
+        Assert.Contains("ValidationFailed", Assert.IsType<TextContentBlock>(Assert.Single(result.Content)).Text);
+        lock (_backend.Requests)
+        {
+            Assert.Empty(_backend.Requests);
         }
     }
 }

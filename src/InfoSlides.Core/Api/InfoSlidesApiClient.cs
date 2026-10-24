@@ -406,6 +406,24 @@ public sealed class InfoSlidesApiClient
         return SendAsync(method, path, content, InfoSlidesJsonContext.Default.JsonElement, false, idempotent, ct);
     }
 
+    /// <summary>Sends one file as a multipart <c>file</c> part and returns the API's <c>data</c> as raw JSON.</summary>
+    /// <param name="method">HTTP method.</param>
+    /// <param name="path">Route under the base URL, query string included.</param>
+    /// <param name="file">The file content.</param>
+    /// <param name="fileName">Name of the uploaded file.</param>
+    /// <param name="contentType">Best-effort MIME type of the file.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The API's <c>data</c> and warnings.</returns>
+    public Task<ApiResult<JsonElement>> SendFileAsync(
+        HttpMethod method, string path, Stream file, string fileName, string contentType, CancellationToken ct = default)
+    {
+        var content = new MultipartFormDataContent();
+        var filePart = new StreamContent(file);
+        filePart.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+        content.Add(filePart, "file", fileName);
+        return SendAsync(method, path, content, InfoSlidesJsonContext.Default.JsonElement, false, idempotent: true, ct);
+    }
+
     /// <summary>Builds a query string from the pairs whose value is not null or empty.</summary>
     /// <param name="pairs">Name and value pairs; values are URL-escaped.</param>
     /// <returns><c>?a=1&amp;b=2</c>, or an empty string when nothing is set.</returns>

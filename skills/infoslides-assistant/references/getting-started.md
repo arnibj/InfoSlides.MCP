@@ -64,11 +64,11 @@ Every new slideshow renders first. It plays once `renderStatus` on `get_slidesho
 | The person has or wants | Call |
 | --- | --- |
 | A PowerPoint or PDF, shown as it is | `upload_pptx` (`POST /v1/slideshows/pptx`) or `upload_pdf` (`POST /v1/slideshows/pdf`); both take either. Multipart with a `file` part, up to 100 MB, optional `title`. One slide per page |
-| Photos or videos in turn | `create_slideshow` (`POST /v1/slideshows`) with `{"title": "Lunch menu", "slides": [{"mediaUrl": "https://...", "durationSeconds": 10}]}`. Their own files: `upload_media` (`POST /v1/media`) first, then `add_media_slide` (`POST /v1/slideshows/{id}/slides`) with `mediaAssetId` |
-| Nothing yet ("make me something to start with") | `list_gallery` (`GET /v1/gallery`); show the `previewUrl`s; `clone_gallery_slideshow` (`POST /v1/gallery/{id}/clone`) with the one they pick. Or design one with AI Studio (ai-studio.md) |
+| Photos or videos in turn | `create_slideshow` (MCP `upload_slideshow`, `POST /v1/slideshows`) with `{"title": "Lunch menu", "slides": [{"mediaUrl": "https://...", "durationSeconds": 10}]}`. Their own files: `upload_media` (`POST /v1/media`) first, then `add_media_slide` (`POST /v1/slideshows/{id}/slides`) with `mediaAssetId` |
+| Nothing yet ("make me something to start with") | `list_gallery` (`GET /v1/gallery`); show the `previewUrl`s; `clone_gallery_slideshow` (MCP `clone_slideshow` with `fromGallery`, `POST /v1/gallery/{id}/clone`) with the one they pick. Or design one with AI Studio (ai-studio.md) |
 | A copy to try changes on | `clone_slideshow` (`POST /v1/slideshows/{id}/clone`). No screen plays the copy until you put it on one |
 | A live data slide | See live-data.md |
-| Their Google Slides deck | Not possible through the API: ask them to download it as `.pptx` or `.pdf`, or to import it in the web app |
+| Their Google Slides deck | `import_google_slides` with `fileId` or the presentation `url`, and a short-lived Google access token with Drive read access from a Google sign-in you run (used once, never stored; exports up to 10 MB). Without a token, ask them to download it as `.pptx` or `.pdf` and use `upload_pptx`, or to import it in the web app |
 
 A gallery clone is the fastest way to something presentable. Build from scratch only when
 nothing in the gallery is close.
@@ -80,7 +80,7 @@ nothing in the gallery is close.
 - **Otherwise:** `create_device` (`POST /v1/devices`) with a name for where it is ("Reception
   TV", not "Device 1"), plus `"resolution": {"width": 1080, "height": 1920}` for a portrait
   screen. Then pair it (section 5).
-- Put content on it: `play_slideshow` (`POST /v1/devices/{id}/play`) with `slideshowId`. It
+- Put content on it: `play_slideshow` (MCP `play_slideshow_find_device` with `deviceId`, `POST /v1/devices/{id}/play`) with `slideshowId`. It
   checks the render, the screen and conflicts first. A warning `AspectMismatch` means the content
   will be stretched or cropped: fix the resolution rather than shipping it.
 

@@ -84,6 +84,7 @@ only the changed field.
 | A screen's default slideshow | `assign_schedule` (`POST /v1/devices/{id}/schedule`) with `{"slideshowIds": ["..."]}` (exactly one id), or `play_slideshow_find_device`, which checks for conflicts first |
 | Take screens over ("evacuation map everywhere now", "boardroom for two hours") | `create_takeover` (`POST /v1/takeovers`) with `deviceIds`, `slideshowId`, and `endsAt` or `durationMinutes` (optional `startsAt`). Times without a zone are workspace time; crossing midnight is fine. A slideshow that has never rendered takes over once its first render completes. An open player picks a takeover up within one to two minutes, not instantly |
 | End a takeover early ("put things back") | `end_takeover` (`DELETE /v1/takeovers/{id}`) |
+| "Show this photo on the lobby screen" | `show_media_on_device` with the photo's or video's public `mediaUrl`, optional `until` (default 30 minutes) and `caption`. It makes a one-slide slideshow and takes the screen over until `until`; `end_takeover` ends it early. Poll `get_show_status` at most every 5 seconds. `Ready` means prepared, not displayed: an open player switches within one to two minutes. Say it is ready and will switch shortly, and say it is on the TV only once the person or `get_device_status` confirms it |
 
 "For a while" and "from now until" are takeovers. "Every day at" is a schedule entry. "From now
 on" is the default slideshow.

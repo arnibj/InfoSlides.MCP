@@ -110,6 +110,7 @@ The first call for the requests people actually make. The reference files have t
 | "Play the Q1 slides on the lobby screen" | `play_slideshow_find_device` (`POST /v1/play`) |
 | "Lunch specials from 11 to 2 every day" | `add_schedule_entry` (`POST /v1/devices/{id}/schedule/entries`) |
 | "On the boardroom TV for the next two hours" / "evacuation map everywhere now" | `create_takeover` (`POST /v1/takeovers`) |
+| "Show this photo on the lobby screen" | `show_media_on_device` (`POST /v1/devices/{id}/show`) |
 | "Make a slide saying ..." / "a welcome slide for our visitors" | **First choice:** a heading, some text and a colour or picture behind it: `add_designed_slide` (`POST /v1/slideshows/{id}/slides/design`), the words exactly as given and not checked for accuracy, so the facts come from the person. When the layouts do not offer enough flexibility, `add_media_slide` with the `mediaUrl` of a finished image the person has, or for a slide designed for them `make_ai_slide` (`POST /v1/slideshows/{id}/slides/ai`), show the previews, then `insert_ai_slides` |
 | "Make this 20-page report into slides" / "use AI Studio" | `make_ai_slide` (`POST /v1/slideshows/{id}/slides/ai`) |
 | "Change the price on the specials slide" | `update_source` or `update_slide` with `overrideData` (live slides only) |
@@ -121,6 +122,8 @@ The first call for the requests people actually make. The reference files have t
 | "We need more screens" | The free plan has one screen; a workspace admin can change the plan in InfoSlides account settings. |
 | "Remove the InfoSlides mark / watermark" | It comes with the free plan, not the slides: a workspace admin can change the plan in InfoSlides account settings. After a plan change the slideshows re-render by themselves and the mark is gone shortly after; a screen already playing may keep it until the slideshow is reloaded, so tell the person to restart it (or reopen the player link) if it lingers |
 | "Undo that" | `undo_change` (`POST /v1/undo`) with the token you kept |
+| "Is an update coming?" / "what changed?" | `get_platform_notices`, `get_platform_version`, then `get_article` for its release notes |
+| "How do I ...?" when you are not sure it can be done | `search_articles` (`GET /v1/articles?q=`) before saying no |
 
 ## Talking to the person
 
@@ -185,12 +188,25 @@ Warnings come back with a success, and matter as much: `AspectMismatch` (the con
 stretched or cropped: fix the resolution), `StreamNotReady` (still rendering: tell the person to
 wait a minute), `HtmlPlaybackUnsupported` (this screen's app plays a video stream instead).
 
+## Keeping the person informed
+
+InfoSlides posts a notice before an update, deploys it, then publishes release notes. Follow that
+for the person without being asked:
+
+1. Check `get_platform_notices` now and then. When a `SystemUpdate` notice is active, tell the
+   person what is coming and when (`startsAt`).
+2. Remember `version` from `get_platform_version`. When it changes, tell the person the update is
+   live. When `releaseNotes` has entries, read them with `get_article` and pass on what matters to
+   them; while it is empty, check again later rather than guessing what changed.
+3. Before saying something cannot be done, search the help articles and blog with
+   `search_articles`.
+
 ## When you cannot do it
 
 Some things are not possible: importing from Google Slides (web app only; ask for a `.pptx` or
 `.pdf`), editing text inside a PowerPoint, deleting the whole workspace (email
-privacy@infoslides.app from the owner address). Say so plainly and offer the nearest thing that
-works.
+privacy@infoslides.app from the owner address). Search `search_articles` first, then say so
+plainly and offer the nearest thing that works.
 
 ## Feedback: to the InfoSlides team, and from the person
 

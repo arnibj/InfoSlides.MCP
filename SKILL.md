@@ -155,7 +155,9 @@ is to find it, change it, and confirm the change reached the wall.
    | move a slide | `update_slideshow` with the full `slideOrder` |
    | remove a slide for good | `delete_slide` |
    | replace the whole presentation with a new file | `replace_slideshow_file` (keeps the screens and schedule) |
-   | scroll headlines from a feed | `list_sources`, then `update_slideshow` with `tickerSourceIds` (a new feed: `list_adapters`, `create_source`) |
+   | scroll headlines from a feed | `list_sources`, then `update_slideshow` with `tickerSourceIds` (a new feed: `list_adapters`, `test_source_config`, `create_source`; a feed that looks stale: `get_source_status` for `health` and `lastError`, `fetch_source_now`, `get_source_items`) |
+   | make slides match the company brand | `get_brand_guide` first (colours, fonts, logos, voice; `inUse` is what slides use); to propose changes `update_brand_guide` (a draft only, admin key) then `preview_brand` to look at it and tell the person it waits for their approval at `brandPageUrl`; you cannot confirm it |
+   | do our slides follow the brand | `check_brand` with the slideshow id; lists, slide by slide, colours outside the palette, hard-to-read text, a missing logo, banned phrases and other fonts; advisory only |
    | "play the Q1 slides on the lobby screen" | `play_slideshow_find_device` (`dryRun` first if unsure) |
    | breakfast menu 6-11, lunch menu after | `add_schedule_entry`; `get_schedule` / `delete_schedule_entry` to review or undo |
    | fire drill notice on every screen for 30 minutes | `create_takeover`; `end_takeover` to stop early |
@@ -167,11 +169,19 @@ is to find it, change it, and confirm the change reached the wall.
    | "don't email me about screens at night" | `set_workspace_offline_alerts`; one TV switched off on purpose: `set_device_offline_alerts` |
    | "make this photo, page or text into a slide" | `make_ai_slide`, poll `get_ai_slide_job`, show the previews, then `insert_ai_slides` (trial: ask before `start_ai_studio_trial`) |
    | "undo that" | `undo_change` with the `undo.body.token` of the earlier result (24 hours; ask before `force`) |
+   | change the wording or background of a text slide | `get_slide_design`, change the fields, send the whole design to `update_slide_design`; a stock photo comes from `search_stock_images` (show the credit) as `stockPhoto` |
+   | "who deleted the menu?" / "bring it back" | `get_audit_trail` with `action` `SlideshowDeleted`, then `restore_slideshow`, then assign it to the screen again |
+   | "is there room for this video?" / tidy the media library | `get_upload_limits` before a large upload; `list_media`, `update_media`, `delete_media` and the folder tools |
+   | change or retire a layout | `get_template_usage` first, then `update_template`; a built-in one: `clone_template`; `delete_template` |
+   | "lunch is 12 to 3 now" | `update_schedule_entry` in place |
+   | the old TV came down | `delete_device` after the person's yes (it returns `undo`); one stream for many TVs: `create_broadcast_device` |
+   | "is an update coming?" / "what changed?" | `get_platform_notices`, `get_platform_version`, then `get_article` for the release notes |
+   | "can InfoSlides do ...?" | `search_articles` before saying no |
 
 Dayparting versus takeover: "every day from 11 to 2" is `add_schedule_entry` (repeats daily, times in the
    workspace time zone, name it); "for two hours" or "until 17:00" is `create_takeover` (one-off, the schedule
    returns by itself). Before `create_source`, ask the person for the source's settings (`list_adapters`
-   shows the fields); secrets in config are write-only.
+   shows the fields), then check them with `test_source_config`; secrets in config are write-only.
 
 4. **Wait for it to land.** After an edit the slideshow re-renders. `get_slideshow` until
    `renderStatus` is `Completed`; `Failed` means it did not reach the screen, say so.
@@ -258,7 +268,9 @@ playing" in one call. From there:
   time. Fix the slideshow's resolution with `update_slideshow`, or the screen's with a correctly
   shaped device.
 - **Stale numbers on a self-updating slide** — whatever should be sending data has stopped.
-  `get_source_status` shows when data last arrived; `list_api_keys` shows each key's last use.
+  `get_source_status` shows when data last arrived; `list_api_keys` shows each key's last use. For a feed
+  InfoSlides fetches (RSS, weather), `health` is `Healthy`, `Degraded` or `Failing` and `lastError` says why in
+  plain words; `fetch_source_now` retries it and `get_source_items` shows what it holds.
 - **`EmailNotVerified`** — the owner has not clicked the link. `resend_verification_email`, and
   tell them to check spam.
 
