@@ -104,6 +104,45 @@ vocabulary pass before the test is judged.
    manifest that validates can still point at the wrong file.
 5. Publish to the registry (below).
 6. Submit to the third-party directories (below).
+7. Redeploy the hosted server (`infoslides-mcp`), unless a directory review hold is on.
+8. Run the sync check. Every line should pass; a failing line names the step that was skipped:
+
+   ```powershell
+   ./scripts/check-release-sync.ps1
+   ```
+
+## Checking that every surface matches the release
+
+A release touches several surfaces that ship separately: the git tag, the GitHub release, the MCP registry
+listing, and the hosted host (its `initialize` version and its server card). `scripts/check-release-sync.ps1`
+(PowerShell 7) prints one PASS / FAIL / SKIP line for each and exits 1 on any failure:
+
+| Line | Passes when |
+| --- | --- |
+| Git tag | the newest `v*` tag is the release |
+| GitHub release | the release exists and has a `server.json` |
+| Registry | the latest listing has the release version and the release's `fileSha256` |
+| Server card | the live card reports the release version and its tool names equal the `tools` in `src/InfoSlides.Mcp.Tools/Instructions/hosted-rules.json` |
+| Host initialize | the hosted `/mcp` `initialize` reports the release version |
+
+It needs no credential except for the last line: set `INFOSLIDES_API_KEY` to an admin key so the script gets past
+the 401, or that line is skipped. The version defaults to `<Version>` in the CLI csproj; pass `-Version` to check
+another. The script changes nothing; the registry publish stays manual, and the check only says it is overdue.
+
+## Adding or changing a tool
+
+1. Write the tool. Every JSON parameter is a `JsonObject` or `JsonArray`, never `JsonElement` (`ToolSchemaTypesTests`).
+2. Add the tool to the result table in `ToolOutputSchemas` (`ToolOutputSchemaTests` fails without it), and a sample to
+   the test when it returns a typed result.
+3. If it is hosted: add it to `HostedToolProfile.ToolNames` and `hosted-rules.json`, and give it a hosted description
+   that follows [hosted-directory-rules.md](hosted-directory-rules.md) (no other tool named, no instructions, no
+   billing words). `McpHostProfileTests` checks the hosted list has a description and typed parameters for every tool.
+4. Mention it in the skill (in the infoslides repo's skill source, then `python scripts/sync-skills.py`) or in
+   `agents.md`. `ToolDocumentationCoverageTests` fails otherwise; a tool deliberately left out goes on its
+   `IntentionallyNotMentioned` list with a reason.
+5. Do the vocabulary pass: the description uses the words a person uses (TV, screen, menu board), and
+   `McpStdioSmokeTests` lists the tool.
+6. After the release: redeploy the host and run the sync check above.
 
 ## Publishing to the MCP registry
 

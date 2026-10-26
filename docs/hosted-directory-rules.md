@@ -20,7 +20,7 @@ The Claude directory scan reports "Add a type to this parameter" for any paramet
 - Changed: `push_data.data`, `update_source.data`, `update_slide` (`fieldMapping`, `overrideData`, `countdown`), `create_template.sampleJson`, `create_source.config`, `update_source_settings.config`, `preview_new_template.sampleData`.
 - `countdown` is now an array only. It used to accept a single object as well, and the description said so. A client that sent one object must wrap it in an array.
 - The API client still takes a `JsonElement`. `ToolResults.ToElement` converts the typed argument. The CLI parses `--config` and `--sample-data` with `CliContext.ParseJsonObject`, which rejects anything that is not a JSON object.
-- Guard: `ToolSchemaTypesTests` builds every tool's schema and fails if a parameter has none of `type`, `anyOf` or `enum`.
+- Guard: `ToolSchemaTypesTests` builds every tool's schema and fails if a parameter has none of `type`, `anyOf` or `enum`. `HostedTools_HaveADescription_AndOnlyTypedParameters` in `McpHostProfileTests` checks the same on the hosted list as served, after decoration, and fails on a hosted tool with no description.
 
 ## Rule 2: hosted descriptions describe, they do not instruct
 

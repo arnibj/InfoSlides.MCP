@@ -132,6 +132,35 @@ public sealed class McpHostProfileTests(McpHostFactory factory) : IClassFixture<
     }
 
     /// <summary>
+    /// APX-57: directory scans reject a tool without a description and a parameter whose schema has no type, so every
+    /// hosted tool, as the hosted list serves it after decoration, has a description and only typed parameters.
+    /// </summary>
+    [Fact]
+    public async Task HostedTools_HaveADescription_AndOnlyTypedParameters()
+    {
+        var tools = await ListToolsAsync(factory.MintToken(surface: "claude"));
+        var problems = new List<string>();
+
+        foreach (var tool in tools)
+        {
+            var name = tool.GetProperty("name").GetString()!;
+            if (!tool.TryGetProperty("description", out var description) || string.IsNullOrWhiteSpace(description.GetString()))
+            {
+                problems.Add($"{name} has no description");
+            }
+
+            if (tool.GetProperty("inputSchema").TryGetProperty("properties", out var properties))
+            {
+                problems.AddRange(properties.EnumerateObject()
+                    .Where(p => !p.Value.TryGetProperty("type", out _) && !p.Value.TryGetProperty("anyOf", out _) && !p.Value.TryGetProperty("enum", out _))
+                    .Select(p => $"{name}.{p.Name} has no schema type"));
+            }
+        }
+
+        Assert.True(problems.Count == 0, string.Join("; ", problems));
+    }
+
+    /// <summary>
     /// APX-58: the profile decoration copies each tool through JSON, so the output schema must survive it; a call
     /// returns the envelope as structured content; and the server card carries the same schema as the tool list.
     /// </summary>

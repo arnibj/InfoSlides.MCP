@@ -90,3 +90,24 @@ jobs:
             artifacts/server.json
             artifacts/sha256sums.txt
           generate_release_notes: true
+
+      # The steps after the release are manual on purpose (the registry listing is public and awkward to retract),
+      # so the summary hands over the exact commands. See docs/PUBLISHING.md.
+      - name: Next steps summary
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          {
+            echo "## Next steps for v${VERSION}"
+            echo
+            echo "1. Install the .mcpb from this release in a real MCP client and use it."
+            echo "2. Publish to the MCP registry:"
+            echo '```bash'
+            echo "gh workflow run publish-registry.yml --repo ${GITHUB_REPOSITORY} -f version=${VERSION}"
+            echo '```'
+            echo "3. Redeploy the hosted server (infoslides-mcp), unless a directory review hold is on."
+            echo "4. Check every surface matches the release:"
+            echo '```powershell'
+            echo "./scripts/check-release-sync.ps1 -Version ${VERSION}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
