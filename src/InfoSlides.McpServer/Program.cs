@@ -148,9 +148,11 @@ app.UseOutputCache();
 app.MapMcp("/mcp").RequireAuthorization();
 // Static server card for directories that cannot sign in to scan (Smithery). Built from the tools the host registers,
 // in the hosted profile, so it cannot drift from tools/list. Short cache: Cloudflare must not hold a stale card long.
-app.MapGet("/.well-known/mcp/server-card.json", (IEnumerable<McpServerTool> tools) =>
+// The tools come from the server options, as tools/list takes them: the output schemas are attached when those options
+// are built, so the raw registered tools would lack them until the first /mcp request.
+app.MapGet("/.well-known/mcp/server-card.json", (IOptions<McpServerOptions> server) =>
 {
-    var listed = ToolProfileFilters.ProfileTools(tools.Select(t => t.ProtocolTool), ToolProfile.Hosted, surface: null, isApiKey: false);
+    var listed = ToolProfileFilters.ProfileTools((server.Value.ToolCollection ?? []).Select(t => t.ProtocolTool), ToolProfile.Hosted, surface: null, isApiKey: false);
     return Results.Json(new
     {
         serverInfo = new { name = "infoslides", version = serverVersion },

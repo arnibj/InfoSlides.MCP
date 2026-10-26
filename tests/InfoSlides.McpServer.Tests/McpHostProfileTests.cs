@@ -162,6 +162,25 @@ public sealed class McpHostProfileTests(McpHostFactory factory) : IClassFixture<
         Assert.Equal(JsonValueKind.Array, result.GetProperty("structuredContent").GetProperty("data").ValueKind);
     }
 
+    /// <summary>
+    /// APX-58: a directory scanner may fetch the card before anyone has called <c>/mcp</c> (and the card is cached), so a
+    /// freshly started host must already carry the output schemas on its card.
+    /// </summary>
+    [Fact]
+    public async Task ServerCard_CarriesOutputSchemas_BeforeAnyMcpRequest()
+    {
+        await using var fresh = new McpHostFactory();
+
+        var card = await (await fresh.CreateClient().GetAsync("/.well-known/mcp/server-card.json")).Content.ReadFromJsonAsync<JsonElement>();
+
+        var missing = card.GetProperty("tools").EnumerateArray()
+            .Select(t => t.GetProperty("name").GetString()!)
+            .Where(n => n != "get_user_profile" && !ToolOutputSchemas.Exempt.Contains(n))
+            .Where(n => !card.GetProperty("tools").EnumerateArray().First(t => t.GetProperty("name").GetString() == n).TryGetProperty("outputSchema", out _))
+            .ToList();
+        Assert.True(missing.Count == 0, "No outputSchema on the card for: " + string.Join(", ", missing));
+    }
+
     [Fact]
     public async Task Gemini_AndApiKeys_GetTheFullSet()
     {
