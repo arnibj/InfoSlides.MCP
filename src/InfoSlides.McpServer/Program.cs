@@ -155,10 +155,14 @@ app.MapGet("/.well-known/mcp/server-card.json", (IEnumerable<McpServerTool> tool
     {
         serverInfo = new { name = "infoslides", version = serverVersion },
         authentication = new { required = true, schemes = new[] { "oauth2" } },
-        tools = listed.Select(t => new { name = t.Name, description = t.Description, inputSchema = t.InputSchema }),
+        tools = listed.Select(t => new { name = t.Name, description = t.Description, inputSchema = t.InputSchema, outputSchema = t.OutputSchema }),
         resources = Array.Empty<object>(),
         prompts = Array.Empty<object>(),
-    }, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+    }, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web)
+    {
+        // A tool with no output schema omits the field, as tools/list does.
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+    });
 }).AllowAnonymous().CacheOutput(p => p.Expire(TimeSpan.FromMinutes(5)));
 app.MapGet("/healthz", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
 

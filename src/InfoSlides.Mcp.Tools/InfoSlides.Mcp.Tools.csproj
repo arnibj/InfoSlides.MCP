@@ -13,6 +13,10 @@
     <EmbeddedResource Include="Instructions/hosted.txt" LogicalName="Instructions.hosted.txt" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The output schema tests run ToolResults.Execute directly. -->
+    <InternalsVisibleTo Include="InfoSlides.Mcp.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\InfoSlides.Core\InfoSlides.Core.csproj" />
   </ItemGroup>
 </Project>

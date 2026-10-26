@@ -3,6 +3,7 @@
 // ─────────────────────────────────────────────────────────────────────────────────
 
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using InfoSlides.Mcp.Tools;
@@ -128,6 +129,37 @@ public sealed class McpHostProfileTests(McpHostFactory factory) : IClassFixture<
         }
 
         Assert.True(problems.Count == 0, string.Join("; ", problems));
+    }
+
+    /// <summary>
+    /// APX-58: the profile decoration copies each tool through JSON, so the output schema must survive it; a call
+    /// returns the envelope as structured content; and the server card carries the same schema as the tool list.
+    /// </summary>
+    [Fact]
+    public async Task HostedTools_KeepTheirOutputSchema_AndTheServerCardCarriesIt()
+    {
+        var tools = await ListToolsAsync(factory.MintToken(surface: "claude"));
+        var card = await (await factory.CreateClient().GetAsync("/.well-known/mcp/server-card.json")).Content.ReadFromJsonAsync<JsonElement>();
+        var cardTools = card.GetProperty("tools").EnumerateArray().ToDictionary(t => t.GetProperty("name").GetString()!);
+
+        foreach (var tool in tools.Where(t => t.GetProperty("name").GetString() != "get_user_profile" && !ToolOutputSchemas.Exempt.Contains(t.GetProperty("name").GetString()!)))
+        {
+            var name = tool.GetProperty("name").GetString()!;
+            var schema = tool.GetProperty("outputSchema");
+            Assert.Equal("object", schema.GetProperty("type").GetString());
+            Assert.True(schema.GetProperty("properties").TryGetProperty("data", out _), name);
+
+            // The card lists the surface-less hosted set, which can be narrower than one surface's list.
+            if (cardTools.TryGetValue(name, out var cardTool))
+            {
+                Assert.Equal(schema.GetRawText(), cardTool.GetProperty("outputSchema").GetRawText());
+            }
+        }
+
+        Assert.All(cardTools.Values, t => Assert.True(t.TryGetProperty("outputSchema", out _) || t.GetProperty("name").GetString() == "get_user_profile" || ToolOutputSchemas.Exempt.Contains(t.GetProperty("name").GetString()!)));
+
+        var result = await CallAsync(factory.MintToken(surface: "claude"), "list_devices", new { });
+        Assert.Equal(JsonValueKind.Array, result.GetProperty("structuredContent").GetProperty("data").ValueKind);
     }
 
     [Fact]

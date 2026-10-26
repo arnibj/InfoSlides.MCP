@@ -1,4 +1,5 @@
 using System.Text.Json;
+using InfoSlides.Mcp.Tools;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
 using Xunit;
@@ -108,6 +109,61 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         }
 
         Assert.Equal(ExpectedTools.Length, names.Count);
+    }
+
+    /// <summary>APX-58: every tool that returns the result envelope declares an output schema; the image tools do not.</summary>
+    [Fact]
+    public async Task EveryEnvelopeTool_DeclaresAnOutputSchema()
+    {
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var tools = await client.ListToolsAsync(cancellationToken: Timeout());
+
+        foreach (var tool in tools)
+        {
+            if (ToolOutputSchemas.Exempt.Contains(tool.Name))
+            {
+                Assert.Null(tool.ProtocolTool.OutputSchema);
+                continue;
+            }
+
+            var schema = tool.ProtocolTool.OutputSchema;
+            Assert.True(schema is not null, tool.Name);
+            Assert.Equal("object", schema!.Value.GetProperty("type").GetString());
+            Assert.Equal("data", Assert.Single(schema.Value.GetProperty("required").EnumerateArray()).GetString());
+        }
+    }
+
+    /// <summary>APX-58: the same envelope arrives as structured content and as the text block.</summary>
+    [Fact]
+    public async Task ListSlideshows_ReturnsTheEnvelopeAsStructuredContentAndText()
+    {
+        _backend.MapJson("GET", "/v1/slideshows",
+            """
+            {"data":[{"id":"s1","title":"Menu","resolution":{"width":1920,"height":1080}}],
+             "warnings":[{"code":"AspectMismatch","message":"ratio differs"}]}
+            """);
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var result = await client.CallToolAsync("list_slideshows", cancellationToken: Timeout());
+
+        var text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content)).Text;
+        Assert.NotNull(result.StructuredContent);
+        Assert.True(JsonElement.DeepEquals(JsonDocument.Parse(text).RootElement, result.StructuredContent!.Value));
+        Assert.Equal("s1", result.StructuredContent!.Value.GetProperty("data")[0].GetProperty("id").GetString());
+    }
+
+    /// <summary>APX-58: an error result carries no structured content.</summary>
+    [Fact]
+    public async Task ErrorResult_HasNoStructuredContent()
+    {
+        await using var client = await ConnectAsync("isk_admin_test");
+
+        var result = await client.CallToolAsync("update_slide",
+            new Dictionary<string, object?> { ["slideId"] = "sl1" }, cancellationToken: Timeout());
+
+        Assert.True(result.IsError);
+        Assert.Null(result.StructuredContent);
     }
 
     /// <summary>

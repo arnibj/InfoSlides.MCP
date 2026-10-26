@@ -35,9 +35,12 @@ internal static class ToolResults
                 envelope["undo"] = JsonNode.Parse(undo.GetRawText());
             }
 
+            // The same envelope twice: as structured content, and as text for clients that only read text.
+            var json = envelope.ToJsonString();
             return new CallToolResult
             {
-                Content = [new TextContentBlock { Text = envelope.ToJsonString() }],
+                Content = [new TextContentBlock { Text = json }],
+                StructuredContent = JsonDocument.Parse(json).RootElement.Clone(),
             };
         }
         catch (Exception exception) when (IsToolError(exception))

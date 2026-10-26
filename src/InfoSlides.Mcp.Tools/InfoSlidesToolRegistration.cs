@@ -37,16 +37,22 @@ public static class InfoSlidesToolRegistration
     /// <param name="builder">The MCP server builder.</param>
     /// <param name="jsonOptions">Options from <see cref="CreateJsonOptions"/>.</param>
     /// <returns>The same builder, for chaining.</returns>
-    public static IMcpServerBuilder WithInfoSlidesTools(this IMcpServerBuilder builder, JsonSerializerOptions jsonOptions) => builder
-        .WithTools<TenantTools>(jsonOptions)
-        .WithTools<SlideshowTools>(jsonOptions)
-        .WithTools<MediaTools>(jsonOptions)
-        .WithTools<TemplateTools>(jsonOptions)
-        .WithTools<DeviceTools>(jsonOptions)
-        .WithTools<ApiKeyTools>(jsonOptions)
-        .WithTools<BillingTools>(jsonOptions)
-        .WithTools<ScreenTools>(jsonOptions)
-        .WithTools<WorkspaceTools>(jsonOptions)
-        .WithTools<PlatformTools>(jsonOptions)
-        .WithRequestFilters(filters => filters.AddCallToolFilter(ToolArgumentValidation.Filter));
+    public static IMcpServerBuilder WithInfoSlidesTools(this IMcpServerBuilder builder, JsonSerializerOptions jsonOptions)
+    {
+        // The registered tools share their Tool objects with every session, so the output schema is set once, here,
+        // after the SDK has collected them: the same place serves the stdio and the hosted server.
+        builder.Services.AddOptions<McpServerOptions>().PostConfigure(options => ToolOutputSchemas.Apply(options.ToolCollection ?? []));
+        return builder
+            .WithTools<TenantTools>(jsonOptions)
+            .WithTools<SlideshowTools>(jsonOptions)
+            .WithTools<MediaTools>(jsonOptions)
+            .WithTools<TemplateTools>(jsonOptions)
+            .WithTools<DeviceTools>(jsonOptions)
+            .WithTools<ApiKeyTools>(jsonOptions)
+            .WithTools<BillingTools>(jsonOptions)
+            .WithTools<ScreenTools>(jsonOptions)
+            .WithTools<WorkspaceTools>(jsonOptions)
+            .WithTools<PlatformTools>(jsonOptions)
+            .WithRequestFilters(filters => filters.AddCallToolFilter(ToolArgumentValidation.Filter));
+    }
 }
