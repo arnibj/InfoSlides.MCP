@@ -280,7 +280,11 @@ public sealed record CreatePushKeyRequest(string? Name = null);
 /// <param name="Name">Label.</param>
 /// <param name="KeyPrefix">The first characters, to recognise it later.</param>
 /// <param name="Key">The full key. Not stored anywhere; shown once.</param>
-public sealed record PushKey(string Id, string Name, string KeyPrefix, string Key);
+/// <param name="QuickUpdateUrl">
+/// The source's quick update page with this key: a phone page, no login, where a person updates the
+/// board by hand. Shown once, like the key. Null from an API older than GH-01.
+/// </param>
+public sealed record PushKey(string Id, string Name, string KeyPrefix, string Key, string? QuickUpdateUrl = null);
 
 public sealed record GalleryItem(
     string Id,

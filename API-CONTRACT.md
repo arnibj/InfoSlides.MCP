@@ -164,7 +164,7 @@ latest payload and feeds every slide bound to it; those slides stay hidden until
 | `POST /v1/sources/{id}/data` ✅ | admin or data-provider (bound to the source) | Push a JSON object. Validated against every template the source feeds (required fields, types; extra fields ignored). Returns `{ "receivedAt" }` (null on `?dryRun=true`). |
 | `GET /v1/sources` | admin | Lists the workspace's content sources: `[{ "id", "name", "adapterType", "lastFetchedAt" }]`. Ids for a slideshow's `ticker.sourceIds` and a dynamic slide's `sourceId`. Ships with APX-13 in the main repo; the `list_sources` tool and `source list` command call it. |
 | `GET /v1/sources/{id}` ✅ | admin | `{ "id", "name", "lastReceivedAt", "hideAfterMinutes", "isShowingData", "slideIds" }`. |
-| `POST /v1/sources/{id}/keys` ✅ | admin | Body `{ "name"? }`. Returns `{ "id", "name", "keyPrefix", "key" }`: a push-only key bound to the source, shown once. Revoke with `DELETE /v1/apikeys/{id}`. |
+| `POST /v1/sources/{id}/keys` ✅ | admin | Body `{ "name"? }`. Returns `{ "id", "name", "keyPrefix", "key", "quickUpdateUrl" }`: a push-only key bound to the source, shown once, and the source's quick update page carrying that key (a phone page, no login). Revoke with `DELETE /v1/apikeys/{id}`, which also ends the link. |
 
 ### 4.5 Devices, schedules & streams
 

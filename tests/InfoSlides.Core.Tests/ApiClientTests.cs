@@ -177,7 +177,7 @@ public sealed class ApiClientTests
     {
         var (client, handler) = CreateClient("isk_admin_abc");
         handler.Enqueue(HttpStatusCode.Created,
-            """{"data":{"id":"k1","name":"queue system","keyPrefix":"isk_dp_AbCd","key":"isk_dp_full"}}""");
+            """{"data":{"id":"k1","name":"queue system","keyPrefix":"isk_dp_AbCd","key":"isk_dp_full","quickUpdateUrl":"https://infoslides.app/update/src-1#k=isk_dp_full"}}""");
 
         var result = await client.CreateSourceKeyAsync("src-1", "queue system");
 
@@ -185,6 +185,7 @@ public sealed class ApiClientTests
         Assert.Equal("/v1/sources/src-1/keys", request.Uri.AbsolutePath);
         Assert.Equal("""{"name":"queue system"}""", request.Body);
         Assert.Equal("isk_dp_full", result.Data!.Key);
+        Assert.Equal("https://infoslides.app/update/src-1#k=isk_dp_full", result.Data.QuickUpdateUrl);
     }
 
     [Fact]

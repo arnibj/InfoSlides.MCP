@@ -191,7 +191,9 @@ public sealed class TemplateTools(InfoSlidesApiClient api)
     [Description("Create a push-only key for a push source, to give to the system that sends its " +
                  "data. The key can push to this one source and do nothing else. It is returned once: " +
                  "show it to the user or store it where the system can read it, because it cannot be " +
-                 "shown again.")]
+                 "shown again. The answer also has quickUpdateUrl, a phone page with large buttons and " +
+                 "no login where a person updates the board by hand: give that link to the person when " +
+                 "nobody has a system to send the data. Revoking the key ends the link.")]
     public Task<CallToolResult> CreateSourceKey(
         [Description("Id of the push source.")] string sourceId,
         [Description("A label for the key, e.g. the system that will use it.")] string? name = null,

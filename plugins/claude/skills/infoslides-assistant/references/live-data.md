@@ -61,6 +61,12 @@ How it behaves:
   blank on the slide. Read the warning out and push again with the missing fields if that is not
   what the person wanted.
 
+**Updating by hand from a phone.** When nobody has a system to send the data (a receptionist
+counting people in, a front desk changing a status), every Push source has a quick update page:
+large buttons built from the template's fields, no login.
+The link is created in the InfoSlides web app: Sources, the source's Connect panel, "Create quick
+update link". It cannot be created from here.
+
 The worked example, a clinic queue board with its HTML, CSS and a curl push:
 <https://infoslides.app/blog/agents-guide-to-the-infoslides-galaxy>.
 

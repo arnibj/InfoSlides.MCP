@@ -67,6 +67,15 @@ How it behaves:
   blank on the slide. Read the warning out and push again with the missing fields if that is not
   what the person wanted.
 
+**Updating by hand from a phone.** When nobody has a system to send the data (a receptionist
+counting people in, a front desk changing a status), every Push source has a quick update page:
+large buttons built from the template's fields, no login.
+`create_source_key` (`POST /v1/sources/{id}/keys`, name it after the person or desk) answers with
+`quickUpdateUrl`, shown once like the key. Give that link to the person. Anyone who has it can
+update that one source until the key is revoked, so send it to them alone and suggest they bookmark
+it. To stop it, revoke the key: `revoke_api_key` (`DELETE /v1/apikeys/{id}`) with the key's `id`,
+or in the web app under Sources.
+
 The worked example, a clinic queue board with its HTML, CSS and a curl push:
 <https://infoslides.app/blog/agents-guide-to-the-infoslides-galaxy>.
 

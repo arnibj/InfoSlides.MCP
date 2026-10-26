@@ -688,7 +688,8 @@ internal static class CommandTree
         key.SetAction((parse, ct) => CliContext.Run(parse,
             api => api.CreateSourceKeyAsync(parse.GetValue(keySourceId)!, parse.GetValue(keyName), ct),
             InfoSlidesJsonContext.Default.PushKey,
-            r => $"{r.Key}\n(shown once; it can only push to this source)"));
+            r => $"{r.Key}\n(shown once; it can only push to this source)"
+                 + (r.QuickUpdateUrl is { } url ? $"\nQuick update page (no login): {url}" : string.Empty)));
         source.Subcommands.Add(key);
         ToolCommands.AddSourceVerbs(source);
         return source;

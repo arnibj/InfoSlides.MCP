@@ -98,7 +98,7 @@ public sealed class JsonContextCoverageTests
         RoundTrip(new PushReceived(), c.PushReceived);
         RoundTrip(new PushSourceStatus("src1", "Queue data", now, 30, true, ["sl2"]), c.PushSourceStatus);
         RoundTrip(new CreatePushKeyRequest("queue system"), c.CreatePushKeyRequest);
-        RoundTrip(new PushKey("k1", "queue system", "isk_dp_AbCd", "isk_dp_full"), c.PushKey);
+        RoundTrip(new PushKey("k1", "queue system", "isk_dp_AbCd", "isk_dp_full", "https://infoslides.app/update/s1#k=isk_dp_full"), c.PushKey);
         RoundTrip(new GalleryItem("g1", "Cafe", "desc", "https://cdn/p.png", resolution), c.GalleryItem);
         RoundTrip(new List<GalleryItem> { new("g1", "Cafe", null, null, null) }, c.ListGalleryItem);
 
