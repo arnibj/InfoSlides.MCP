@@ -134,7 +134,8 @@ another. The script changes nothing; the registry publish stays manual, and the 
 1. Write the tool. Every JSON parameter is a `JsonObject` or `JsonArray`, never `JsonElement` (`ToolSchemaTypesTests`).
 2. Add the tool to the result table in `ToolOutputSchemas` (`ToolOutputSchemaTests` fails without it), and a sample to
    the test when it returns a typed result.
-3. If it is hosted: add it to `HostedToolProfile.ToolNames` and `hosted-rules.json`, and give it a hosted description
+3. If it is not hosted: add a row to [TOOL-SURFACES.md](TOOL-SURFACES.md) with the reason (`ToolSurfaceTrackingTests`
+   fails without one). If it is hosted: add it to `HostedToolProfile.ToolNames` and `hosted-rules.json`, and give it a hosted description
    that follows [hosted-directory-rules.md](hosted-directory-rules.md) (no other tool named, no instructions, no
    billing words). `McpHostProfileTests` checks the hosted list has a description and typed parameters for every tool.
 4. Mention it in the skill (in the infoslides repo's skill source, then `python scripts/sync-skills.py`) or in
@@ -142,7 +143,8 @@ another. The script changes nothing; the registry publish stays manual, and the 
    `IntentionallyNotMentioned` list with a reason.
 5. Do the vocabulary pass: the description uses the words a person uses (TV, screen, menu board), and
    `McpStdioSmokeTests` lists the tool.
-6. After the release: redeploy the host and run the sync check above.
+6. A hosted tool changes the list the directories reviewed: bump the version, and after the release redeploy the host,
+   run the sync check above and refresh the tool list in each directory submission.
 
 ## Publishing to the MCP registry
 
