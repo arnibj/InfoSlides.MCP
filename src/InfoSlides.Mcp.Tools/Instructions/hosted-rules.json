@@ -47,6 +47,11 @@
     "get_article",
     "get_user_profile"
   ],
+  "museExcluded": [
+    "make_ai_slide",
+    "get_ai_slide_job",
+    "insert_ai_slides"
+  ],
   "allowedNonToolWords": [
     "data_trigger"
   ],

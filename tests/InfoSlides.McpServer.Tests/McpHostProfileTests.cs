@@ -425,6 +425,7 @@ public sealed class McpHostProfileTests(McpHostFactory factory) : IClassFixture<
         Assert.Equal(InfoSlidesServerInstructions.HostedForMuse, instructions);
         Assert.All(AiSlideTools, tool => Assert.DoesNotContain(tool, instructions));
         Assert.Contains("get_tenant_info", instructions);
+        Assert.Contains("/skills/muse/infoslides-assistant/SKILL.md", instructions);
     }
 
     [Fact]

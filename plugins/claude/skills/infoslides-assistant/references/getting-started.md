@@ -69,15 +69,15 @@ ready, walk them through it one step at a time and wait for each answer.
    | Screen | What the person does |
    | --- | --- |
    | Android TV / Google TV, or an Android box | Install **InfoSlides** from Google Play and open it |
-   | LG (webOS) | Install **InfoSlides** from the LG Content Store and open it |
+   | LG (webOS) | Install **InfoSlides** from the LG Content Store (`https://us.lgappstv.com/main/tvapp/detail?appId=1306632`) and open it |
    | Samsung (Tizen) | The app is awaiting store approval: open the TV's web browser at `https://infoslides.app/pair.html` |
    | Anything else with a browser | Open `https://infoslides.app/pair.html`, full screen |
 
-   HTML playback (live pushed data) plays only in the browser page and the Android app from 1.2.0
-   for now; the LG and Samsung versions that play it are in store review. An automatic slideshow
+   HTML playback (live pushed data) plays in the browser page, the Android app from 1.2.0 and the
+   LG webOS app from 1.3.0; the Samsung version that plays it is in store review. An automatic slideshow
    handles this by itself (it stays a video stream for screens that cannot play HTML). If a
    slideshow was forced to HTML, use the browser page unless the screen runs an up-to-date Android
-   app. `supportsHtml` on `list_devices` says what each screen can play.
+   or LG app. `supportsHtml` on `list_devices` says what each screen can play.
 4. **Pair it.** The screen shows a QR code, a short nickname (like `swift-oak-42`) and a box for
    a 6-character code. Whichever works:
    - They scan the QR code with their phone. If the phone's browser is signed in to InfoSlides, a

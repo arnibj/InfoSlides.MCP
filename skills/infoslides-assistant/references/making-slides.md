@@ -26,9 +26,9 @@ in mixed case (text mostly in capitals fits about 30% fewer):
 | `heading` | 60 | none | none |
 | `heading-text` | 60 | 200 | none |
 | `heading-text-cta` | 60 | 160 | 55 |
-| picture layouts, 16:9 | 75 | 260 | 45 |
-| picture layouts, 4:3 | 60 | 215 | 40 |
-| picture layouts, square | 50 | 175 | 30 |
+| picture layouts, 16:9 | 75 | 220 | 45 |
+| picture layouts, 4:3 | 60 | 145 | 30 |
+| picture layouts, square | 50 | 170 | 30 |
 | picture layouts, portrait | 80 | 275 | 50 |
 
 ## When the layouts are not flexible enough: an image you make yourself

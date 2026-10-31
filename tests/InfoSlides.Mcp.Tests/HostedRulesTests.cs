@@ -40,6 +40,21 @@ public sealed class HostedRulesTests
     }
 
     [Fact]
+    public void MuseExclusions_EqualTheSkillRulesMuseExcludedList()
+    {
+        var fromSkill = Rules().GetProperty("museExcluded").EnumerateArray().Select(e => e.GetString()!);
+
+        Assert.Equal(fromSkill.Order(), HostedToolProfile.MuseExcluded.Order());
+    }
+
+    [Fact]
+    public void MuseInstructions_LinkToTheMuseSkill_NotTheHostedOne()
+    {
+        Assert.Contains("https://infoslides.app/skills/muse/infoslides-assistant/SKILL.md", InfoSlidesServerInstructions.HostedForMuse);
+        Assert.DoesNotContain("/skills/hosted/", InfoSlidesServerInstructions.HostedForMuse);
+    }
+
+    [Fact]
     public void HostedInstructions_RespectTheSkillRules()
     {
         var rules = Rules();

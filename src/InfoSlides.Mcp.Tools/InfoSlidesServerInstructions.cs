@@ -3,7 +3,6 @@
 // ─────────────────────────────────────────────────────────────────────────────────
 
 using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace InfoSlides.Mcp.Tools;
 
@@ -28,10 +27,10 @@ public static class InfoSlidesServerInstructions
 
     /// <summary>
     /// The hosted text for Muse callers, who are not offered the AI slide tools (see
-    /// <see cref="HostedToolProfile.MuseExcluded"/>): the clause that prefers <c>make_ai_slide</c> is cut so the model
-    /// is not pointed at a tool it cannot call. A test fails if a tool name from the exclusion list is still in it.
+    /// <see cref="HostedToolProfile.MuseExcluded"/>): the same text, linking to the Muse variant of the guide, which
+    /// has none of the AI Studio material (OAI-18). A test fails if a tool name from the exclusion list is still in it.
     /// </summary>
-    public static readonly string HostedForMuse = Regex.Replace(Hosted, @"prefer make_ai_slide[^;]*;\s*", string.Empty);
+    public static readonly string HostedForMuse = Hosted.Replace("/skills/hosted/", "/skills/muse/", StringComparison.Ordinal);
 
     /// <summary>Returns the instructions for a profile.</summary>
     /// <param name="profile">The caller's profile.</param>
