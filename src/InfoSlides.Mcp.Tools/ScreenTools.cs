@@ -153,8 +153,9 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
             idempotent: true, ct));
 
     [McpServerTool(Name = "list_takeovers", Title = "List screen takeovers", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
-    [Description("See temporary takeovers: what is interrupting a screen's schedule right now, or " +
-                 "planned. Filter by screen, or only the active ones.")]
+    [Description("See which screens are showing a notice or announcement that interrupts their normal schedule for a " +
+                 "while (a fire drill message, a launch announcement, an evacuation map), now or planned, and until " +
+                 "when. Filter by screen, or only the active ones.")]
     public Task<CallToolResult> ListTakeovers(
         [Description("Only this screen's takeovers.")] string? deviceId = null,
         [Description("Only takeovers active right now.")] bool activeOnly = false,

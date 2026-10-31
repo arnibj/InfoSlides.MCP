@@ -109,7 +109,8 @@ public sealed class MediaTools(InfoSlidesApiClient api)
         Json(() => api.SendJsonAsync(HttpMethod.Get, "/v1/media/folders", ct: ct));
 
     [McpServerTool(Name = "create_media_folder", Title = "Create media folder", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
-    [Description("Create a folder in the media library, such as 'Menus', at the top level or inside another folder.")]
+    [Description("Create a folder in the media library, where the workspace keeps its photos and videos, such as " +
+                 "'Menus', at the top level or inside another folder.")]
     public Task<CallToolResult> CreateMediaFolder(
         [Description("Folder name, 1 to 200 characters.")] string name,
         [Description("Folder to create it in; the top level when omitted.")] string? parentFolderId = null,
@@ -118,7 +119,7 @@ public sealed class MediaTools(InfoSlidesApiClient api)
             Body(("name", name), ("parentFolderId", parentFolderId)), idempotent: true, ct));
 
     [McpServerTool(Name = "rename_media_folder", Title = "Rename media folder", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
-    [Description("Rename a media library folder.")]
+    [Description("Rename a folder in the media library (the place photos and videos are kept).")]
     public Task<CallToolResult> RenameMediaFolder(
         [Description("Id of the folder.")] string folderId,
         [Description("New name, 1 to 200 characters.")] string name,
@@ -126,8 +127,8 @@ public sealed class MediaTools(InfoSlidesApiClient api)
         Json(() => api.SendJsonAsync(HttpMethod.Patch, $"/v1/media/folders/{Id(folderId)}", Body(("name", name)), ct: ct));
 
     [McpServerTool(Name = "delete_media_folder", Title = "Delete media folder", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
-    [Description("Delete an empty media library folder. Refused while it still holds files or folders; move or " +
-                 "delete those first.")]
+    [Description("Delete an empty folder from the media library (the place photos and videos are kept). Refused " +
+                 "while it still holds files or folders; move or delete those first. Confirm with the person first.")]
     public Task<CallToolResult> DeleteMediaFolder(
         [Description("Id of the folder.")] string folderId,
         CancellationToken ct = default) =>
