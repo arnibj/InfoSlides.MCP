@@ -137,6 +137,7 @@ public static class ToolOutputSchemas
         ["list_brand_previews"] = Ctx.Default.JsonElement,
         ["upload_brand_logo"] = Ctx.Default.JsonElement,
         ["check_brand"] = Ctx.Default.JsonElement,
+        ["check_slideshow"] = Ctx.Default.JsonElement,
     };
 
     /// <summary>

@@ -423,6 +423,17 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/brand/check", Body(("slideshowId", slideshowId)), ct: ct));
 
+    [McpServerTool(Name = "check_slideshow", Title = "Check a slideshow before it goes on a screen", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("Check what will go wrong before a slideshow goes on a screen: no slides to show, a failed " +
+                 "render, a live data slide with no source or a source that is off or failing, and a media file " +
+                 "that failed to prepare. ready is false when any finding is an error; each finding has a message " +
+                 "to read out and a fix. Advisory only. It does not look at text size, expired content or the " +
+                 "screen's shape.")]
+    public Task<CallToolResult> CheckSlideshow(
+        [Description("Id of the slideshow.")] string slideshowId,
+        CancellationToken ct = default) =>
+        Json(() => api.SendJsonAsync(HttpMethod.Get, $"/v1/slideshows/{Id(slideshowId)}/preflight", ct: ct));
+
     private static JsonNode? Node(JsonElement? value) =>
         value is { ValueKind: not (JsonValueKind.Undefined or JsonValueKind.Null) } v ? JsonNode.Parse(v.GetRawText()) : null;
 }
