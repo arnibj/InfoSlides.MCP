@@ -12,7 +12,9 @@ public enum ToolProfile
 
     /// <summary>
     /// The curated profile for hosted directories (ChatGPT, Claude, Microsoft 365 Copilot). It leaves out anything
-    /// that sells, creates accounts, manages credentials, reads the caller's disk, or handles precise location, and
+    /// that sells, creates accounts, manages credentials, reads the caller's disk, or handles precise location (a person's
+    /// or a device's position; a weather source's place location is a town's coordinates, which is why create_source is
+    /// hosted while device coordinates stay hidden), and
     /// keeps the tool count down: directory reviewers reject commerce and a fuzzy tool surface.
     /// </summary>
     Hosted,
@@ -39,6 +41,8 @@ public static class HostedToolProfile
         "make_ai_slide", "get_ai_slide_job", "insert_ai_slides",
         // Live data
         "list_sources", "get_source_status", "push_data", "update_source",
+        // APX-78: a weather or news source for a named place, created and put on a slide from the assistant.
+        "list_adapters", "list_templates", "create_source", "update_source_settings",
         // Workspace
         "get_tenant_info", "get_workspace_health", "check_slideshow", "undo_change",
         // Platform news and help (APX-77): read-only public content.
@@ -97,7 +101,15 @@ public static class HostedToolProfile
             ["list_devices"] =
                 "Lists every screen registered to the workspace with the shape each is set up for, what it is playing now (nowPlayingTitle and nowPlayingSlideshowId) and how many of the allowed screens are used. q filters by name, case and accent insensitive ('lobby' finds 'Lobby Screen'). supportsHtml says whether the screen's app plays HTML playback.",
             ["add_dynamic_slide"] =
-                "Adds a slide that keeps itself up to date instead of showing a fixed picture, such as today's soup, a queue number, sales figures or the weather. Takes the templateId of a live-data slide already in a slideshow. With a push template the result includes sourceId, the push source the data is sent to. The slide stays hidden until the first data arrives.",
+                "Adds a slide that keeps itself up to date instead of showing a fixed picture, such as today's soup, a queue number, sales figures or the weather. Takes the templateId of a live-data layout. With a push template the result includes sourceId, the push source the data is sent to, and the slide stays hidden until the first data arrives. With the sourceId of a fetched source, such as a weather source, the slide is bound to it in the same call; the source's type has to match the template's, otherwise the answer is ValidationFailed on sourceId.",
+            ["list_adapters"] =
+                "Lists the kinds of live content source the workspace can create, such as an RSS feed, weather or a calendar, each with the config fields it takes: name, label, type and whether it is required.",
+            ["list_templates"] =
+                "Lists the self-updating screen layouts available to the workspace, such as news, weather and push-data layouts, each with its id, title and an example of the data it expects.",
+            ["create_source"] =
+                "Creates a content source that InfoSlides fetches by itself, such as a news RSS feed or the weather for a place. Takes adapterType, name, config (the adapter's config fields as a JSON object) and fetchIntervalSeconds. Weather comes as CurrentWeather (conditions now) or WeatherForecast (a 3-day outlook in six 12-hour slots). A weather source takes a place location: the latitude and longitude of the town or city the forecast is for, not where the person is. locationName is the place name shown on the slide. InfoSlides does not look up place names. A config field that holds a secret, such as an API key, is refused with Forbidden. EntitlementRequired means the workspace's plan does not include the source. Returns the source with its id, which a live-data slide is bound to by sourceId.",
+            ["update_source_settings"] =
+                "Changes a content source: its name, config, fetch interval, or pauses and resumes it. config replaces the whole stored config, so it carries every field, including a weather source's place location (latitude and longitude of the town or city) and locationName. A config field that holds a secret, such as an API key, is refused with Forbidden, and so is a config change to a source that already holds one. A source shared with the workspace is read-only.",
             ["get_ai_slide_job"] =
                 "Returns the state of an AI slide job: Processing, Ready (with preview images), Inserted, NeedsClarification (with a question) or Failed. Jobs are kept for 24 hours.",
             ["identify_devices"] =
@@ -191,7 +203,12 @@ public static class HostedToolProfile
         {
             ["add_dynamic_slide"] = new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                ["templateId"] = "Id of a template (the templateId of an existing live-data slide).",
+                ["templateId"] = "Id of a live-data layout (from the workspace's template list or an existing live-data slide).",
+                ["sourceId"] = "A fetched source (weather, RSS feed) to bind to the slide, of the same type as the template. Left out for a push template.",
+            },
+            ["create_source"] = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["adapterType"] = "Adapter type, e.g. 'RssFeed' or 'CurrentWeather'.",
             },
             ["get_article"] = new Dictionary<string, string>(StringComparer.Ordinal)
             {

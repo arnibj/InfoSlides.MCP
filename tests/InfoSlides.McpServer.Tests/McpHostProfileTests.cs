@@ -239,6 +239,17 @@ public sealed class McpHostProfileTests(McpHostFactory factory) : IClassFixture<
         Assert.True(Props(full, "update_device").TryGetProperty("latitude", out _));
         Assert.True(Props(full, "add_dynamic_slide").TryGetProperty("createPushKey", out _));
         Assert.False(Props(hostedAfter, "list_devices").TryGetProperty("near", out _));
+        // APX-78: a hosted caller binds a fetched source to a slide by sourceId.
+        Assert.True(Props(hostedBefore, "add_dynamic_slide").TryGetProperty("sourceId", out _));
+    }
+
+    [Fact]
+    public async Task HostedProfile_OffersTheSourceToolsForAWeatherSlide()
+    {
+        var names = (await ListToolsAsync(factory.MintToken(surface: "claude")))
+            .Select(t => t.GetProperty("name").GetString()).ToHashSet();
+
+        Assert.Superset(new HashSet<string?> { "list_adapters", "list_templates", "create_source", "update_source_settings" }, names);
     }
 
     [Fact]

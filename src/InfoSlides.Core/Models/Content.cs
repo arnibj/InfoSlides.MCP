@@ -216,13 +216,15 @@ public sealed record UploadedMedia(string Id, string FileType, int? Width = null
 /// Request body for <c>POST /v1/slideshows/{id}/slides/dynamic</c>. For a push template
 /// (<c>dataMode: "push"</c>) the backend creates a Push source for the slide and returns its id;
 /// <see cref="CreatePushKey"/> also returns a push-only key for it. Other templates start with no
-/// source; push their data with <c>source update</c>.
+/// source; push their data with <c>source update</c>. <see cref="SourceId"/> binds a fetched source
+/// (weather, RSS) to the new slide in the same call.
 /// </summary>
 public sealed record AddDynamicSlideRequest(
     string TemplateId,
     double? DurationSeconds = null,
     int? Position = null,
-    bool? CreatePushKey = null);
+    bool? CreatePushKey = null,
+    string? SourceId = null);
 
 /// <param name="Conditions">The conditions; an empty list clears them.</param>
 /// <param name="Mode"><c>show</c> (default) or <c>hide</c>: what happens while the conditions hold.</param>

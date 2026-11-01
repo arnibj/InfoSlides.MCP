@@ -21,9 +21,9 @@ public sealed class MediaTools(InfoSlidesApiClient api)
         [Description("Absolute path to the image or video file on disk.")] string filePath,
         CancellationToken ct = default)
     {
-        if (!File.Exists(filePath))
+        if (LocalUploadFiles.Problem(filePath, LocalUploadFiles.Media) is { } problem)
         {
-            return ValidationError($"File not found: {filePath}");
+            return ValidationError(problem);
         }
 
         await using var stream = File.OpenRead(filePath);

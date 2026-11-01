@@ -253,9 +253,9 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
             return await Json(() => api.ShowOnDeviceAsync(deviceId, null, null, null, mediaUrl, until, caption, ct));
         }
 
-        if (!File.Exists(filePath))
+        if (LocalUploadFiles.Problem(filePath, LocalUploadFiles.Media) is { } problem)
         {
-            return ValidationError($"File not found: {filePath}");
+            return ValidationError(problem);
         }
 
         await using var stream = File.OpenRead(filePath);

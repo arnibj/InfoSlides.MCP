@@ -161,15 +161,9 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
         [Description("Absolute path to the new .pptx or .pdf file on disk.")] string filePath,
         CancellationToken ct = default)
     {
-        if (!File.Exists(filePath))
+        if (LocalUploadFiles.Problem(filePath, LocalUploadFiles.Slideshows) is { } problem)
         {
-            return ToolResults.ValidationError($"File not found: {filePath}");
-        }
-
-        var extension = Path.GetExtension(filePath).ToLowerInvariant();
-        if (extension is not (".pptx" or ".pdf"))
-        {
-            return ToolResults.ValidationError($"Unsupported file type '{extension}'; expected .pptx or .pdf.");
+            return ToolResults.ValidationError(problem);
         }
 
         await using var stream = File.OpenRead(filePath);
@@ -351,17 +345,21 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
                  "Needs a template first (see create_template or list_templates). With a push template " +
                  "the result includes sourceId, the push source to send data to with push_data, and " +
                  "with createPushKey=true a pushKey for the user's system (shown once); the slide " +
-                 "stays hidden until the first data arrives. Otherwise push values with update_source.")]
+                 "stays hidden until the first data arrives. Otherwise push values with update_source. " +
+                 "For a fetched source such as weather or an RSS feed, create the source first (create_source) " +
+                 "and pass its id as sourceId with a template of the same type: the slide is bound to it " +
+                 "in this one call.")]
     public Task<CallToolResult> AddDynamicSlide(
         [Description("Id of the slideshow to add the slide to.")] string slideshowId,
         [Description("Id of a template (from create_template/list_templates).")] string templateId,
         [Description("How long the slide stays on screen, in seconds.")] double? durationSeconds = null,
         [Description("Zero-based position in the loop; appended when omitted.")] int? position = null,
         [Description("For a push template: also create a push-only key for the new push source.")] bool createPushKey = false,
+        [Description("A fetched source (weather, RSS feed) to bind to the slide; its type must match the template's. Omit for a push template.")] string? sourceId = null,
         CancellationToken ct = default) =>
         ToolResults.Execute(
             () => api.AddDynamicSlideAsync(
-                slideshowId, new AddDynamicSlideRequest(templateId, durationSeconds, position, createPushKey ? true : null), ct),
+                slideshowId, new AddDynamicSlideRequest(templateId, durationSeconds, position, createPushKey ? true : null, sourceId), ct),
             InfoSlidesJsonContext.Default.Slide);
 
     [McpServerTool(Name = "upload_pptx", Title = "Upload PowerPoint or PDF", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
@@ -375,15 +373,9 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
         [Description("Display name; defaults to the file name.")] string? title = null,
         CancellationToken ct = default)
     {
-        if (!File.Exists(filePath))
+        if (LocalUploadFiles.Problem(filePath, LocalUploadFiles.Slideshows) is { } problem)
         {
-            return ToolResults.ValidationError($"File not found: {filePath}");
-        }
-
-        var extension = Path.GetExtension(filePath).ToLowerInvariant();
-        if (extension is not (".pptx" or ".pdf"))
-        {
-            return ToolResults.ValidationError($"Unsupported file type '{extension}'; expected .pptx or .pdf.");
+            return ToolResults.ValidationError(problem);
         }
 
         await using var stream = File.OpenRead(filePath);

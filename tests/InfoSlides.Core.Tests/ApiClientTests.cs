@@ -203,6 +203,19 @@ public sealed class ApiClientTests
     }
 
     [Fact]
+    public async Task AddDynamicSlide_SourceId_IsSent_AndBoundSourceIsRead()
+    {
+        var (client, handler) = CreateClient("isk_admin_abc");
+        handler.Enqueue(HttpStatusCode.Created,
+            """{"data":{"id":"sl-1","templateId":"t-1","durationSeconds":10,"position":0,"sourceId":"src-9"}}""");
+
+        var result = await client.AddDynamicSlideAsync("show-1", new AddDynamicSlideRequest("t-1", SourceId: "src-9"));
+
+        Assert.Equal("""{"templateId":"t-1","sourceId":"src-9"}""", Assert.Single(handler.Requests).Body);
+        Assert.Equal("src-9", result.Data!.SourceId);
+    }
+
+    [Fact]
     public async Task RevokeApiKey_WithEmptyEnvelope_ReturnsOkResult()
     {
         var (client, handler) = CreateClient("isk_admin_abc");

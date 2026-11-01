@@ -430,17 +430,21 @@ internal static class CommandTree
         {
             Description = "For a push template: also create a push-only key for the new push source (shown once).",
         };
+        var dynSourceId = new Option<string?>("--source-id")
+        {
+            Description = "A fetched source (weather, RSS feed) to bind to the slide; its type must match the template's.",
+        };
         var addDynamic = new Command(
             "add-dynamic",
             "Add a template-driven dynamic slide to a slideshow. A push template gets a push source " +
             "(push to it with `source push`); other templates take data with `source update`.")
         {
-            dynShowId, templateId, dynDuration, dynPosition, createPushKey,
+            dynShowId, templateId, dynDuration, dynPosition, createPushKey, dynSourceId,
         };
         addDynamic.SetAction((parse, ct) => CliContext.Run(parse,
             api => api.AddDynamicSlideAsync(parse.GetValue(dynShowId)!, new AddDynamicSlideRequest(
                 parse.GetValue(templateId)!, parse.GetValue(dynDuration), parse.GetValue(dynPosition),
-                parse.GetValue(createPushKey) ? true : null), ct),
+                parse.GetValue(createPushKey) ? true : null, parse.GetValue(dynSourceId)), ct),
             InfoSlidesJsonContext.Default.Slide));
         slide.Subcommands.Add(addDynamic);
 

@@ -15,6 +15,8 @@ that does not exist or is already hosted, or when a row's reason is not one of t
 | Muse | The hosted list minus `HostedToolProfile.MuseExcluded` (the three AI Studio tools). |
 | Skill text | One source: the infoslides repo's `skill-source`. `python scripts/sync-skills.py` copies it to `skills/` (local wording) and `plugins/claude/skills/` (hosted wording); never edit those copies by hand. |
 
+Hosted callers do not get precise location (a person's or a device's position, so `near` and a device's coordinates stay hidden). A weather source's place location is different: it is the `latitude` and `longitude` of a town or city, not a person's or a device's position, which is why `create_source` is hosted.
+
 ## Reasons a tool is left out of the hosted profile
 
 | Key | Meaning |
@@ -67,7 +69,6 @@ delete its row in the same change.
 | `clone_template` | `undecided` | |
 | `create_broadcast_device` | `undecided` | |
 | `create_media_folder` | `undecided` | |
-| `create_source` | `undecided` | |
 | `create_template` | `undecided` | |
 | `delete_device` | `undecided` | |
 | `delete_media` | `undecided` | |
@@ -88,13 +89,11 @@ delete its row in the same change.
 | `get_upload_limits` | `undecided` | |
 | `import_google_slides` | `undecided` | Takes the caller's own Google access token. |
 | `import_slide` | `undecided` | |
-| `list_adapters` | `undecided` | |
 | `list_media` | `undecided` | |
 | `list_media_folders` | `undecided` | |
 | `list_shared_slideshows` | `undecided` | |
 | `list_takeovers` | `undecided` | |
 | `list_template_categories` | `undecided` | |
-| `list_templates` | `undecided` | |
 | `preview_new_template` | `undecided` | |
 | `regenerate_template_thumbnail` | `undecided` | |
 | `rename_media_folder` | `undecided` | |
@@ -106,6 +105,5 @@ delete its row in the same change.
 | `update_media` | `undecided` | |
 | `update_schedule_entry` | `undecided` | |
 | `update_slide_design` | `undecided` | |
-| `update_source_settings` | `undecided` | |
 | `update_template` | `undecided` | |
 | `update_tenant` | `undecided` | |

@@ -4,7 +4,7 @@
 
 1. Fixed or live? Decide first
 2. Pushed data: the loop
-3. Templates, data fields and pulled sources: set up in the web app
+3. Pulled sources, and templates and data fields set up in the web app
 6. How often it reaches the screen
 7. Plans
 
@@ -70,11 +70,26 @@ update link". It cannot be created from here.
 The worked example, a clinic queue board with its HTML, CSS and a curl push:
 <https://infoslides.app/blog/agents-guide-to-the-infoslides-galaxy>.
 
-## 3. Templates, data fields and pulled sources: set up in the web app
+## 3. Pulled sources, and templates and data fields set up in the web app
 
-New live data templates, their data fields and pulled sources (weather, news, a calendar) are designed in the
-InfoSlides web app. You work with what exists: `list_sources` and `get_source_status` show the sources,
-`add_dynamic_slide` puts a template on a slideshow, and `push_data` or `update_source` sends data.
+New live data templates and their data fields are designed in the InfoSlides web app. You work with what exists:
+`list_templates` shows the templates, `list_sources` and `get_source_status` show the sources, `add_dynamic_slide`
+puts a template on a slideshow, and `push_data` or `update_source` sends data.
+
+Pulled sources (weather, news, a calendar) can be created from here. Read `get_tenant_info` first: a workspace on
+the free plan has no pulled sources.
+
+| The person asks | Call |
+| --- | --- |
+| What can be pulled | `list_adapters` (`GET /v1/adapters`), with each adapter's `configFields` form |
+| A new feed | `create_source` (`POST /v1/sources`) with `{"adapterType": "RssFeed", "name": "News", "config": {"feedUrl": "..."}}` |
+| Weather for a place | `create_source` with `{"adapterType": "CurrentWeather", "name": "Akureyri weather", "config": {"latitude": 65.6835, "longitude": -18.1262, "locationName": "Akureyri"}}`. The place location is the `latitude` and `longitude` of the town or city the forecast is for, not where the person is. InfoSlides does not look up place names: use the coordinates you know for the named place, ask when the name could be several places ("Akureyri in Iceland?"), and always set `locationName`, the place name shown on the slide. Then the slide: the last row, then `preview_slide`. There are two weather slides with the same three config fields: `CurrentWeather` (the **Current weather** template: temperature, conditions, humidity and wind now) and `WeatherForecast` (the **Weather Forecast** template: a 3-day outlook in six 12-hour slots). "Right now" or "the temperature" is `CurrentWeather`; "forecast", "outlook", "the weekend" or "the next few days" is `WeatherForecast`. When the words leave it open ("the weather", "put weather on the screen"), ask: "The weather right now, or a 3-day outlook?" |
+| Change it | `update_source_settings` (`PATCH /v1/sources/{id}`): `name`, `config`, `fetchIntervalSeconds`, `isEnabled` |
+| A slide from the source | `list_templates` (a weather source needs a weather template), then `add_dynamic_slide` with the `templateId` and the source's `sourceId`. A source of another type than the template needs is `ValidationFailed` on `sourceId`. Undo removes the slide and keeps the source |
+
+A source field that holds a secret, such as an API key, is refused from here with `Forbidden`, and so is a config change
+to a source that already holds one: tell the person it is set in the InfoSlides web app. `config` replaces the whole
+stored config, so send every field again, place location included.
 
 
 ## 6. How often it reaches the screen

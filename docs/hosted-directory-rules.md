@@ -38,6 +38,7 @@ The directory submission requires the statement that tool descriptions contain n
 2. Add its hosted wording to `DescriptionOverrides` if the shared description names another tool or gives the model instructions. The guard test tells you.
 3. Give every JSON parameter a `JsonObject` or `JsonArray` type, never `JsonElement`.
 4. Nothing in hosted text may mention prices, trials, billing or upgrades (`hosted-rules.json`).
+5. Precise location stays hidden on the hosted profile (`HiddenParameters`). A weather source's place location is a town's coordinates, not a person's or a device's position, which is why `create_source` is hosted while device coordinates stay hidden; hosted text calls it the place location.
 
 ## What is not covered
 

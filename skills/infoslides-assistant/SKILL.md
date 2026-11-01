@@ -133,7 +133,7 @@ The first call for the requests people actually make. The reference files have t
 | "Make this 20-page report into slides" / "use AI Studio" | `make_ai_slide` (`POST /v1/slideshows/{id}/slides/ai`) |
 | "Change the price on the specials slide" | `update_source` or `update_slide` with `overrideData` (live slides only) |
 | "Show our queue / sales / scores live" | `create_template` with `dataMode: push`, see live-data.md |
-| "Show today's calendar / the news / the weather" | `list_adapters`, `create_source` (paid plans) |
+| "Show today's calendar / the news / the weather" | `list_adapters`, `create_source` (paid plans); a slide from it is `add_dynamic_slide` with the `sourceId`. Weather: ask "the weather right now, or a 3-day outlook?" unless their words settle it (live-data.md) |
 | "What's on the lobby screen?" | `get_now_slide_png` (`GET /v1/devices/{id}/now.png`) |
 | "Why is it black?" | `get_device_diagnosis` (`GET /v1/devices/{id}/diagnosis`), always first |
 | "How are my screens?" | `get_workspace_health` (`GET /v1/workspace/health`), read `summary` out |
@@ -183,8 +183,7 @@ The first call for the requests people actually make. The reference files have t
   offer one idea that suits this place: a news ticker for a hotel lobby, an office or a waiting
   room, but not on a menu board where it pulls eyes off the food; weather for a hotel, a ski hire
   or a cafe with a terrace; a QR code slide for a shop that wants signups. Use what you know: the
-  business, the city, what the screen is for. Weather is for their own city: create a source for
-  it (the workspace's sample weather is London). If they say no, drop it.
+  business, the city, what the screen is for. Weather is for the place the screen is about, not where the person sits. Read `get_tenant_info` first: a workspace on the free plan is not offered weather. Ask which weather slide fits unless their words settle it: "The weather right now, or a 3-day outlook?" Then `create_source` with `adapterType` `CurrentWeather` for now or `WeatherForecast` for the outlook, the place location (`latitude` and `longitude` of the town or city the forecast is for, not where the person is) and `locationName`, the place name shown on the slide, `add_dynamic_slide` with the weather template's `templateId` and the new `sourceId`, and `preview_slide` so the person sees the place name and the weather. The workspace's sample weather is Reykjavik. If they say no, drop it.
 - **For the TV end, talk remote, not keyboard.** "Press Home, open the InfoSlides app" beats
   "navigate to the URL". The walk-through is in getting-started.md.
 

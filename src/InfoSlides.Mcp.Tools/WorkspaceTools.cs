@@ -95,7 +95,14 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
     [McpServerTool(Name = "create_source", Title = "Create content source", ReadOnly = false, Destructive = false, OpenWorld = true, Idempotent = false)]
     [Description("Create a content source InfoSlides fetches by itself, e.g. a news RSS feed for the " +
                  "ticker or a weather forecast for a slide. adapterType and the config fields come from " +
-                 "list_adapters. For data your own system sends, use a push template instead " +
+                 "list_adapters. For weather, config needs the place location: the latitude and longitude of the " +
+                 "town or city the forecast is for, not where the person is. locationName is the place name " +
+                 "shown on the slide. InfoSlides does not look up place names, so use the coordinates you know for the named " +
+                 "place, ask which one when the name could be several places, and always set locationName. " +
+                 "Weather comes as CurrentWeather (conditions now) or WeatherForecast (a 3-day outlook in six " +
+                 "12-hour slots); ask which one the person wants when their words leave it open. " +
+                 "To put it on a slideshow, add_dynamic_slide with this source's id as sourceId. " +
+                 "For data your own system sends, use a push template instead " +
                  "(create_template with dataMode push, then add_dynamic_slide). Secrets in config (API keys, " +
                  "tokens) are write-only: they are never returned. Plans without live sources " +
                  "return EntitlementRequired with an upgrade link.")]
@@ -403,9 +410,9 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
         [Description("light (default), dark or icon.")] string slot = "light",
         CancellationToken ct = default)
     {
-        if (!File.Exists(filePath))
+        if (LocalUploadFiles.Problem(filePath, LocalUploadFiles.Images) is { } problem)
         {
-            return ValidationError($"File not found: {filePath}");
+            return ValidationError(problem);
         }
 
         await using var stream = File.OpenRead(filePath);
