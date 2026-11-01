@@ -40,6 +40,7 @@
     "update_source",
     "get_tenant_info",
     "get_workspace_health",
+    "check_slideshow",
     "undo_change",
     "get_platform_version",
     "get_platform_notices",

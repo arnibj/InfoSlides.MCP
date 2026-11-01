@@ -40,7 +40,7 @@ public static class HostedToolProfile
         // Live data
         "list_sources", "get_source_status", "push_data", "update_source",
         // Workspace
-        "get_tenant_info", "get_workspace_health", "undo_change",
+        "get_tenant_info", "get_workspace_health", "check_slideshow", "undo_change",
         // Platform news and help (APX-77): read-only public content.
         "get_platform_version", "get_platform_notices", "search_articles", "get_article",
         // Provided by the host itself (not a CLI tool): who is connected, for multi-account support.
@@ -166,6 +166,8 @@ public static class HostedToolProfile
                 "Lists ready-made screen designs, such as menu boards, welcome screens and notice layouts, that can be copied into the workspace.",
             ["get_workspace_health"] =
                 "Returns a summary of the workspace in one call: a sentence such as '11 of 12 screens are online; Lobby has been offline since 09:12', every screen with online and lastSeenAt, usage against the plan, and problems most urgent first (offline screens, failed renders, slideshows no screen plays, expired plan, limits near full), each with a code, a message and a ready-made fix. Empty problems means all is well.",
+            ["check_slideshow"] =
+                "Lists what will go wrong if a slideshow goes on a screen: no slides to show, a failed render, a live data slide with no source or a source that is off or failing, and a media file that failed to prepare. ready is false when any finding is an error, errors first; each finding has a message in plain words and a fix. Advisory only. It does not look at text size, expired content or the screen's shape.",
             ["create_device"] =
                 "Registers the physical screen the content will play on, such as the TV in reception or a menu board (Icelandic: upplýsingaskjár, skjár). Once per screen. The workspace's plan sets how many screens can be active; DeviceLimitReached means they are all in use, and a workspace admin can change the plan in InfoSlides account settings. Resolution defaults to 1920x1080; 1080x1920 is for a screen turned on its end.",
             ["make_ai_slide"] =

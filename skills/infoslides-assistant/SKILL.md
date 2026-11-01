@@ -137,6 +137,7 @@ The first call for the requests people actually make. The reference files have t
 | "What's on the lobby screen?" | `get_now_slide_png` (`GET /v1/devices/{id}/now.png`) |
 | "Why is it black?" | `get_device_diagnosis` (`GET /v1/devices/{id}/diagnosis`), always first |
 | "How are my screens?" | `get_workspace_health` (`GET /v1/workspace/health`), read `summary` out |
+| "Is this slideshow ready?" / before putting one on a screen | `check_slideshow` (`GET /v1/slideshows/{id}/preflight`), read each finding's `message` out and offer its `fix`; `ready` is false only when a finding is an error |
 | "Which screen is this?" | `list_devices` with `near`, else `identify_devices` (`POST /v1/devices/identify`) |
 | "How long did the promo play?" | `get_slideshow_plays` (`GET /v1/slideshows/{id}/plays`) |
 | "Add my colleague" | `invite_team_member` (`POST /v1/team/invitations`) |

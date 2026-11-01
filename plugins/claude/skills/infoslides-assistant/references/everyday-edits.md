@@ -99,6 +99,7 @@ on" is the default slideshow.
 | "Is it on?" | `get_device_status` (`GET /v1/devices/{id}/status`): `online`, `lastSeenAt`, `nowPlaying` |
 | "Why is it black?" | `get_device_diagnosis` (`GET /v1/devices/{id}/diagnosis`) first, always. Every cause that applies, most likely first, each with a sentence to read out and often a ready-made fix. No causes: check `get_now_slide_png` |
 | "How are my screens?" | `get_workspace_health` (`GET /v1/workspace/health`). Read `summary` as it is. `problems` each has a `message` and a `fix`. Empty means all is well: say so in one sentence |
+| "Is this slideshow ready?" | `check_slideshow` (`GET /v1/slideshows/{id}/preflight`) before it goes on a screen. `ready` is false only when a finding has severity `error`; warnings still play. Each finding has a `message` to read out and a `fix`. It does not look at text size, expired content or the screen's shape, so `preview_slide` still matters |
 
 Play time is estimated from screen heartbeats per UTC day and has no per-slide counts. Say so
 when you report it.

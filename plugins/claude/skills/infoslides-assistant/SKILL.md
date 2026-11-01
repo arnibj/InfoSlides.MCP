@@ -118,6 +118,7 @@ The first call for the requests people actually make. The reference files have t
 | "What's on the lobby screen?" | `get_now_slide_png` (`GET /v1/devices/{id}/now.png`) |
 | "Why is it black?" | `get_device_diagnosis` (`GET /v1/devices/{id}/diagnosis`), always first |
 | "How are my screens?" | `get_workspace_health` (`GET /v1/workspace/health`), read `summary` out |
+| "Is this slideshow ready?" / before putting one on a screen | `check_slideshow` (`GET /v1/slideshows/{id}/preflight`), read each finding's `message` out and offer its `fix`; `ready` is false only when a finding is an error |
 | "Which screen is this?" | `list_devices` with `q`, or `identify_devices` (`POST /v1/devices/identify`) |
 | "We need more screens" | The free plan has one screen; a workspace admin can change the plan in InfoSlides account settings. |
 | "Remove the InfoSlides mark / watermark" | It comes with the free plan, not the slides: a workspace admin can change the plan in InfoSlides account settings. After a plan change the slideshows re-render by themselves and the mark is gone shortly after; a screen already playing may keep it until the slideshow is reloaded, so tell the person to restart it (or reopen the player link) if it lingers |

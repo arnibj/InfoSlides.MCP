@@ -62,7 +62,6 @@ delete its row in the same change.
 | `preview_brand` | `undecided` | Good candidate, same reason. |
 | `update_brand_guide` | `undecided` | Drafts only; an agent cannot confirm. |
 | `check_brand` | `undecided` | |
-| `check_slideshow` | `undecided` | PLAT-02. Good candidate: an agent should check before putting a slideshow on a screen. |
 | `list_brand_previews` | `undecided` | |
 | `add_weather_alert_timeline` | `undecided` | |
 | `clone_template` | `undecided` | |
