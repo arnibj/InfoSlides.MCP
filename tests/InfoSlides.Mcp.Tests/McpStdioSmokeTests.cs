@@ -140,7 +140,7 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
     {
         _backend.MapJson("GET", "/v1/slideshows",
             """
-            {"data":[{"id":"s1","title":"Menu","resolution":{"width":1920,"height":1080}}],
+            {"data":{"items":[{"id":"s1","title":"Menu","resolution":{"width":1920,"height":1080}}],"total":1,"page":1,"pageSize":50,"totalPages":1},
              "warnings":[{"code":"AspectMismatch","message":"ratio differs"}]}
             """);
         await using var client = await ConnectAsync("isk_admin_test");
@@ -150,7 +150,7 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
         var text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content)).Text;
         Assert.NotNull(result.StructuredContent);
         Assert.True(JsonElement.DeepEquals(JsonDocument.Parse(text).RootElement, result.StructuredContent!.Value));
-        Assert.Equal("s1", result.StructuredContent!.Value.GetProperty("data")[0].GetProperty("id").GetString());
+        Assert.Equal("s1", result.StructuredContent!.Value.GetProperty("data").GetProperty("items")[0].GetProperty("id").GetString());
     }
 
     /// <summary>APX-58: an error result carries no structured content.</summary>
@@ -231,7 +231,7 @@ public sealed class McpStdioSmokeTests : IAsyncLifetime
     {
         _backend.MapJson("GET", "/v1/slideshows",
             """
-            {"data":[{"id":"s1","title":"Menu","resolution":{"width":1920,"height":1080}}],
+            {"data":{"items":[{"id":"s1","title":"Menu","resolution":{"width":1920,"height":1080}}],"total":1,"page":1,"pageSize":50,"totalPages":1},
              "warnings":[{"code":"AspectMismatch","message":"ratio differs"}]}
             """);
         await using var client = await ConnectAsync("isk_admin_test");

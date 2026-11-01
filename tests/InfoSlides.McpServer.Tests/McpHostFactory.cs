@@ -137,7 +137,11 @@ public class McpHostFactory : WebApplicationFactory<Program>
 
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent("""{"data":[]}""", Encoding.UTF8, "application/json"),
+                Content = new StringContent(
+                    request.RequestUri!.AbsolutePath == "/v1/slideshows"
+                        ? """{"data":{"items":[],"total":0,"page":1,"pageSize":50,"totalPages":0}}"""
+                        : """{"data":[]}""",
+                    Encoding.UTF8, "application/json"),
             });
         }
     }

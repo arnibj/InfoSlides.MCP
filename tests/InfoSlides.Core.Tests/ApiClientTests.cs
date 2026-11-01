@@ -220,15 +220,17 @@ public sealed class ApiClientTests
         var (client, handler) = CreateClient("isk_admin_abc");
         handler.Enqueue(HttpStatusCode.OK,
             """
-            {"data":[
+            {"data":{"items":[
               {"id":"s1","title":"Menu","resolution":{"width":1920,"height":1080}},
-              {"id":"s2","title":"Lobby","resolution":{"width":1080,"height":1920}}]}
+              {"id":"s2","title":"Lobby","resolution":{"width":1080,"height":1920}}],
+              "total":5,"page":1,"pageSize":2,"totalPages":3}}
             """);
 
         var result = await client.ListSlideshowsAsync();
 
-        Assert.Equal(2, result.Data.Count);
-        Assert.Equal(new Resolution(1080, 1920), result.Data[1].Resolution);
+        Assert.Equal(2, result.Data.Items.Count);
+        Assert.Equal(5, result.Data.Total);
+        Assert.Equal(new Resolution(1080, 1920), result.Data.Items[1].Resolution);
     }
 
     [Fact]

@@ -73,7 +73,7 @@ public static class ToolOutputSchemas
         ["list_shared_slideshows"] = Ctx.Default.JsonElement,
         ["import_slide"] = Ctx.Default.JsonElement,
         ["replace_slideshow_file"] = Ctx.Default.Slideshow,
-        ["list_slideshows"] = Ctx.Default.ListSlideshow,
+        ["list_slideshows"] = Ctx.Default.SlideshowPage,
         ["get_slideshow"] = Ctx.Default.Slideshow,
         ["clone_slideshow"] = Ctx.Default.Slideshow,
         ["list_gallery"] = Ctx.Default.ListGalleryItem,

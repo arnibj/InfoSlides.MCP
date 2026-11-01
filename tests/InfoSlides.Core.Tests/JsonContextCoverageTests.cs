@@ -46,7 +46,7 @@ public sealed class JsonContextCoverageTests
         RoundTrip(slide, c.Slide);
         RoundTrip(new Slideshow("s1", "Menu", resolution, [slide]), c.Slideshow);
         RoundTrip(new Slideshow("s1", "Menu", resolution, [slide], "Html", "Html"), c.Slideshow);
-        RoundTrip(new List<Slideshow> { new("s1", "Menu", resolution) }, c.ListSlideshow);
+        RoundTrip(new SlideshowPage([new("s1", "Menu", resolution)], 1, 1, 50, 1), c.SlideshowPage);
 
         var rule = new SlideRule("hide", "any", [new SlideCondition("date", "2026-12-01..2026-12-26")], false, "Hidden in December");
         RoundTrip(rule, c.SlideRule);

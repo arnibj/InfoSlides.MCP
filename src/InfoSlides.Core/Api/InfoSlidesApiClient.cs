@@ -56,8 +56,8 @@ public sealed class InfoSlidesApiClient
 
     /// <summary>Lists slideshows (<c>GET /v1/slideshows</c>).</summary>
     /// <param name="q">Optional title filter, case- and accent-insensitive.</param>
-    public Task<ApiResult<List<Slideshow>>> ListSlideshowsAsync(string? q = null, CancellationToken ct = default) =>
-        SendAsync(HttpMethod.Get, "/v1/slideshows" + Query(("q", q)), null, InfoSlidesJsonContext.Default.ListSlideshow, false, false, ct);
+    public Task<ApiResult<SlideshowPage>> ListSlideshowsAsync(string? q = null, int? page = null, int? pageSize = null, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Get, "/v1/slideshows" + Query(("q", q), ("page", page?.ToString()), ("pageSize", pageSize?.ToString())), null, InfoSlidesJsonContext.Default.SlideshowPage, false, false, ct);
 
     public Task<ApiResult<Slideshow>> GetSlideshowAsync(string slideshowId, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Get, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}", null,

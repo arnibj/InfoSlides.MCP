@@ -116,6 +116,17 @@ public sealed record Slideshow(
     IReadOnlyList<Screen>? Screens = null,
     int? ScreenCount = null);
 
+/// <summary>
+/// One page of <c>GET /v1/slideshows</c>: <paramref name="Total"/> counts every slideshow that matches, so a
+/// caller has them all once <paramref name="Page"/> reaches <paramref name="TotalPages"/>.
+/// </summary>
+public sealed record SlideshowPage(
+    IReadOnlyList<Slideshow> Items,
+    int Total,
+    int Page,
+    int PageSize,
+    int TotalPages);
+
 public sealed record CreateSlideshowRequest(
     string Title,
     Resolution? Resolution = null,

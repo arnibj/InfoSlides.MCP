@@ -186,9 +186,10 @@ internal static class CommandTree
         slideshow.Subcommands.Add(uploadPptx);
 
         var titleFilter = new Option<string?>("--q") { Description = "Title filter, case- and accent-insensitive." };
-        var list = new Command("list", "List slideshows.") { titleFilter };
+        var listPage = new Option<int?>("--page") { Description = "Page number, from 1." };
+        var list = new Command("list", "List slideshows.") { titleFilter, listPage };
         list.SetAction((parse, ct) => CliContext.Run(parse,
-            api => api.ListSlideshowsAsync(parse.GetValue(titleFilter), ct), InfoSlidesJsonContext.Default.ListSlideshow));
+            api => api.ListSlideshowsAsync(parse.GetValue(titleFilter), parse.GetValue(listPage), null, ct), InfoSlidesJsonContext.Default.SlideshowPage));
         slideshow.Subcommands.Add(list);
 
         var id = new Argument<string>("slideshow-id") { Description = "Slideshow id." };

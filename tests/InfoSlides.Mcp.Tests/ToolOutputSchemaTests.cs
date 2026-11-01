@@ -42,7 +42,7 @@ public sealed class ToolOutputSchemaTests
         [typeof(StreamLink)] = """{"hlsUrl":null,"expiresAt":null,"playerUrl":"https://infoslides.app/player/tok1","playbackMode":"Html"}""",
         [typeof(UploadedMedia)] = """{"id":"m1","fileType":"image","width":null,"height":null}""",
         [typeof(Slideshow)] = SlideshowJson,
-        [typeof(List<Slideshow>)] = "[" + SlideshowJson + "]",
+        [typeof(SlideshowPage)] = """{"items":[""" + SlideshowJson + """],"total":1,"page":1,"pageSize":50,"totalPages":1}""",
         [typeof(List<GalleryItem>)] = """[{"id":"g1","title":"Opening hours","description":null,"previewUrl":null,"resolution":null}]""",
         [typeof(Slide)] = SlideJson,
         [typeof(DesignedSlide)] = """{"id":"sl1","designId":"des1","layout":"Hero","previewUrl":null,"durationSeconds":8,"position":0}""",
