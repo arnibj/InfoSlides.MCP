@@ -103,7 +103,7 @@ public sealed class McpHostTransportTests(McpHostFactory factory, ITestOutputHel
         var tools = result.GetProperty("tools").EnumerateArray().ToList();
         output.WriteLine("tools/list result keys: " + string.Join(", ", result.EnumerateObject().Select(p => p.Name)));
         output.WriteLine("first tool: " + tools[0].GetRawText());
-        Assert.Equal(116, tools.Count); // 119 shared tools - 4 that need a local file + the host's profile tool
+        Assert.Equal(117, tools.Count); // 120 shared tools - 4 that need a local file + the host's profile tool
         Assert.All(tools, t =>
         {
             var annotations = t.GetProperty("annotations");

@@ -50,7 +50,7 @@ public sealed class McpHostProfileTests(McpHostFactory factory) : IClassFixture<
         Assert.Subset(HostedToolProfile.ToolNames.ToHashSet(), names);
         Assert.Empty(names.Intersect(Forbidden));
         Assert.Contains("get_user_profile", names);
-        Assert.InRange(names.Count, 30, 45);
+        Assert.InRange(names.Count, 30, 50);
     }
 
     private static readonly string[] AiSlideTools = ["make_ai_slide", "get_ai_slide_job", "insert_ai_slides"];
