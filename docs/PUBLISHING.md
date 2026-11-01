@@ -15,6 +15,10 @@ the same tag push; only the registry submission is manual.
 | `server.json` | The registry submission |
 | `sha256sums.txt` | Verification for all of the above |
 
+Every archive, the bundle and `server.json` also get a build provenance attestation, so
+`gh attestation verify <file> --repo arnibj/InfoSlides.MCP` proves the file came from this workflow.
+How users verify a download, and what to do about a bad release, is in [SECURITY.md](../SECURITY.md).
+
 The plain archives are kept deliberately. The dependency-free Native AOT binary is a real selling
 point, and MCPB is an installation channel, not a replacement for it.
 
@@ -98,7 +102,9 @@ vocabulary pass before the test is judged.
    `VersionInfo.Version` reads the assembly's own metadata rather than holding a second constant,
    and CI fails if the README's install pin disagrees with the csproj.
 2. `dotnet test`.
-3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`. CI builds everything above.
+3. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`. CI builds the binaries, then the
+   release job waits in the `release` environment. Approve it from the run page (or decline a tag
+   you did not push). Nothing is published until you approve.
 4. **Install the `.mcpb` from the release in a real MCP client and use it.** Not optional — this is
    the only step that exercises the manifest's command paths and platform overrides end to end. A
    manifest that validates can still point at the wrong file.
@@ -110,6 +116,23 @@ vocabulary pass before the test is judged.
    ```powershell
    ./scripts/check-release-sync.ps1
    ```
+
+## Release security
+
+Anyone who could push a tag, or change an action the workflow uses, could otherwise ship a build.
+What stops that (APX-79):
+
+- Every `uses:` is pinned to a full commit SHA with the tag in a comment. Dependabot
+  (`.github/dependabot.yml`) opens a PR when an action moves; review what changed before merging.
+- Workflows default to `contents: read`. Only the release job gets `contents: write`, plus
+  `id-token: write` and `attestations: write` for the provenance attestation.
+- The release job runs in the `release` environment, with the owner as required reviewer.
+- A tag ruleset limits who can create `v*` tags and blocks deleting or moving them. The branch
+  ruleset protects the default branch, which the Gemini CLI and Antigravity install from. Both
+  rulesets stay on; the owner is a bypass actor (repository admin role), so merging a PR needs no
+  switching off.
+- Code signing (Authenticode on Windows, Developer ID plus notarization on macOS) is not in place
+  yet; it waits for the certificates.
 
 ## Checking that every surface matches the release
 

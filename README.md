@@ -24,7 +24,10 @@ credit card, no trial clock, nothing expires. The whole flow below costs nothing
 ```sh
 # 1. Install (macOS/Linux; see Install for Windows and MCP clients)
 #    Version-pinned. Check /releases/latest for the current one.
-curl -L https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.9.0/infoslides-v1.9.0-linux-x64.tar.gz | tar xz
+#    Download, check the file against the release's checksums, and only then unpack it.
+curl -LO https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.9.0/infoslides-v1.9.0-linux-x64.tar.gz
+curl -LO https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.9.0/sha256sums.txt
+sha256sum -c --ignore-missing sha256sums.txt && tar xzf infoslides-v1.9.0-linux-x64.tar.gz
 
 # 2. Create a workspace (anonymous; prints an admin API key and saves it to ~/.infoslides)
 ./infoslides tenant create "Acme Cafe" owner@acme.test --save
@@ -304,8 +307,19 @@ Download from the [latest release](https://github.com/arnibj/InfoSlides.MCP/rele
 | macOS (Apple Silicon) | `infoslides-v<version>-osx-arm64.tar.gz` |
 | MCP clients           | `infoslides-mcp-v<version>.mcpb`         |
 
-Every release ships `sha256sums.txt`. Nothing is needed at runtime: the binary is Native AOT
-compiled. Or build from source:
+Verify a download before you run it. Every file in a release carries a build provenance
+attestation that ties it to this repository's release workflow; with the
+[GitHub CLI](https://cli.github.com):
+
+```sh
+gh attestation verify infoslides-v<version>-linux-x64.tar.gz --repo arnibj/InfoSlides.MCP
+```
+
+Without `gh`, check the file against the release's `sha256sums.txt`
+(`sha256sum -c --ignore-missing sha256sums.txt`, or `shasum -a 256 -c` on macOS,
+`Get-FileHash` on Windows). See [SECURITY.md](SECURITY.md) for more.
+
+Nothing is needed at runtime: the binary is Native AOT compiled. Or build from source:
 
 ```sh
 dotnet publish src/InfoSlides.Cli -c Release -r linux-x64   # or win-x64 / osx-arm64
