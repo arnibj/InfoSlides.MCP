@@ -168,7 +168,7 @@ public sealed class McpHostTransportTests(McpHostFactory factory, ITestOutputHel
         var list = await ReadRpcAsync(await client.SendAsync(Rpc(new { jsonrpc = "2.0", id = 2, method = "tools/list" }, key)));
         var call = await ReadRpcAsync(await client.SendAsync(Rpc(new { jsonrpc = "2.0", id = 3, method = "tools/call", @params = new { name = "list_slideshows", arguments = new { } } }, key)));
 
-        Assert.Equal(115, list.GetProperty("result").GetProperty("tools").GetArrayLength()); // 119 shared - 4 local-file tools
+        Assert.Equal(116, list.GetProperty("result").GetProperty("tools").GetArrayLength()); // 120 shared - 4 local-file tools
         output.WriteLine(call.GetRawText());
         Assert.Equal("Bearer " + key, Assert.Single(factory.ApiRequests).Authorization);
     }
