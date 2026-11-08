@@ -213,6 +213,32 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
             () => fromGallery ? api.CloneGalleryItemAsync(sourceId, ct) : api.CloneSlideshowAsync(sourceId, ct),
             InfoSlidesJsonContext.Default.Slideshow);
 
+    [McpServerTool(Name = "get_evening_version_offer", Title = "Check evening version", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [Description("See whether a slideshow can get an evening version before making one: how many designed slides " +
+                 "would get the dark look (designerSlideCount, 0 means it cannot be made), which screens would " +
+                 "switch (devices), whether the workspace is at its slideshow limit and whether the brand guide is " +
+                 "locked. Changes nothing.")]
+    public Task<CallToolResult> GetEveningVersionOffer(
+        [Description("Id of the slideshow.")] string slideshowId,
+        CancellationToken ct = default) =>
+        ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Get, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}/evening-version", ct: ct));
+
+    [McpServerTool(Name = "make_evening_version", Title = "Make evening version", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
+    [Description("Make a dark evening copy of a slideshow that plays on the same screens every evening, for " +
+                 "\"switch to a dark version after closing\". Designed slides get the evening look; uploaded and " +
+                 "live data slides are copied as they are, and later edits to the day slideshow are not copied. " +
+                 "Times are HH:mm in the workspace timezone; the window may cross midnight. The result names the " +
+                 "copy and, per screen, the times it plays. Offer undo_change afterwards. Nothing is created when " +
+                 "it fails, for example with no designed slides, an overlap with a timed slot on a screen (the " +
+                 "message names it), or a locked brand guide.")]
+    public Task<CallToolResult> MakeEveningVersion(
+        [Description("Id of the slideshow to copy.")] string slideshowId,
+        [Description("When the evening copy starts each day, HH:mm. Defaults to 17:00.")] string? eveningStart = null,
+        [Description("When the original takes over again the next morning, HH:mm. Defaults to 08:00.")] string? morningEnd = null,
+        CancellationToken ct = default) =>
+        ToolResults.Json(() => api.SendJsonAsync(HttpMethod.Post, $"/v1/slideshows/{Uri.EscapeDataString(slideshowId)}/evening-version",
+            ToolResults.Body(("eveningStart", eveningStart), ("morningEnd", morningEnd)), idempotent: true, ct));
+
     [McpServerTool(Name = "list_gallery", Title = "List gallery templates", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("Browse ready-made screen designs — menu boards, welcome screens, notice layouts — " +
                  "that can be copied into the workspace with clone_slideshow(fromGallery=true). Start " +

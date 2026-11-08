@@ -144,7 +144,8 @@ text slide edits (`get_slide_design`, `update_slide_design`, stock photos with `
 (`import_google_slides`), copying a page from a shared slideshow (`list_shared_slideshows`, `import_slide`), the media library
 (`get_upload_limits`, `list_media`, `get_media`, `update_media`, `delete_media`, `list_media_folders`, `create_media_folder`,
 `rename_media_folder`, `delete_media_folder`), removing a screen and broadcast channels (`delete_device`,
-`create_broadcast_device`), editing a schedule window in place (`update_schedule_entry`), the audit trail, error log and
+`create_broadcast_device`), editing a schedule window in place (`update_schedule_entry`), a dark evening copy of a slideshow that
+plays every evening (`get_evening_version_offer`, `make_evening_version`), the audit trail, error log and
 restoring a deleted slideshow (`get_audit_trail`, `get_error_log`, `restore_slideshow`), turning team access off and on
 (`deactivate_member`, `reactivate_member`), platform news (`get_platform_version`, `get_platform_notices`) and the help
 articles, blog and release notes (`search_articles`, `get_article`),
@@ -195,6 +196,7 @@ infoslides login                          # OAuth in the browser (Google/Microso
 infoslides tenant create "Acme Cafe" owner@acme.test --save
 infoslides gallery list
 infoslides slideshow clone <gallery-id> --from-gallery
+infoslides slideshow evening <slideshow-id> --evening-start 17:00 --morning-end 08:00   # dark copy that plays every evening
 infoslides slideshow upload-pptx ./deck.pptx           # or ./deck.pdf; or: media upload + slide add-media
 infoslides media upload ./logo.png
 infoslides slide add-media <slideshow-id> --asset-id <media-id> --duration 8

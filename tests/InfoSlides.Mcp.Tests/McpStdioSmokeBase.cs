@@ -44,6 +44,7 @@ public abstract class McpStdioSmokeBase : IAsyncLifetime
         "restore_slideshow", "import_google_slides", "list_shared_slideshows", "import_slide",
         "get_slide_design", "update_slide_design", "search_stock_images", "add_weather_alert_timeline",
         "update_schedule_entry", "delete_device", "create_broadcast_device",
+        "get_evening_version_offer", "make_evening_version",
     ];
 
     protected readonly FakeBackend _backend = new();

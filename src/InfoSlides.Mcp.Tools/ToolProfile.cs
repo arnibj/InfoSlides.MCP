@@ -36,7 +36,8 @@ public static class HostedToolProfile
         // Schedules and takeovers
         "get_schedule", "add_schedule_entry", "assign_schedule", "delete_schedule_entry", "create_takeover", "end_takeover",
         // Slideshows and slides
-        "list_slideshows", "get_slideshow", "update_slideshow", "delete_slideshow", "clone_slideshow", "list_gallery",
+        "list_slideshows", "get_slideshow", "update_slideshow", "delete_slideshow", "clone_slideshow",
+        "make_evening_version", "list_gallery",
         "add_media_slide", "add_designed_slide", "add_dynamic_slide", "update_slide", "delete_slide", "set_slide_conditions", "preview_slide",
         "make_ai_slide", "get_ai_slide_job", "insert_ai_slides",
         // Live data
@@ -172,6 +173,8 @@ public static class HostedToolProfile
                 "Sends fresh values for a live-data slide, such as today's menu, a price, a total or opening hours. The display re-renders itself server-side. The data uses the fields the slide's template expects. For a slide on a push source the data goes to that source. dryRun=true checks the data without changing what is on screen.",
             ["clone_slideshow"] =
                 "Copies an existing slideshow so it can be changed without touching the original, or, with fromGallery=true, copies a ready-made design from the gallery.",
+            ["make_evening_version"] =
+                "Makes a dark evening copy of a slideshow, named with (evening) after the title, and plays it on the same screens every evening, by default from 17:00 until 08:00 (HH:mm in the workspace timezone; a window across midnight is two entries per screen). Designed slides get the evening look; uploaded and live data slides are copied as they are, and later edits to the day slideshow are not copied. The result names the copy and the times on each screen, with an undo that deletes the copy. Nothing is created when it fails, for example with no designed slides, a time slot already on a screen, or a locked brand guide.",
             ["update_slide"] =
                 "Changes one slide already in a slideshow: how long it stays on screen (durationSeconds, 1 to 300) and whether it is hidden (hidden). For a live-data slide it can also switch to another template (templateId) or content source (sourceId), change values on it (overrideData, e.g. {\"price\":\"1.990 kr\"}; only the fields sent change, and null removes one), or set its countdown. Text inside an uploaded PowerPoint page cannot be edited this way. Only what is passed changes.",
             ["list_gallery"] =

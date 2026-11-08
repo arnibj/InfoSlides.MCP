@@ -78,6 +78,7 @@ delete its row in the same change.
 | `get_audit_trail` | `undecided` | |
 | `get_device_plays` | `undecided` | |
 | `get_error_log` | `undecided` | |
+| `get_evening_version_offer` | `undecided` | Left off the hosted list 2026-11-08: `make_evening_version` refuses with a named reason and creates nothing, so a hosted agent does not need the check first. |
 | `get_media` | `undecided` | |
 | `get_offline_alerts` | `undecided` | |
 | `get_slide_design` | `undecided` | |
