@@ -146,7 +146,7 @@ internal static class ToolCommands
             broadcastName, broadcastShow));
     }
 
-    /// <summary>Adds play time, restore, Google import, shared slides and the weather alert timeline to <c>slideshow</c>.</summary>
+    /// <summary>Adds play time, restore, Google import, shared slides, the weather alert timeline and the evening version to <c>slideshow</c>.</summary>
     /// <param name="slideshow">The <c>slideshow</c> command.</param>
     public static void AddSlideshowVerbs(Command slideshow)
     {
@@ -191,6 +191,19 @@ internal static class ToolCommands
             (p, ct) => CliContext.RunTool(p, api => new SlideshowTools(api).AddWeatherAlertTimeline(p.GetValue(alertsShow)!, p.GetValue(alertsSource)!,
                 p.GetValue(alertsPosition), p.GetValue(alertsDuration), null, null, ct)),
             alertsShow, alertsSource, alertsPosition, alertsDuration));
+
+        var offerId = Arg("slideshow-id", "Slideshow id.");
+        slideshow.Subcommands.Add(Verb("evening-offer", "See whether a slideshow can get an evening version and which screens would switch.",
+            (p, ct) => CliContext.RunTool(p, api => new SlideshowTools(api).GetEveningVersionOffer(p.GetValue(offerId)!, ct)),
+            offerId));
+
+        var eveningId = Arg("slideshow-id", "Slideshow id.");
+        var eveningStart = Opt<string?>("--evening-start", "When the evening copy starts each day, HH:mm (default 17:00).");
+        var morningEnd = Opt<string?>("--morning-end", "When the original takes over again, HH:mm (default 08:00).");
+        slideshow.Subcommands.Add(Verb("evening", "Make a dark evening copy of a slideshow that plays every evening; prints an undo token.",
+            (p, ct) => CliContext.RunTool(p, api => new SlideshowTools(api).MakeEveningVersion(p.GetValue(eveningId)!,
+                p.GetValue(eveningStart), p.GetValue(morningEnd), ct)),
+            eveningId, eveningStart, morningEnd));
     }
 
     /// <summary>Adds reading and changing a text slide's design, and the stock photo search, to <c>slide</c>.</summary>

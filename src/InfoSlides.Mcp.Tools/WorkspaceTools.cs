@@ -432,10 +432,11 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
 
     [McpServerTool(Name = "check_slideshow", Title = "Check a slideshow before it goes on a screen", ReadOnly = true, Destructive = false, OpenWorld = false, Idempotent = true)]
     [Description("Check what will go wrong before a slideshow goes on a screen: no slides to show, a failed " +
-                 "render, a live data slide with no source or a source that is off or failing, and a media file " +
-                 "that failed to prepare. ready is false when any finding is an error; each finding has a message " +
-                 "to read out and a fix. Advisory only. It does not look at text size, expired content or the " +
-                 "screen's shape.")]
+                 "render, a live data slide with no source, a source that is off or failing or whose content has " +
+                 "expired, a media file that is missing or failed to prepare, a visibility rule whose dates have " +
+                 "passed, a screen of the other orientation, and text that is too small or cut off. ready is false " +
+                 "when any finding is an error; each finding has a message to read out and a fix. Advisory only. " +
+                 "It lays the slides out to measure their text, so it can take some seconds.")]
     public Task<CallToolResult> CheckSlideshow(
         [Description("Id of the slideshow.")] string slideshowId,
         CancellationToken ct = default) =>

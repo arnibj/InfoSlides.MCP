@@ -55,6 +55,21 @@ public sealed class CredentialStore(string directory)
     public void SaveCredentials(StoredCredentials credentials) =>
         Save(CredentialsPath, JsonSerializer.Serialize(credentials, InfoSlidesJsonContext.Default.StoredCredentials));
 
+    /// <summary>
+    /// Saves the key of a newly created workspace. A sign-in already saved here is kept: the new key then goes to
+    /// its own file, <c>credentials-{tenantId}.json</c>, which the program does not read by itself.
+    /// </summary>
+    /// <param name="credentials">The new workspace's credentials; <c>TenantId</c> names the separate file.</param>
+    /// <returns>The path written. It differs from <see cref="CredentialsPath"/> when an earlier sign-in was kept.</returns>
+    public string SaveNewWorkspaceCredentials(StoredCredentials credentials)
+    {
+        var path = LoadCredentials() is { ApiKey: not null } or { SessionToken: not null }
+            ? Path.Combine(Directory, $"credentials-{Path.GetFileName(credentials.TenantId)}.json")
+            : CredentialsPath;
+        Save(path, JsonSerializer.Serialize(credentials, InfoSlidesJsonContext.Default.StoredCredentials));
+        return path;
+    }
+
     public void SaveConfig(StoredConfig config) =>
         Save(ConfigPath, JsonSerializer.Serialize(config, InfoSlidesJsonContext.Default.StoredConfig));
 

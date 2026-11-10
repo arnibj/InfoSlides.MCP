@@ -66,9 +66,15 @@ internal static class CommandTree
                         parse.GetValue(timeZone), parse.GetValue(locale), parse.GetValue(ownerName)), ct);
                 if (parse.GetValue(save))
                 {
-                    new CredentialStore(CliContext.Settings(parse).ConfigDirectory)
-                        .SaveCredentials(new StoredCredentials(
-                            ApiKey: result.Data.ApiKey, TenantId: result.Data.TenantId));
+                    var store = new CredentialStore(CliContext.Settings(parse).ConfigDirectory);
+                    var path = store.SaveNewWorkspaceCredentials(new StoredCredentials(
+                        ApiKey: result.Data.ApiKey, TenantId: result.Data.TenantId));
+                    if (path != store.CredentialsPath)
+                    {
+                        Console.Error.WriteLine(
+                            $"Your saved sign-in was kept. The new workspace's key is in {path}. " +
+                            "To work in that workspace, pass it with --api-key or set INFOSLIDES_API_KEY.");
+                    }
                 }
 
                 return result;

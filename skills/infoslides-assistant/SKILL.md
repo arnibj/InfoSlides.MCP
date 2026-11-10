@@ -122,6 +122,7 @@ The first call for the requests people actually make. The reference files have t
 | "Show these photos in turn" | `create_slideshow` (`POST /v1/slideshows`) with `mediaUrl` slides |
 | "Put the lunch menu on this TV" (TV showing its pairing screen) | `pair_device` (`POST /v1/pairings`) with the QR code or nickname |
 | "Turn off the news ticker" / "hide the clock" | `update_slideshow` (`PATCH /v1/slideshows/{id}`) |
+| "Make an evening version" / "a dark version at night" / "switch after closing" | `make_evening_version` (`POST /v1/slideshows/{id}/evening-version`); `get_evening_version_offer` first tells you which screens would switch and whether it can be done |
 | "Hide the Christmas slide" / "show it 15 seconds" | `update_slide` (`PATCH /v1/slides/{id}`) |
 | "Only before 11 on weekdays" / "take it down on 6 January" (ask: through the 6th, or gone from it?) | `set_slide_conditions` (`PUT /v1/slides/{id}/conditions`) |
 | "Replace the lobby presentation with this file" | `replace_slideshow_file` (`PUT /v1/slideshows/{id}/file`) |

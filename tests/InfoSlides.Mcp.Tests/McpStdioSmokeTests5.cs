@@ -1,4 +1,5 @@
 using System.Text.Json;
+using InfoSlides.Core.Config;
 using InfoSlides.Mcp.Tools;
 using ModelContextProtocol.Client;
 using ModelContextProtocol.Protocol;
@@ -115,5 +116,64 @@ public sealed class McpStdioSmokeTests5 : McpStdioSmokeBase
             Assert.Equal(path, request.Path);
             Assert.Equal(body, request.Body);
         }
+    }
+
+    /// <summary>A new workspace's key must not replace the sign-in already saved on this machine.</summary>
+    [Theory]
+    [InlineData("isk_admin_old", null)]
+    [InlineData(null, "session-token")]
+    public async Task Cli_TenantCreateSave_KeepsASavedSignIn(string? apiKey, string? sessionToken)
+    {
+        var store = new CredentialStore(Path.Combine(_isolatedHome, ".infoslides"));
+        var saved = new StoredCredentials(ApiKey: apiKey, SessionToken: sessionToken);
+        store.SaveCredentials(saved);
+
+        var stderr = await CreateTenantWithSaveAsync();
+
+        Assert.Equal(saved, store.LoadCredentials());
+        var separateFile = Path.Combine(store.Directory, "credentials-t-new.json");
+        Assert.Contains("isk_admin_new", await File.ReadAllTextAsync(separateFile));
+        Assert.Contains(separateFile, stderr);
+    }
+
+    /// <summary>With nothing saved yet, the new key becomes the one the program uses.</summary>
+    [Fact]
+    public async Task Cli_TenantCreateSave_WithNothingSaved_SavesTheNewKeyAsTheDefault()
+    {
+        var store = new CredentialStore(Path.Combine(_isolatedHome, ".infoslides"));
+
+        await CreateTenantWithSaveAsync();
+
+        Assert.Equal("isk_admin_new", store.LoadCredentials()?.ApiKey);
+        Assert.Equal("t-new", store.LoadCredentials()?.TenantId);
+    }
+
+    /// <summary>Runs <c>tenant create --save</c> against the fake API.</summary>
+    /// <returns>What the program wrote to standard error.</returns>
+    private async Task<string> CreateTenantWithSaveAsync()
+    {
+        _backend.MapJson("POST", "/v1/tenants", """{"data":{"tenantId":"t-new","apiKey":"isk_admin_new","verificationEmailSent":true}}""", status: 201);
+        var psi = new System.Diagnostics.ProcessStartInfo("dotnet")
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+        foreach (var arg in new[] { Path.Combine(AppContext.BaseDirectory, "infoslides.dll"), "tenant", "create", "Acme", "owner@acme.test", "--save" })
+        {
+            psi.ArgumentList.Add(arg);
+        }
+
+        psi.Environment["INFOSLIDES_API_URL"] = _backend.BaseUrl.ToString().TrimEnd('/');
+        psi.Environment.Remove("INFOSLIDES_API_KEY");
+        psi.Environment["HOME"] = _isolatedHome;
+        psi.Environment["USERPROFILE"] = _isolatedHome;
+        using var process = System.Diagnostics.Process.Start(psi)!;
+        var stdout = process.StandardOutput.ReadToEndAsync(Timeout());
+        var stderr = await process.StandardError.ReadToEndAsync(Timeout());
+        await stdout;
+        await process.WaitForExitAsync(Timeout());
+
+        Assert.True(process.ExitCode == 0, stderr);
+        return stderr;
     }
 }

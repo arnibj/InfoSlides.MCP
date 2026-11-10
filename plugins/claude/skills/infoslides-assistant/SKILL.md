@@ -104,6 +104,7 @@ The first call for the requests people actually make. The reference files have t
 | "Make a slide with a photo of an ambulance" | `make_ai_slide` with `backgroundDescription`, which adds the photographer credit. Use an image address or library the person names. If you pick an image from the web yourself, say where it came from. The workspace owner is responsible for having the right to use the images on their screens |
 | "Put the lunch menu on this TV" (TV showing its pairing screen) | `pair_device` (`POST /v1/pairings`) with the QR code or nickname |
 | "Turn off the news ticker" / "hide the clock" | `update_slideshow` (`PATCH /v1/slideshows/{id}`) |
+| "Make an evening version" / "a dark version at night" / "switch after closing" | `make_evening_version` (`POST /v1/slideshows/{id}/evening-version`). If it cannot be done, it creates nothing and says why |
 | "Hide the Christmas slide" / "show it 15 seconds" | `update_slide` (`PATCH /v1/slides/{id}`) |
 | "Only before 11 on weekdays" / "take it down on 6 January" (ask: through the 6th, or gone from it?) | `set_slide_conditions` (`PUT /v1/slides/{id}/conditions`) |
 | "Replace the lobby presentation with this file" | Replacing a file is done in the InfoSlides web app; say so |

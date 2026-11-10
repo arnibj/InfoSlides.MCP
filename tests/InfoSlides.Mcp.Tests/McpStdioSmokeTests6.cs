@@ -56,6 +56,9 @@ public sealed class McpStdioSmokeTests6 : McpStdioSmokeBase
         { "update_schedule_entry", """{"deviceId":"d1","entryId":"e1","priority":2}""", "PATCH", "/v1/devices/d1/schedule/entries/e1", """{"priority":2}""" },
         { "delete_device", """{"deviceId":"d1"}""", "DELETE", "/v1/devices/d1", "" },
         { "create_broadcast_device", """{"name":"Lobby channel"}""", "POST", "/v1/devices/broadcast", """{"name":"Lobby channel"}""" },
+        { "get_evening_version_offer", """{"slideshowId":"s1"}""", "GET", "/v1/slideshows/s1/evening-version", "" },
+        { "make_evening_version", """{"slideshowId":"s1","eveningStart":"18:00"}""", "POST", "/v1/slideshows/s1/evening-version",
+            """{"eveningStart":"18:00"}""" },
     };
 
     [Fact]

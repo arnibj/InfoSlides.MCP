@@ -76,6 +76,8 @@ public static class ToolOutputSchemas
         ["list_slideshows"] = Ctx.Default.SlideshowPage,
         ["get_slideshow"] = Ctx.Default.Slideshow,
         ["clone_slideshow"] = Ctx.Default.Slideshow,
+        ["get_evening_version_offer"] = Ctx.Default.JsonElement,
+        ["make_evening_version"] = Ctx.Default.JsonElement,
         ["list_gallery"] = Ctx.Default.ListGalleryItem,
         ["add_media_slide"] = Ctx.Default.Slide,
         ["add_designed_slide"] = Ctx.Default.DesignedSlide,

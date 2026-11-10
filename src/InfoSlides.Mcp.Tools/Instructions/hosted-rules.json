@@ -23,6 +23,7 @@
     "update_slideshow",
     "delete_slideshow",
     "clone_slideshow",
+    "make_evening_version",
     "list_gallery",
     "add_media_slide",
     "add_designed_slide",
