@@ -9,3 +9,7 @@ TestResults/
 
 # deploy-mcp.ps1 output
 publish/
+
+# Claude Code saves approved commands here word for word, secrets included
+.claude/*.local.json
+CLAUDE.local.md
