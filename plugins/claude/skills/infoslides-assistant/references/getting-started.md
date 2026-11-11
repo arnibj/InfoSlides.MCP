@@ -69,6 +69,7 @@ ready, walk them through it one step at a time and wait for each answer.
    | Screen | What the person does |
    | --- | --- |
    | Android TV / Google TV, or an Android box | Install **InfoSlides** from Google Play and open it |
+   | Amazon Fire TV Stick or Fire TV (also turns an old TV or a computer monitor with HDMI into a screen) | Install **InfoSlidesTV** from the Amazon Appstore (`https://www.amazon.com/dp/B0HQ4HZXJ5`) and open it |
    | LG (webOS) | Install **InfoSlides** from the LG Content Store (`https://us.lgappstv.com/main/tvapp/detail?appId=1306632`) and open it |
    | Samsung (Tizen) | The app is awaiting store approval: open the TV's web browser at `https://infoslides.app/pair.html` |
    | Anything else with a browser | Open `https://infoslides.app/pair.html`, full screen |
@@ -88,8 +89,11 @@ ready, walk them through it one step at a time and wait for each answer.
      type it on the screen before `expiresAt`.
 5. **Name the screen.** Right after pairing, `update_device` (`PATCH /v1/devices/{id}`) with
    `name` so you can find it next time.
-6. **Confirm it plays.** Ask whether the slideshow is on the screen. "No slideshow" on a screen:
-   check `supportsHtml` against the HTML note above.
+6. **Confirm it plays, and that it fits.** Ask whether the slideshow is on the screen. "No
+   slideshow" on a screen: check `supportsHtml` against the HTML note above. Once it plays, ask
+   whether everything fits or anything is cut off at the edges, and whether the screen should run
+   all day (if so, the TV's auto power off needs turning off). Either one:
+   [display-quality.md](display-quality.md).
 
 Phrase instructions for a remote: "press the Home button, open the web browser, and type this
 address". Long URLs are miserable to type with a remote; the app is kinder where it exists.

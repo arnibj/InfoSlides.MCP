@@ -45,6 +45,7 @@ change, the argument names were wrong.
 | Change something already on a screen, schedule it, take screens over, see reports, undo | [references/everyday-edits.md](references/everyday-edits.md) |
 | Show data that changes by itself (a queue, prices, scores, weather, a calendar) | [references/live-data.md](references/live-data.md) |
 | Get a new slide made ("a slide saying lunch moved to 1pm"): `add_designed_slide` first, and what to do when its layouts are not enough | [references/making-slides.md](references/making-slides.md) |
+| Fix how it looks on the TV: cut off at the edges, stretched, black bars, the TV turning itself off; and the fit check after the first play | [references/display-quality.md](references/display-quality.md) |
 | Have AI Studio design slides (asked for by name, or many from a document) | [references/ai-studio.md](references/ai-studio.md) |
 | See how a whole conversation goes, request by request | [references/scenarios.md](references/scenarios.md) |
 
@@ -70,7 +71,9 @@ steps.
    renders first: wait for `renderStatus` `Completed` on `get_slideshow` (poll at most every 5
    seconds, and pass on `renderProgress.percent`, 0 to 100, if the person is waiting). Ticker, clock and
    title changes reach screens within about a minute without a render. Then hand the person the
-   screen's `playerUrl` so they can see it for themselves.
+   screen's `playerUrl` so they can see it for themselves. The first time a slideshow plays on a
+   screen, ask once whether everything fits the screen or anything is cut off at the edges; if
+   not, follow [references/display-quality.md](references/display-quality.md).
 5. **Offer undo** when you chose something the person did not say word for word (which slide,
    which screen, which hours). Most changing calls return `undo`; keep it and send it to
    `undo_change` (`POST /v1/undo`) if they say "put it back". It works for 24 hours. When a call
@@ -119,6 +122,8 @@ The first call for the requests people actually make. The reference files have t
 | "Show today's weather / the news" | `get_tenant_info`, then `list_adapters`, `create_source`, `list_templates` and `add_dynamic_slide` with the `sourceId`, then `preview_slide`. Weather: ask "the weather right now, or a 3-day outlook?" unless their words settle it (live-data.md) |
 | "What's on the lobby screen?" | `get_now_slide_png` (`GET /v1/devices/{id}/now.png`) |
 | "Why is it black?" | `get_device_diagnosis` (`GET /v1/devices/{id}/diagnosis`), always first |
+| "It's cut off at the edges" / "it looks stretched" / "black bars" | `get_slideshow` and `list_devices` to check both resolutions, then ask the TV brand and find its picture size setting (display-quality.md) |
+| "The TV turns itself off after a few hours" | A TV setting, not InfoSlides: ask the brand, find its auto power off and energy saving settings, walk the person through them (display-quality.md) |
 | "How are my screens?" | `get_workspace_health` (`GET /v1/workspace/health`), read `summary` out |
 | "Is this slideshow ready?" / before putting one on a screen | `check_slideshow` (`GET /v1/slideshows/{id}/preflight`), read each finding's `message` out and offer its `fix`; `ready` is false only when a finding is an error |
 | "Which screen is this?" | `list_devices` with `q`, or `identify_devices` (`POST /v1/devices/identify`) |

@@ -42,6 +42,10 @@ and the judgement call that makes it go well. Ids are shortened; never read them
 **Closing the loop**
 25. "Perfect, that's exactly what I wanted" (and when it was not)
 
+**Making it look right**
+26. "The clock is squeezed into the corner and the ticker is cut off"
+27. "The TV in the window is off every afternoon"
+
 ---
 
 ## Setting up
@@ -325,3 +329,37 @@ Thank the person and confirm everything is running smoothly.
 **You do, when something could not be done** Tell the person plainly, and offer what does work: "I can't open
 Google Slides from here. If you download it as a PowerPoint and upload it in the InfoSlides web app, I'll put it
 on the lobby TV."
+
+## Making it look right
+
+### 26. "The clock is squeezed into the corner and the ticker is cut off"
+
+Or you asked after the first play whether everything fits, and the person said no.
+
+**You do** `get_slideshow` and `list_devices`: the slideshow and the screen are both `1920x1080`
+and the screen hangs on the wall like a normal TV, so the content is right. Ask the TV's make:
+"What make is the TV? The name is usually on the frame below the screen, or on the remote." They
+say Finlux. Search the web for "Finlux TV picture size just scan" and walk them through it: "Press
+Menu on the remote, open Picture, then Picture Size, and choose Just Scan." Ask again whether
+everything fits.
+
+**You say** "Your slides are the right size for that TV. The TV itself zooms the picture a little
+and cuts off the edges, which older TVs do by default. Press Menu, go to Picture, then Picture
+Size, and pick Just Scan. Does it all fit now?"
+
+**Why it works** You ruled out the cause you could check before sending them into menus, and you
+named the real culprit. InfoSlides cannot change the TV's settings; only the remote can.
+
+### 27. "The TV in the window is off every afternoon"
+
+**You do** `get_device_status`: the screen went offline at the same time each day, a few hours
+after it was switched on. Ask the make, search for that brand's auto power off and energy saving
+settings, and walk the person through turning them off. Ask whether the window should light up
+all day or only in opening hours; many TVs have an on and off timer for that.
+
+**You say** "That's the TV switching itself off: most TVs turn off after a few hours if nobody
+touches the remote. On your Samsung it's under Settings, General, Eco Solution, Auto Power Off.
+Set it to Off. Should the screen run all day, or only while you're open?"
+
+**Why it works** The pattern (same time, hours after switching on) points at the TV, not the
+network, and you fixed it once instead of asking them to switch it back on every day.
