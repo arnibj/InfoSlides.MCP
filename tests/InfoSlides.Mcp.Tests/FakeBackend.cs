@@ -104,5 +104,10 @@ public sealed class FakeBackend : IDisposable
         catch (ObjectDisposedException)
         {
         }
+        catch (HttpListenerException)
+        {
+            // On Linux, Close() can throw "Address already in use" while unregistering the prefix when a
+            // parallel test class's backend was handed the same free port. The listener is stopped either way.
+        }
     }
 }
