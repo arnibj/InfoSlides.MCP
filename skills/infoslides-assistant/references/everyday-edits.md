@@ -64,7 +64,7 @@ A screen with nothing playing has no slideshow to edit. Several matches or none:
 | Text inside an uploaded PowerPoint | Not editable. Say so; offer `replace_slideshow_file` with their updated file |
 | A live slide's design or data source | `update_slide` with `templateId` and/or `sourceId` |
 | A countdown on a live slide | `update_slide` with `{"countdown": {"overlayId": "...", "mode": "daily", "dailyTime": "17:00"}}` (`fixed` takes `targetTime`, `source` takes `sourceField`; `[]` removes it). `overlayId` is the id of the countdown element in the slide's template; no call lists it, so for a new countdown do not guess an id: say it is set up in the InfoSlides web app |
-| Delete a whole slideshow | `delete_slideshow` (`DELETE /v1/slideshows/{id}`). Screens playing it go blank and its schedules are removed: check `screens` and confirm first. Not undoable |
+| Delete a whole slideshow | `delete_slideshow` (`DELETE /v1/slideshows/{id}`). Screens playing it go blank and its schedules are removed: check `screens` and confirm first. The answer's `undo` brings it back with its schedules and screens |
 
 Conditions stay on their slide when slides move, and they are applied by the platform at the
 right time. Never promise to come back and change something later: put the date on the slide.
@@ -135,8 +135,9 @@ the calls listed under "Not covered" below.
 - When they say yes, send it as returned: `undo_change` (`POST /v1/undo`) with
   `{"token": "..."}`. It works for 24 hours; keep it until then, nothing else stores it.
 - Covered: slide edits, hide and show, delete (the slide comes back), conditions, slideshow
-  settings and order, schedule entries, play, takeovers and pairing.
-- Not covered: pushed live data (the next push replaces it anyway), deleting a slideshow,
+  settings and order, deleting a slideshow (it comes back with its schedules and screens, if the
+  plan has room), schedule entries, play, takeovers and pairing.
+- Not covered: pushed live data (the next push replaces it anyway),
   a screen's name or resolution, and which TV was paired before a re-pairing. Creating a slideshow,
   uploading or replacing a file and showing a photo on a screen return no `undo` either. Say so
   plainly: delete the new slideshow (confirm first), upload the old file again, or end the

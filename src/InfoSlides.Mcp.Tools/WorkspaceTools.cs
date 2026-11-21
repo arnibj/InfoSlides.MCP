@@ -254,8 +254,8 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
     [McpServerTool(Name = "undo_change", Title = "Undo previous change", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = false)]
     [Description("Undo the last change: puts back what an earlier call changed. Calls that change " +
                  "something return an undo field; pass its body.token here within 24 hours. A deleted " +
-                 "slide comes back, an added slide, takeover or paired screen is removed. Not covered: " +
-                 "deleting a slideshow (restore_slideshow brings one back), and screen settings. If the same thing was changed again since, " +
+                 "slide or slideshow comes back (a slideshow with its schedules and screens), an added slide, " +
+                 "takeover or paired screen is removed. Not covered: screen settings. If the same thing was changed again since, " +
                  "the answer is NeedsClarification: ask the person before sending force=true, which " +
                  "overwrites that later change.")]
     public Task<CallToolResult> UndoChange(

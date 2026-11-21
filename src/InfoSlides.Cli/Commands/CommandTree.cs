@@ -283,7 +283,7 @@ internal static class CommandTree
 
         var deleteId = new Argument<string>("slideshow-id") { Description = "Slideshow id." };
         var deleteShow = new Command(
-            "delete", "Delete a slideshow. Its schedules go and screens playing it stop showing it. There is no undelete.")
+            "delete", "Delete a slideshow. Its schedules go and screens playing it stop showing it. The undo brings it back with them for 24 hours.")
         {
             deleteId,
         };

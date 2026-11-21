@@ -136,9 +136,9 @@ public static class HostedToolProfile
             ["update_slideshow"] =
                 "Changes a slideshow: rename it, switch between landscape and portrait, reorder the slides (slideOrder is the complete list of slide ids in the wanted order), turn the news ticker or the on-screen clock on or off, set one duration for every slide, or force how it plays. playbackMode overrides the usual rendered-video stream with a smooth HTML/CSS loop, or back again; 'inherit' drops the override. Only what is passed changes. A screen picks up the change after a re-render, when renderStatus is Completed.",
             ["delete_slideshow"] =
-                "Deletes a slideshow permanently. Its schedules are removed and any screen playing it stops showing it at its next check-in. There is no undelete.",
+                "Deletes a slideshow. Its schedules are removed and any screen playing it stops showing it at its next check-in. The result's undo brings it back with its schedules and screens within 24 hours.",
             ["undo_change"] =
-                "Reverts an earlier change. Calls that change something return an undo field; its body.token is what this takes, within 24 hours. A deleted slide comes back; an added slide, takeover or paired screen is removed. Not covered: deleting a slideshow, and screen settings. If the same thing was changed again since, the result is NeedsClarification, and force=true overwrites that later change.",
+                "Reverts an earlier change. Calls that change something return an undo field; its body.token is what this takes, within 24 hours. A deleted slide or slideshow comes back (a slideshow with its schedules and screens); an added slide, takeover or paired screen is removed. Not covered: screen settings. If the same thing was changed again since, the result is NeedsClarification, and force=true overwrites that later change.",
             ["create_takeover"] =
                 "Takes over one or more screens for a while, such as a fire drill notice for 30 minutes or a launch announcement until 17:00, then returns them to their schedule by themselves. Takes deviceIds, the slideshow, and either durationMinutes or endsAt. Without an end it runs until it is ended.",
             ["list_sources"] =

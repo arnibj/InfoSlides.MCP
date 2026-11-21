@@ -86,10 +86,11 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
     }
 
     [McpServerTool(Name = "delete_slideshow", Title = "Delete slideshow", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
-    [Description("Delete a slideshow for good: the old lunch menu, a campaign that has ended, a test " +
+    [Description("Delete a slideshow: the old lunch menu, a campaign that has ended, a test " +
                  "deck. Its schedules are removed and any screen playing it stops " +
-                 "showing it at its next check-in. restore_slideshow can bring it back for a while, but " +
-                 "not its schedules, so confirm with the person first unless they clearly asked for it. " +
+                 "showing it at its next check-in. The result's undo brings it back with its schedules and " +
+                 "screens within 24 hours, and after that restore_slideshow brings back the slideshow alone. " +
+                 "Confirm with the person first unless they clearly asked for it. " +
                  "To take one slide out, use delete_slide or hide it with update_slide instead.")]
     public Task<CallToolResult> DeleteSlideshow(
         [Description("Id of the slideshow to delete.")] string slideshowId,
