@@ -475,9 +475,10 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
     }
 
     [McpServerTool(Name = "delete_slide", Title = "Delete slide", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
-    [Description("Remove one slide from a slideshow for good: the Christmas slide once it is over, a " +
+    [Description("Remove one slide from a slideshow: the Christmas slide once it is over, a " +
                  "wrong photo, a page nobody wants. The slides after it close up and any rule on it " +
-                 "goes too. If the slide may come back later, hide it with update_slide instead. " +
+                 "goes too. The result's undo puts it back within 24 hours. If the slide may come " +
+                 "back later, hide it with update_slide instead. " +
                  "Confirm with the person first unless they clearly asked for it.")]
     public Task<CallToolResult> DeleteSlide(
         [Description("Id of the slide to remove.")] string slideId,
