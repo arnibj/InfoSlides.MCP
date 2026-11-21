@@ -350,7 +350,7 @@ internal static class ToolCommands
             editId, editName, editConfig, editInterval, enabled));
 
         var deleteId = Arg("source-id", "Source id.");
-        source.Subcommands.Add(Verb("delete", "Delete a source; slides and tickers fed by it stop updating.",
+        source.Subcommands.Add(Verb("delete", "Delete a source for good; refused while a slideshow's slides or ticker use it.",
             (p, ct) => CliContext.RunTool(p, api => new WorkspaceTools(api).DeleteSource(p.GetValue(deleteId)!, ct)),
             deleteId));
 

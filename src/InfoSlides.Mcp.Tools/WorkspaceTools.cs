@@ -131,8 +131,9 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
             ct: ct));
 
     [McpServerTool(Name = "delete_source", Title = "Delete content source", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
-    [Description("Delete a content source. Slides and tickers fed by it stop updating. Confirm with the " +
-                 "person first.")]
+    [Description("Delete a content source for good; there is no undo. Refused while a slideshow's slides " +
+                 "or news ticker use it (also with the ticker turned off), and the error names those " +
+                 "slideshows. Confirm with the person first.")]
     public Task<CallToolResult> DeleteSource(
         [Description("Id of the source.")] string sourceId,
         CancellationToken ct = default) =>

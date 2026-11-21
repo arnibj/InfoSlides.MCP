@@ -118,7 +118,7 @@ public static class HostedToolProfile
             ["get_now_slide_png"] =
                 "Returns the slide a screen is scheduled to show right now as an image, worked out from its schedule, takeovers, slide rules and slide durations. It shows what is scheduled, not a camera view, so an offline TV may show something else.",
             ["delete_slide"] =
-                "Removes one slide from a slideshow permanently. The slides after it close up and any display rule on it is removed.",
+                "Removes one slide from a slideshow. The slides after it close up and any display rule on it is removed. The result's undo puts it back within 24 hours.",
             ["list_slideshows"] =
                 "Lists everything the workspace can put on a screen, with the shape (landscape or portrait) each is built for, whether its latest render has finished (renderStatus) and how many screens play it (screenCount). q filters by title, case and accent insensitive ('q1' finds 'Q1 Results 2026').",
             ["show_media_on_device"] =
