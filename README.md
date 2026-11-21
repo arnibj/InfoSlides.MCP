@@ -17,7 +17,7 @@ without anyone opening a dashboard. As far as we know, no other digital signage 
 driven that way.
 
 New workspaces land on a **permanent free plan**: 1 screen, 4 slideshows, 2 users, 200 MB. No
-credit card, no trial clock, nothing expires. The whole flow below costs nothing and keeps running.
+credit card or trial clock. The whole flow below costs nothing and keeps running.
 
 ## Zero to a live screen
 
@@ -25,9 +25,9 @@ credit card, no trial clock, nothing expires. The whole flow below costs nothing
 # 1. Install (macOS/Linux; see Install for Windows and MCP clients)
 #    Version-pinned. Check /releases/latest for the current one.
 #    Download, check the file against the release's checksums, and only then unpack it.
-curl -LO https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.10.0/infoslides-v1.10.0-linux-x64.tar.gz
-curl -LO https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.10.0/sha256sums.txt
-sha256sum -c --ignore-missing sha256sums.txt && tar xzf infoslides-v1.10.0-linux-x64.tar.gz
+curl -LO https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.10.1/infoslides-v1.10.1-linux-x64.tar.gz
+curl -LO https://github.com/arnibj/InfoSlides.MCP/releases/download/v1.10.1/sha256sums.txt
+sha256sum -c --ignore-missing sha256sums.txt && tar xzf infoslides-v1.10.1-linux-x64.tar.gz
 
 # 2. Create a workspace (anonymous; prints an admin API key and saves it to ~/.infoslides)
 ./infoslides tenant create "Acme Cafe" owner@acme.test --save
