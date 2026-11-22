@@ -138,7 +138,7 @@ public static class HostedToolProfile
             ["delete_slideshow"] =
                 "Deletes a slideshow. Its schedules are removed and any screen playing it stops showing it at its next check-in. The result's undo brings it back with its schedules and screens within 24 hours.",
             ["undo_change"] =
-                "Reverts an earlier change. Calls that change something return an undo field; its body.token is what this takes, within 24 hours. A deleted slide or slideshow comes back (a slideshow with its schedules and screens); an added slide, takeover or paired screen is removed. Not covered: screen settings. If the same thing was changed again since, the result is NeedsClarification, and force=true overwrites that later change.",
+                "Reverts an earlier change. Calls that change something return an undo field; its body.token, a short id such as undo_7k3m9q2xa4bd, is what this takes, within 24 hours. A deleted slide or slideshow comes back (a slideshow with its schedules and screens); an added slide, takeover or paired screen is removed. Not covered: screen settings. If the same thing was changed again since, the result is NeedsClarification, and force=true overwrites that later change.",
             ["create_takeover"] =
                 "Takes over one or more screens for a while, such as a fire drill notice for 30 minutes or a launch announcement until 17:00, then returns them to their schedule by themselves. Takes deviceIds, the slideshow, and either durationMinutes or endsAt. Without an end it runs until it is ended.",
             ["list_sources"] =
@@ -250,6 +250,7 @@ public static class HostedToolProfile
             },
             ["undo_change"] = new Dictionary<string, string>(StringComparer.Ordinal)
             {
+                ["token"] = "The short undo id from the undo field of an earlier result, such as undo_7k3m9q2xa4bd.",
                 ["force"] = "True to overwrite a later change.",
             },
             ["push_data"] = new Dictionary<string, string>(StringComparer.Ordinal)
