@@ -48,13 +48,6 @@ public sealed class HostedRulesTests
     }
 
     [Fact]
-    public void MuseInstructions_LinkToTheMuseSkill_NotTheHostedOne()
-    {
-        Assert.Contains("https://infoslides.app/skills/muse/infoslides-assistant/SKILL.md", InfoSlidesServerInstructions.HostedForMuse);
-        Assert.DoesNotContain("/skills/hosted/", InfoSlidesServerInstructions.HostedForMuse);
-    }
-
-    [Fact]
     public void HostedInstructions_RespectTheSkillRules()
     {
         var rules = Rules();
@@ -74,9 +67,10 @@ public sealed class HostedRulesTests
     }
 
     [Fact]
-    public void HostedInstructions_LinkToTheHostedSkill_NotTheFullOne()
+    public void HostedInstructions_LinkToNoExternalGuide()
     {
-        Assert.Contains("https://infoslides.app/skills/hosted/infoslides-assistant/SKILL.md", InfoSlidesServerInstructions.Hosted);
-        Assert.DoesNotContain("https://infoslides.app/skills/infoslides-assistant/", InfoSlidesServerInstructions.Hosted);
+        // Anthropic directory policy 2.F: no behavioural instructions pulled from an external source.
+        Assert.DoesNotContain("SKILL.md", InfoSlidesServerInstructions.Hosted);
+        Assert.DoesNotContain("https://", InfoSlidesServerInstructions.Hosted);
     }
 }

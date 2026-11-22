@@ -26,20 +26,12 @@ public static class InfoSlidesServerInstructions
     public static readonly string Hosted = Load("hosted");
 
     /// <summary>
-    /// The hosted text for Muse callers, who are not offered the AI slide tools (see
-    /// <see cref="HostedToolProfile.MuseExcluded"/>): the same text, linking to the Muse variant of the guide, which
-    /// has none of the AI Studio material (OAI-18). A test fails if a tool name from the exclusion list is still in it.
+    /// Returns the instructions for a profile. Muse callers get the hosted text too: it names no AI slide tool and
+    /// links to no external guide (Anthropic directory policy 2.F), so nothing in it varies for them.
     /// </summary>
-    public static readonly string HostedForMuse = Hosted.Replace("/skills/hosted/", "/skills/muse/", StringComparison.Ordinal);
-
-    /// <summary>Returns the instructions for a profile.</summary>
     /// <param name="profile">The caller's profile.</param>
-    /// <param name="surface">The token's <c>surface</c> claim, if any.</param>
     /// <returns>The instruction text.</returns>
-    public static string For(ToolProfile profile, string? surface = null) =>
-        profile != ToolProfile.Hosted ? Full
-        : string.Equals(surface, HostedToolProfile.MuseSurface, StringComparison.OrdinalIgnoreCase) ? HostedForMuse
-        : Hosted;
+    public static string For(ToolProfile profile) => profile != ToolProfile.Hosted ? Full : Hosted;
 
     private static string Load(string kind)
     {
