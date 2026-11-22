@@ -116,7 +116,7 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
             Body(("adapterType", adapterType), ("name", name), ("config", config), ("fetchIntervalSeconds", fetchIntervalSeconds)),
             idempotent: true, ct));
 
-    [McpServerTool(Name = "update_source_settings", Title = "Update source configuration", ReadOnly = false, Destructive = false, OpenWorld = true, Idempotent = true)]
+    [McpServerTool(Name = "update_source_settings", Title = "Update source configuration", ReadOnly = false, Destructive = true, OpenWorld = true, Idempotent = true)]
     [Description("Change a content source's name, config, fetch interval, or pause and resume it (ids " +
                  "from list_sources). To send data to a push source, use push_data instead.")]
     public Task<CallToolResult> EditSource(

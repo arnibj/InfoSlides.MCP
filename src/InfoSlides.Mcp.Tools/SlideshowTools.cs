@@ -30,7 +30,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
             () => api.CreateSlideshowAsync(new CreateSlideshowRequest(title, new Resolution(width, height), slides), ct),
             InfoSlidesJsonContext.Default.Slideshow);
 
-    [McpServerTool(Name = "update_slideshow", Title = "Update slideshow settings", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [McpServerTool(Name = "update_slideshow", Title = "Update slideshow settings", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
     [Description("Change what is already playing on a screen: rename it, switch it between landscape " +
                  "and portrait, reorder the slides, turn the news ticker or the on-screen clock on or " +
                  "off, make every slide show for the same number of seconds, or force how it plays. " +
@@ -434,7 +434,7 @@ public sealed class SlideshowTools(InfoSlidesApiClient api)
         ToolResults.Execute(() => api.SetSlideConditionsAsync(slideId, conditions, mode, match, ct),
             InfoSlidesJsonContext.Default.Slide);
 
-    [McpServerTool(Name = "update_slide", Title = "Update slide properties", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = true)]
+    [McpServerTool(Name = "update_slide", Title = "Update slide properties", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = true)]
     [Description("Change one slide that is already in a slideshow: make it stay on screen longer or " +
                  "shorter (durationSeconds, 1 to 300), or hide it and bring it back (hidden), like \"hide " +
                  "the Christmas slide\", \"show the offer for 20 seconds\". For a live-data slide it " +
