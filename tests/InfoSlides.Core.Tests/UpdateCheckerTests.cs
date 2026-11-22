@@ -44,7 +44,7 @@ public sealed class UpdateCheckerTests : IDisposable
     [InlineData("1.1.1", "1.1.0", true)]
     [InlineData("1.1.0", "1.1.0", false)]      // equal is not newer
     [InlineData("1.0.0", "1.1.0", false)]      // older never nags
-    [InlineData("v1.10.3", "v1.9.0", true)]    // numeric, not lexicographic
+    [InlineData("v1.10.4", "v1.9.0", true)]    // numeric, not lexicographic
     [InlineData(null, "1.1.0", false)]
     [InlineData("garbage", "1.1.0", false)]
     [InlineData("1.2.0", "garbage", false)]
