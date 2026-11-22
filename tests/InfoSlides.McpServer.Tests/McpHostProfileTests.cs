@@ -433,10 +433,9 @@ public sealed class McpHostProfileTests(McpHostFactory factory) : IClassFixture<
         var response = await factory.CreateClient().SendAsync(Rpc(Initialize(), factory.MintToken(surface: "muse")));
         var instructions = (await ReadRpcAsync(response)).GetProperty("result").GetProperty("instructions").GetString()!;
 
-        Assert.Equal(InfoSlidesServerInstructions.HostedForMuse, instructions);
+        Assert.Equal(InfoSlidesServerInstructions.Hosted, instructions);
         Assert.All(AiSlideTools, tool => Assert.DoesNotContain(tool, instructions));
         Assert.Contains("get_tenant_info", instructions);
-        Assert.Contains("/skills/muse/infoslides-assistant/SKILL.md", instructions);
     }
 
     [Fact]

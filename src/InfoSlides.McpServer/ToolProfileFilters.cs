@@ -109,7 +109,7 @@ public static class ToolProfileFilters
     /// <summary>The server instructions for a caller, so a host that cannot load the skill still gets its guidance.</summary>
     /// <param name="user">The authenticated caller.</param>
     /// <returns>The instruction text for the caller's profile.</returns>
-    public static string InstructionsFor(ClaimsPrincipal? user) => InfoSlidesServerInstructions.For(CallerContext.ProfileFor(user), CallerContext.Surface(user));
+    public static string InstructionsFor(ClaimsPrincipal? user) => InfoSlidesServerInstructions.For(CallerContext.ProfileFor(user));
 
     private static ClaimsPrincipal? UserOf(IServiceProvider? services) =>
         services?.GetService<IHttpContextAccessor>()?.HttpContext?.User;
