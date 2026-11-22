@@ -116,7 +116,7 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
             Body(("adapterType", adapterType), ("name", name), ("config", config), ("fetchIntervalSeconds", fetchIntervalSeconds)),
             idempotent: true, ct));
 
-    [McpServerTool(Name = "update_source_settings", Title = "Update source configuration", ReadOnly = false, Destructive = false, OpenWorld = true, Idempotent = true)]
+    [McpServerTool(Name = "update_source_settings", Title = "Update source configuration", ReadOnly = false, Destructive = true, OpenWorld = true, Idempotent = true)]
     [Description("Change a content source's name, config, fetch interval, or pause and resume it (ids " +
                  "from list_sources). To send data to a push source, use push_data instead.")]
     public Task<CallToolResult> EditSource(
@@ -254,13 +254,14 @@ public sealed class WorkspaceTools(InfoSlidesApiClient api)
 
     [McpServerTool(Name = "undo_change", Title = "Undo previous change", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = false)]
     [Description("Undo the last change: puts back what an earlier call changed. Calls that change " +
-                 "something return an undo field; pass its body.token here within 24 hours. A deleted " +
+                 "something return an undo field; pass its body.token, a short id such as undo_7k3m9q2xa4bd, " +
+                 "here within 24 hours. A deleted " +
                  "slide or slideshow comes back (a slideshow with its schedules and screens), an added slide, " +
                  "takeover or paired screen is removed. Not covered: screen settings. If the same thing was changed again since, " +
                  "the answer is NeedsClarification: ask the person before sending force=true, which " +
                  "overwrites that later change.")]
     public Task<CallToolResult> UndoChange(
-        [Description("The token from the undo field of the earlier result.")] string token,
+        [Description("The short undo id (undo.body.token) of the earlier result, such as undo_7k3m9q2xa4bd.")] string token,
         [Description("True to overwrite a later change; only after the person agreed.")] bool force = false,
         CancellationToken ct = default) =>
         Json(() => api.SendJsonAsync(HttpMethod.Post, "/v1/undo",

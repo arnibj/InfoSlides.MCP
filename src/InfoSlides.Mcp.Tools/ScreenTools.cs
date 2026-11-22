@@ -17,7 +17,7 @@ public sealed class ScreenTools(InfoSlidesApiClient api)
 {
     private static string Id(string id) => Uri.EscapeDataString(id);
 
-    [McpServerTool(Name = "pair_device", Title = "Pair a TV screen", ReadOnly = false, Destructive = false, OpenWorld = false, Idempotent = false)]
+    [McpServerTool(Name = "pair_device", Title = "Pair a TV screen", ReadOnly = false, Destructive = true, OpenWorld = false, Idempotent = false)]
     [Description("Connect a physical TV to this workspace. The TV shows a pairing screen (the InfoSlides " +
                  "TV app, or https://infoslides.app/pair.html in its browser) with a QR code and a short " +
                  "nickname such as swift-oak-42. If the person reads you the QR code or nickname, or you " +
